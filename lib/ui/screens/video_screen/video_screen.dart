@@ -555,6 +555,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(videoMetadata.authorName ?? "-",
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
