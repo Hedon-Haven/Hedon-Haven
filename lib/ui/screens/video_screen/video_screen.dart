@@ -437,7 +437,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                              child: Text(videoMetadata.title,
+                              child: Text(
+                                  // Most videos result in a 2-line title, but mock usually displays only one causing jumps
+                                  isLoadingMetadata
+                                      ? "${videoMetadata.title}\n${videoMetadata.title}"
+                                      : videoMetadata.title,
                                   style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold),
@@ -605,7 +609,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           Row(children: [
             Text(
                 isLoadingMetadata
-                    ? "unknown time ago"
+                    ? "Xw ago"
                     : videoMetadata.uploadDate == null
                         ? "-"
                         : descriptionExpanded
