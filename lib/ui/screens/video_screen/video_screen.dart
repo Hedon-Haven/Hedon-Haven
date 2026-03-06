@@ -392,8 +392,20 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                               children: <Widget>[
                                                 buildDetailsSection()
                                               ])),
-                                      if (showCommentSection && isMobile)
-                                        buildCommentSection(),
+                                      // After
+                                      if (isMobile)
+                                        AnimatedSlide(
+                                          offset: showCommentSection
+                                              ? Offset.zero
+                                              : const Offset(0, 1),
+                                          duration:
+                                              const Duration(milliseconds: 200),
+                                          curve: Curves.easeInOut,
+                                          child: IgnorePointer(
+                                            ignoring: !showCommentSection,
+                                            child: buildCommentSection(),
+                                          ),
+                                        ),
                                     ]))
                                   ]
                                 ])),
