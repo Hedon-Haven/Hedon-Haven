@@ -82,14 +82,60 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(
                 color: Theme.of(context).colorScheme.primary, Icons.search),
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => SearchScreen(
-                            previousSearch: UniversalSearchRequest(),
-                          )));
-            },
+            onPressed: () => Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, _) =>
+                    SearchScreen(previousSearch: UniversalSearchRequest()),
+                transitionsBuilder: (context, animation, _, child) {
+                  final curved = CurvedAnimation(
+                      parent: animation, curve: Curves.easeInOut);
+                  final topOffset =
+                      kToolbarHeight + MediaQuery.of(context).padding.top;
+                  final screenHeight = MediaQuery.of(context).size.height;
+
+                  return AnimatedBuilder(
+                    animation: curved,
+                    child: child,
+                    builder: (_, child) => Stack(
+                      children: [
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: topOffset +
+                              curved.value * (screenHeight - topOffset),
+                          child: ClipRect(
+                            child: ShaderMask(
+                              blendMode: BlendMode.dstIn,
+                              shaderCallback: (rect) => LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                // AppBar region fades in, body stays fully opaque
+                                colors: [
+                                  Colors.black.withValues(alpha: curved.value),
+                                  Colors.black
+                                ],
+                                stops: [
+                                  topOffset / rect.height,
+                                  topOffset / rect.height
+                                ],
+                              ).createShader(rect),
+                              child: OverflowBox(
+                                alignment: Alignment.topCenter,
+                                maxHeight: screenHeight,
+                                child: child,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 300),
+              ),
+            ),
           ),
         ],
       ),
