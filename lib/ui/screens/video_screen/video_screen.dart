@@ -1264,6 +1264,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       VideoList(
           videoList: videoSuggestions,
           scrollController: screenScrollController,
+          onVideoTap: () => videoPlayerWidgetKey.currentState?.pausePlayer(),
           loadMoreResults: loadMoreResults,
           noResultsMessage: "No video suggestions found",
           noResultsErrorMessage: "Error getting video suggestions",

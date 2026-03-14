@@ -26,6 +26,9 @@ class VideoList extends StatefulWidget {
 
   final ScrollController scrollController;
 
+  /// Called just before transitioning to VideoPlayerScreen
+  final VoidCallback? onVideoTap;
+
   /// Function to recreate the videoList as it was initially loaded.
   /// Only required if noPluginsEnabled can be true
   final Future<List<UniversalVideoPreview>?> Function()? reloadInitialResults;
@@ -82,6 +85,7 @@ class VideoList extends StatefulWidget {
   VideoList(
       {super.key,
       required this.videoList,
+      this.onVideoTap,
       required this.scrollController,
       this.searchRequest,
       this.reloadInitialResults,
@@ -451,6 +455,7 @@ class _VideoListState extends State<VideoList> {
                                   return;
                                 }
                                 addToWatchHistory(videoList![index]);
+                                widget.onVideoTap?.call();
                                 openContainer();
                               },
                               child: Skeletonizer(
