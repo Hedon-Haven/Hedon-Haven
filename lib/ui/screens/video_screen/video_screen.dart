@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:animations/animations.dart';
 import 'package:auto_orientation/auto_orientation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -499,98 +500,106 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Widget buildAuthorPreview() {
-    return TextButton(
-        style: ButtonStyle(
-            padding: WidgetStateProperty.all(EdgeInsets.symmetric(
-                horizontal: 5, vertical: isMobile ? 5 : 15))),
-        onPressed: () {
-          // pause video
-          videoPlayerWidgetKey.currentState?.pausePlayer();
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => AuthorPageScreen(
-                      authorPage: videoMetadata.plugin!
-                          .getAuthorPage(videoMetadata.authorID))));
-        },
-        child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Skeleton.replace(
-                width: 50,
-                height: 50,
-                replacement: ClipRRect(
-                  borderRadius: BorderRadius.circular(255),
-                  child:
-                      ColoredBox(color: Theme.of(context).colorScheme.surface),
-                ),
-                child: ClipOval(
-                    child: Container(
-                  width: 50,
-                  height: 50,
-                  color: Theme.of(context).colorScheme.tertiary,
-                  child: Image.network(
-                    videoMetadata.authorAvatar ?? "Avatar url is null",
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      if (!error.toString().contains("mockAvatar")) {
-                        logger.e(
-                            "Failed to load network avatar: $error\n$stackTrace");
-                      }
-                      return FittedBox(
-                          fit: BoxFit.cover,
-                          child: Icon(Icons.person,
-                              color: Theme.of(context).colorScheme.onTertiary));
-                    },
+    return OpenContainer(
+        closedElevation: 0,
+        openElevation: 0,
+        closedColor: Colors.transparent,
+        openColor: Theme.of(context).colorScheme.surface,
+        transitionDuration: const Duration(milliseconds: 400),
+        openBuilder: (context, _) => AuthorPageScreen(
+            authorPage:
+                videoMetadata.plugin!.getAuthorPage(videoMetadata.authorID)),
+        closedBuilder: (context, openContainer) => TextButton(
+            style: ButtonStyle(
+                padding: WidgetStateProperty.all(EdgeInsets.symmetric(
+                    horizontal: 5, vertical: isMobile ? 5 : 15))),
+            onPressed: () {
+              // pause video
+              videoPlayerWidgetKey.currentState?.pausePlayer();
+              openContainer();
+            },
+            child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Skeleton.replace(
+                    width: 50,
+                    height: 50,
+                    replacement: ClipRRect(
+                      borderRadius: BorderRadius.circular(255),
+                      child: ColoredBox(
+                          color: Theme.of(context).colorScheme.surface),
+                    ),
+                    child: ClipOval(
+                        child: Container(
+                      width: 50,
+                      height: 50,
+                      color: Theme.of(context).colorScheme.tertiary,
+                      child: Image.network(
+                        videoMetadata.authorAvatar ?? "Avatar url is null",
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          if (!error.toString().contains("mockAvatar")) {
+                            logger.e(
+                                "Failed to load network avatar: $error\n$stackTrace");
+                          }
+                          return FittedBox(
+                              fit: BoxFit.cover,
+                              child: Icon(Icons.person,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onTertiary));
+                        },
+                      ),
+                    )),
                   ),
-                )),
-              ),
-              SizedBox(width: 20),
-              SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(videoMetadata.authorName ?? "-",
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold)),
-                        Text(
-                            "Subscribers: ${convertNumberIntoHumanReadable(videoMetadata.authorSubscriberCount ?? 0)}",
-                            style: Theme.of(context).textTheme.titleSmall)
-                      ])),
-              isMobile ? Spacer() : SizedBox(width: 50),
-              FutureBuilder<bool?>(
-                  // TODO: Add call to check subscription here
-                  future: Future.value(false), // subscribed
-                  builder: (context, snapshot) {
-                    return ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary),
-                        onPressed: isLoadingMetadata
-                            ? null
-                            : () => showToast("Not yet implemented", context),
-                        child: Row(children: [
-                          Icon(
-                              size: 20,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              snapshot.data ?? false
-                                  ? Icons.notifications_off_outlined
-                                  : Icons.notification_add),
-                          Text(snapshot.data ?? false
-                              ? " Unsubscribe"
-                              : " Subscribe")
-                        ]));
-                  }),
-            ]));
+                  SizedBox(width: 20),
+                  SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(videoMetadata.authorName ?? "-",
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold)),
+                            Text(
+                                "Subscribers: ${convertNumberIntoHumanReadable(videoMetadata.authorSubscriberCount ?? 0)}",
+                                style: Theme.of(context).textTheme.titleSmall)
+                          ])),
+                  isMobile ? Spacer() : SizedBox(width: 50),
+                  FutureBuilder<bool?>(
+                      // TODO: Add call to check subscription here
+                      future: Future.value(false), // subscribed
+                      builder: (context, snapshot) {
+                        return ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.onPrimary,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary),
+                            onPressed: isLoadingMetadata
+                                ? null
+                                : () =>
+                                    showToast("Not yet implemented", context),
+                            child: Row(children: [
+                              Icon(
+                                  size: 20,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  snapshot.data ?? false
+                                      ? Icons.notifications_off_outlined
+                                      : Icons.notification_add),
+                              Text(snapshot.data ?? false
+                                  ? " Unsubscribe"
+                                  : " Subscribe")
+                            ]));
+                      }),
+                ])));
   }
 
   Widget buildMetadataSection() {
