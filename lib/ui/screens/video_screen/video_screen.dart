@@ -254,7 +254,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     isMobile = MediaQuery.of(context).size.width < 1100;
-    logger.d("Using mobile layout: $isMobile");
     if (!isMobile) {
       openComments();
     }
