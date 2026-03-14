@@ -888,6 +888,13 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
     Map<String, dynamic> jscriptMap = jsonDecode(
         jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
 
+    // normal description
+    String? shortDescription;
+    if (jscriptMap["aboutMeComponent"]?["text"] != null) {
+      shortDescription = jscriptMap["aboutMeComponent"]["text"].trim();
+      shortDescription = HtmlUnescape().convert(shortDescription!);
+    }
+
     Map<String, Uri>? externalLinks;
     Map<String, String>? advancedDescription;
     try {
@@ -1069,7 +1076,7 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
         // xhamster doesn't have banners
         banner: null,
         aliases: jscriptMap["infoComponent"]?["aliases"]?.split(", "),
-        description: jscriptMap["aboutMeComponent"]?["text"]?.trim(),
+        description: shortDescription,
         advancedDescription: advancedDescription,
         externalLinks: externalLinks,
         viewsTotal: viewsTotal,
