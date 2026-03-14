@@ -77,10 +77,12 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
       logger.d("Internet connected: $isInternetConnected");
 
       // Pre-load images so they are immediately available when the skeletonizer stops
-      await precacheImage(
-          NetworkImage(authorPage?.banner ?? "Banner url is null"), context);
-      await precacheImage(
-          NetworkImage(authorPage?.avatar ?? "Avatar url is null"), context);
+      if (authorPage?.banner != null) {
+        await precacheImage(NetworkImage(authorPage!.banner!), context);
+      }
+      if (authorPage?.avatar != null) {
+        await precacheImage(NetworkImage(authorPage!.avatar!), context);
+      }
 
       // Make sure context is still mounted
       if (mounted) setState(() => isLoadingResults = false);
