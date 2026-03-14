@@ -13,7 +13,7 @@ dependencies:
   html: ^0.15.6
   shared_preferences: ^2.5.4
   fvp: ^0.35.2
-  video_player: ^2.11.0
+  video_player: ^2.11.1
   audio_video_progress_bar: ^2.0.3
   auto_orientation: #^2.3.1
     git: https://github.com/Kanwarpalsingh1986/auto_orientation
@@ -21,7 +21,7 @@ dependencies:
   flutter_hls_parser: ^2.0.1
   url_launcher: ^6.3.2
   dynamic_color: ^1.8.1
-  wakelock_plus: ^1.4.0
+  wakelock_plus: ^1.5.1
   package_info_plus: ^9.0.0
   connectivity_plus: ^7.0.0
   skeletonizer: ^2.1.3
