@@ -235,6 +235,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 1100;
     return PopScope(
         onPopInvoked: (goingToPop) {
           // immediately stop video if popping
@@ -273,19 +274,23 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             // pass taps to elements below
             behavior: HitTestBehavior.translucent,
             onTap: showControlsOverlay,
-            onVerticalDragUpdate: (details) {
-              setState(() {
-                dragOffsetY = (dragOffsetY + details.delta.dy).clamp(
-                  widget.isFullScreen ? 0.0 : -maxDrag,
-                  widget.isFullScreen ? maxDrag : 0.0,
-                );
-              });
-            },
-            onVerticalDragEnd: (details) {
-              final triggered = dragOffsetY.abs() >= maxDrag;
-              setState(() => dragOffsetY = 0.0);
-              if (triggered) widget.toggleFullScreen.call();
-            },
+            onVerticalDragUpdate: !isMobile
+                ? null
+                : (details) {
+                    setState(() {
+                      dragOffsetY = (dragOffsetY + details.delta.dy).clamp(
+                        widget.isFullScreen ? 0.0 : -maxDrag,
+                        widget.isFullScreen ? maxDrag : 0.0,
+                      );
+                    });
+                  },
+            onVerticalDragEnd: !isMobile
+                ? null
+                : (details) {
+                    final triggered = dragOffsetY.abs() >= maxDrag;
+                    setState(() => dragOffsetY = 0.0);
+                    if (triggered) widget.toggleFullScreen.call();
+                  },
             child: Stack(children: [
               OverflowBox(
                   maxHeight: double.infinity,
