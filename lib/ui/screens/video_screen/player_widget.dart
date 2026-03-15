@@ -235,6 +235,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final double maxDrag = MediaQuery.of(context).size.width * 9 / 16 * 0.4;
     final bool isMobile = MediaQuery.of(context).size.width < 1100;
     return PopScope(
         onPopInvoked: (goingToPop) {
