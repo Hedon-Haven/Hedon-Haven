@@ -996,7 +996,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           textAlign: TextAlign.center),
                     )
                   : ListView.builder(
-                      controller: commentsScrollController,
                       physics: AlwaysScrollableScrollPhysics(),
                       itemCount:
                           comments![replyCommentIndex].replyComments!.length +
