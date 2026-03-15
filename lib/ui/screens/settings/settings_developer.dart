@@ -89,8 +89,9 @@ class DeveloperScreen extends StatelessWidget {
         updateManager.downloadLink = link!;
       }
       updateManager.latestChangeLog =
-          "Keep in mind that on OS' that check signatures, this might not work "
-          "with the official version.";
+          "Note: On operating systems that verify app signatures (e.g. "
+          "Android), using a custom update URL not pointing to the official "
+          "Hedon Haven repository may not work due to a signature mismatch.";
       showUpdateDialog(updateManager, context);
     }
   }
