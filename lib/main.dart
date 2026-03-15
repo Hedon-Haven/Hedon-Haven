@@ -221,14 +221,20 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
       return FutureBuilder<ThemeMode?>(
           future: themeMode,
           builder: (context, snapshot) {
+            final isMobile = Platform.isAndroid || Platform.isIOS;
             return MaterialApp(
               title: "Hedon Haven",
-              // Try to use system colors first and fallback to Green
               theme: ThemeData(
+                // Disable click
+                splashFactory:
+                    isMobile ? InkRipple.splashFactory : NoSplash.splashFactory,
+                // Try to use system colors first and fallback to Green
                 colorScheme: lightColorScheme ??
                     ColorScheme.fromSwatch(primarySwatch: Colors.green),
               ),
               darkTheme: ThemeData(
+                splashFactory:
+                    isMobile ? InkRipple.splashFactory : NoSplash.splashFactory,
                 colorScheme: darkColorScheme ??
                     ColorScheme.fromSwatch(
                         primarySwatch: Colors.green,
