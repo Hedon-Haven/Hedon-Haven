@@ -62,7 +62,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   int commentsAmount = 0;
   bool showCommentSection = false;
   bool showReplySection = false;
-  int replyCommentIndex = -1;
+  bool animateReplySection = true;
+  int replyCommentIndex = 0;
   bool descriptionExpanded = false;
   int selectedResolution = 0;
   List<int> sortedResolutions = [];
@@ -789,8 +790,17 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget buildCommentSection() {
     return Stack(children: [
       Positioned.fill(child: buildTopLevelCommentSection()),
-      if (showReplySection)
-        Positioned.fill(child: buildReplyCommentSection(replyCommentIndex))
+      Positioned.fill(
+        child: AnimatedSlide(
+          offset: showReplySection ? Offset.zero : const Offset(1, 0),
+          duration: Duration(milliseconds: animateReplySection ? 200 : 0),
+          curve: Curves.easeInOut,
+          child: IgnorePointer(
+            ignoring: !showReplySection,
+            child: buildReplyCommentSection(replyCommentIndex),
+          ),
+        ),
+      )
     ]);
   }
 
@@ -959,6 +969,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   const Spacer(),
                   IconButton(
                       onPressed: () => setState(() {
+                            animateReplySection = false;
                             showReplySection = false;
                             showCommentSection = false;
                           }),
@@ -1193,6 +1204,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                       .onSurfaceVariant)),
                     ]),
                     onPressed: () => setState(() {
+                          animateReplySection = true;
                           replyCommentIndex = index;
                           showReplySection = true;
                         })),
