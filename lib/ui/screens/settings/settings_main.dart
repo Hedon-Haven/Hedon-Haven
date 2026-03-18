@@ -7,7 +7,7 @@ import 'settings_comments.dart';
 import 'settings_developer.dart';
 import 'settings_history.dart';
 import 'settings_media.dart';
-import 'settings_plugins.dart';
+import 'settings_plugins/settings_plugins.dart';
 import 'settings_privacy.dart';
 
 class SettingsScreen extends StatefulWidget {

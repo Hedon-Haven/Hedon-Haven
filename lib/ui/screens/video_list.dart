@@ -12,7 +12,7 @@ import '/services/database_manager.dart';
 import '/ui/screens/author_page.dart';
 import '/ui/screens/bug_report.dart';
 import '/ui/screens/scraping_report.dart';
-import '/ui/screens/settings/settings_plugins.dart';
+import 'settings/settings_plugins/settings_plugins.dart';
 import '/ui/screens/video_screen/video_screen.dart';
 import '/ui/utils/toast_notification.dart';
 import '/utils/convert.dart';

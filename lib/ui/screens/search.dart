@@ -7,7 +7,7 @@ import '/services/loading_handler.dart';
 import '/services/plugin_manager.dart';
 import '/ui/screens/filters/filters.dart';
 import '/ui/screens/results.dart';
-import '/ui/screens/settings/settings_plugins.dart';
+import '/ui/screens/settings/settings_plugins/settings_plugins.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
 
