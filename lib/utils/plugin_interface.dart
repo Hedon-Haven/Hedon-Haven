@@ -35,8 +35,6 @@ class PluginInterface {
   String providerUrl = "";
 
   /// Initial homepage number
-  // Some sites start at 0, some at 1
-  // 0 is usually the same as the homepage from pluginURL
   int initialHomePage = 0;
 
   /// Initial search page number
