@@ -8,15 +8,17 @@ class FloatingDynamicSliverHeader extends StatefulWidget {
 
   const FloatingDynamicSliverHeader(
       {super.key,
-        required this.child,
-        this.backgroundColor,
-        this.pinned = false});
+      required this.child,
+      this.backgroundColor,
+      this.pinned = false});
 
   @override
-  State<FloatingDynamicSliverHeader> createState() => _FloatingDynamicSliverHeaderState();
+  State<FloatingDynamicSliverHeader> createState() =>
+      _FloatingDynamicSliverHeaderState();
 }
 
-class _FloatingDynamicSliverHeaderState extends State<FloatingDynamicSliverHeader> {
+class _FloatingDynamicSliverHeaderState
+    extends State<FloatingDynamicSliverHeader> {
   double _height = 300;
 
   @override
@@ -43,12 +45,13 @@ class _FloatingDynamicHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   _FloatingDynamicHeaderDelegate(
       {required this.child,
-        required this.height,
-        required this.floating,
-        required this.onHeightChanged});
+      required this.height,
+      required this.floating,
+      required this.onHeightChanged});
 
   @override
   double get minExtent => height;
+
   @override
   double get maxExtent => height;
 
@@ -58,8 +61,7 @@ class _FloatingDynamicHeaderDelegate extends SliverPersistentHeaderDelegate {
       maxHeight: double.infinity,
       alignment: Alignment.topLeft,
       child: _MeasureSize(
-          onSizeChanged: (size) => onHeightChanged(size.height),
-          child: child));
+          onSizeChanged: (size) => onHeightChanged(size.height), child: child));
 
   @override
   bool shouldRebuild(_FloatingDynamicHeaderDelegate old) =>
@@ -92,8 +94,7 @@ class _MeasureSizeRenderObject extends RenderProxyBox {
     super.performLayout();
     if (size != _oldSize) {
       _oldSize = size;
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => onSizeChanged(size));
+      WidgetsBinding.instance.addPostFrameCallback((_) => onSizeChanged(size));
     }
   }
 }
