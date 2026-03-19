@@ -189,8 +189,8 @@ class _AboutScreenState extends State<AboutScreen> {
                             leading: const Icon(Icons.attach_money),
                             title: const Text("Donate"),
                             subtitle: const Text("Support the development"),
-                            onTap: () => launchUrl(
-                                Uri.parse("https://donations.hedon-haven.top"))),
+                            onTap: () => launchUrl(Uri.parse(
+                                "https://donations.hedon-haven.top"))),
                       ],
                     )))));
   }
