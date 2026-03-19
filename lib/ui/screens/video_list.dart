@@ -12,7 +12,6 @@ import '/services/database_manager.dart';
 import '/ui/screens/author_page.dart';
 import '/ui/screens/bug_report.dart';
 import '/ui/screens/scraping_report.dart';
-import 'settings/settings_plugins/settings_plugins.dart';
 import '/ui/screens/video_screen/video_screen.dart';
 import '/ui/utils/toast_notification.dart';
 import '/utils/convert.dart';
@@ -20,6 +19,7 @@ import '/utils/global_vars.dart';
 import '/utils/plugin_interface.dart';
 import '/utils/try_parse.dart';
 import '/utils/universal_formats.dart';
+import 'settings/settings_plugins/settings_plugins.dart';
 
 class VideoList extends StatefulWidget {
   Future<List<UniversalVideoPreview>?> videoList;

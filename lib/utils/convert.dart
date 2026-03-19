@@ -1,5 +1,3 @@
-import 'global_vars.dart';
-
 String convertNumberIntoHumanReadable(int number) {
   if (number < 1000) {
     return number.toString();
