@@ -319,9 +319,20 @@ class PluginManager {
       }
       await outputDir.create(recursive: true);
 
+      // Check if plugin.yaml exists in the zip root before extracting
+      final archive = ZipDecoder()
+          .decodeBytes(File(pickedFile!.files.single.path!).readAsBytesSync());
+      final hasPluginYaml =
+          archive.any((file) => file.isFile && file.name == "plugin.yaml");
+
+      if (!hasPluginYaml) {
+        logger.e("No plugin.yaml found in zip root!");
+        throw Exception("No plugin.yaml found in zip root!");
+      }
+
       // Extract the contents of the zip file into the temp dir
-      for (final file in ZipDecoder().decodeBytes(
-          File(pickedFile!.files.single.path!).readAsBytesSync())) {
+      for (final file in ZipDecoder()
+          .decodeBytes(File(pickedFile.files.single.path!).readAsBytesSync())) {
         if (file.isFile) {
           logger.d(
               "Unpacking file ${file.name} to ${outputDir.path}/${file.name}");
@@ -335,132 +346,76 @@ class PluginManager {
       }
 
       // Parse yaml
-      if (!File("${outputDir.path}/plugin.yaml").existsSync()) {
-        return {
-          "codeName": "Error",
-          "error":
-              "${pickedFile.files.single.path} is not a valid plugin (plugin.yaml not found)"
-        };
-      }
       YamlMap pluginConfig =
           loadYaml(File("${outputDir.path}/plugin.yaml").readAsStringSync());
 
       // Check if plugin is already installed
       logger.d("Checking if plugin is already installed");
-      if (allPlugins
-          .any((plugin) => plugin.codeName == pluginConfig["codeName"])) {
-        return {"codeName": "Error", "error": "Plugin already installed"};
+      if (allPlugins.any((plugin) =>
+          plugin.codeName == pluginConfig["metadata"]["codeName"])) {
+        logger.w(
+            "${pickedFile.files.single.path} is already installed as ${pluginConfig["metadata"]["codeName"]}");
+        throw Exception(
+            "AlreadyInstalled: ${pluginConfig["metadata"]["codeName"]}");
       }
 
-      // Check if current platform is supported by plugin
-      logger.d("Checking if platform is supported by plugin");
-      Map<String, List<String>> platformMap = {
-        for (var item in pluginConfig["supportedPlatforms"])
-          item.keys.first: List<String>.from(item.values.first)
-      };
-      if (platformMap[Platform.operatingSystem] != null) {
-        // Get platform architecture
-        String platformString = Platform.version;
-        String platformArch = platformString.substring(
-            platformString.lastIndexOf("_") + 1, platformString.length - 1);
-        if (!platformMap[Platform.operatingSystem]!.contains(platformArch)) {
-          return {
-            "codeName": "Error",
-            "error":
-                "Your device is not supported by the plugin (Unsupported architecture: $platformArch)"
-          };
-        }
-      } else {
-        return {
-          "codeName": "Error",
-          "error":
-              "Your device is not supported by the plugin (Unsupported platform: ${Platform.operatingSystem})"
-        };
-      }
-      Map<String, dynamic> pluginMap = Map<String, dynamic>.from(pluginConfig);
-      pluginMap["tempPluginPath"] = outputDir.path;
-      return pluginMap;
+      Map<String, dynamic> pluginConfigMap =
+          Map<String, dynamic>.from(pluginConfig);
+      pluginConfigMap["tempPluginPath"] = outputDir.path;
+      return pluginConfigMap;
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<bool> importAndTestPlugin(
-      String tempPluginPath, String pluginCodeName) async {
   static Future<bool> testExternalPlugin(Directory pluginDir) async {
+    if (!pluginDir.existsSync()) {
+      throw Exception("Plugin directory ${pluginDir.path} does not exist");
+    }
+    try {
+      var tempPlugin = PluginInterface(pluginDir.path);
+      return await tempPlugin.runFunctionalityTest();
+    } catch (e, stacktrace) {
+      logger.e("Failed to test plugin in ${pluginDir.path}: $e\n$stacktrace");
+      return false;
+    }
+  }
+
+  static Future<void> importPlugin(Map<String, dynamic> pluginConfig) async {
     // Create plugin dir
+    String pluginCodeName = pluginConfig["metadata"]["codeName"];
     Directory appSupportDir = await getApplicationSupportDirectory();
     Directory pluginDir =
         Directory("${appSupportDir.path}/plugins/$pluginCodeName");
+    Directory tempPluginPath = Directory(pluginConfig["tempPluginPath"]);
     if (pluginDir.existsSync()) {
-      // TODO: Prompt user on what to do?
-      logger.w(
-          "Plugin directory for codename $pluginCodeName already exists! Deleting and recreating");
+      logger.w("Plugin directory ${pluginDir.path} for $pluginCodeName already"
+          " exists! Deleting directory + contents!");
       pluginDir.deleteSync(recursive: true);
-      pluginDir.createSync(recursive: true);
     }
 
-    // Copy bin dir
-    copyDirectory(
-        Directory("$tempPluginPath/bin"), Directory("${pluginDir.path}/bin"));
+    copyDirectory(tempPluginPath, pluginDir);
+  }
 
-    // symlink "binary" to the platform appropriate binary inside ./bin
-    String platformString = Platform.version;
-    String platformArch = platformString.substring(
-        platformString.lastIndexOf("_") + 1, platformString.length - 1);
-    try {
-      // make binary executable
-      final result = await Process.run('chmod', [
-        '555',
-        "${pluginDir.path}/bin/${Platform.operatingSystem}-$platformArch"
-      ]);
-      if (result.exitCode != 0) {
-        throw Exception('Failed to make binary executable: ${result.stderr}');
-      }
-    } catch (e) {
-      logger.e("Failed to make binary executable: $e");
-      return false;
-    }
-    try {
-      Link("${pluginDir.path}/bin/binaryLink")
-          .createSync("./${Platform.operatingSystem}-$platformArch");
-    } catch (e) {
-      if (e is PathExistsException) {
-        logger.e(
-            "Cannot symlink to correct platform binary, aborting plugin install");
-        return false;
-      }
-    }
   static Future<void> deletePlugin(PluginInterface plugin) async {
+    if (plugin.isOfficialPlugin) {
+      logger.w("Can't delete official plugins!");
+      return;
+    }
 
-    // conf dir is optional
-    if (Directory("$tempPluginPath/conf").existsSync()) {
-      copyDirectory(Directory("$tempPluginPath/conf"),
-          Directory("${pluginDir.path}/conf"));
+    await disablePlugin(plugin);
+
+    Directory appSupportDir = await getApplicationSupportDirectory();
+    Directory pluginDir =
+        Directory("${appSupportDir.path}/plugins/${plugin.codeName}");
+    if (pluginDir.existsSync()) {
+      logger.d("Deleting plugin directory ${pluginDir.path}");
+      pluginDir.deleteSync(recursive: true);
     } else {
-      logger.i("Conf dir not found inside plugin zip");
+      logger.w("Plugin directory ${pluginDir.path} does not exist; "
+          "cannot delete plugin!");
     }
 
-    // copy plugin.yaml
-    logger.d(
-        "Copying $tempPluginPath/plugin.yaml to ${pluginDir.path}/plugin.yaml");
-    File("$tempPluginPath/plugin.yaml")
-        .copySync("${pluginDir.path}/plugin.yaml");
-
-    logger.i("Attempting to initialize plugin $pluginCodeName");
-    try {
-      PluginInterface tempPlugin = PluginInterface(pluginDir.path);
-      tempPlugin.runFunctionalityTest();
-    } catch (e) {
-      logger.e("Failed to initialize plugin $pluginCodeName: $e");
-      return false;
-    }
-    logger.i("Plugin initialization successful");
-
-    logger.i("Reinitializing all plugins");
-
-    discoverAndLoadPlugins();
-
-    return true;
+    await discoverAndLoadPlugins();
   }
 }
