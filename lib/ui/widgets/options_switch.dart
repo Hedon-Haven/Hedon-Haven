@@ -7,34 +7,33 @@ class OptionsSwitch extends StatefulWidget {
   final String title;
   late String? subTitle;
   late bool switchState;
-  late bool showSettingsButton;
   late bool reduceBorders;
+  late bool reduceHorizontalBordersOnly;
 
   /// Make toggle visual only
   late bool nonInteractive;
   late bool disableLongPressAction;
   late Widget? leadingWidget;
+  late Widget? trailingWidget;
   final void Function(bool) onToggled;
-  final void Function() onPressedSettingsButton;
 
   OptionsSwitch(
       {super.key,
       required this.title,
       required this.switchState,
       required this.onToggled,
-      bool? showExtraSettingsButton,
       bool? reduceBorders,
+      bool? reduceHorizontalBordersOnly,
       bool? nonInteractive,
       bool? disableLongPressAction,
       // can be just null
       this.leadingWidget,
-      this.subTitle,
-      void Function()? onPressedSettingsButton})
-      : showSettingsButton = showExtraSettingsButton ?? false,
-        reduceBorders = reduceBorders ?? false,
+      this.trailingWidget,
+      this.subTitle})
+      : reduceBorders = reduceBorders ?? false,
+        reduceHorizontalBordersOnly = reduceHorizontalBordersOnly ?? false,
         nonInteractive = nonInteractive ?? false,
-        disableLongPressAction = disableLongPressAction ?? false,
-        onPressedSettingsButton = onPressedSettingsButton ?? (() {});
+        disableLongPressAction = disableLongPressAction ?? false;
 
   @override
   State<OptionsSwitch> createState() => _OptionsSwitchWidgetState();
@@ -67,25 +66,22 @@ class _OptionsSwitchWidgetState extends State<OptionsSwitch> {
                         },
                   child: ListTile(
                     leading: widget.leadingWidget,
+                    trailing: widget.trailingWidget,
                     title: Text(widget.title),
                     subtitle:
                         widget.subTitle != null ? Text(widget.subTitle!) : null,
                     visualDensity: widget.reduceBorders
                         ? const VisualDensity(horizontal: 0, vertical: -4)
                         : null,
-                    contentPadding:
-                        widget.reduceBorders ? EdgeInsets.zero : null,
+                    contentPadding: widget.reduceBorders ||
+                            widget.reduceHorizontalBordersOnly
+                        ? EdgeInsets.zero
+                        : widget.leadingWidget != null
+                            // remove right inset and keep only the default 16px left inset
+                            ? EdgeInsets.only(left: 16)
+                            : null,
                   ),
                 ))),
-        widget.showSettingsButton
-            ? IconButton(
-                onPressed: widget.nonInteractive
-                    ? null
-                    : () {
-                        widget.onPressedSettingsButton();
-                      },
-                icon: const Icon(Icons.settings))
-            : const SizedBox(),
         Switch(
           value: widget.switchState,
           // Set onChanged function to null if nonInteractive
