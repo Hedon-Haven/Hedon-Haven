@@ -10,7 +10,7 @@ import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
 
 class PluginInterface {
-  /// This is overriden to true in official plugins
+  /// This is overridden to true in official plugins
   final bool isOfficialPlugin = false;
 
   /// codeName must be a unique identifier for the plugin, to avoid conflicts,
