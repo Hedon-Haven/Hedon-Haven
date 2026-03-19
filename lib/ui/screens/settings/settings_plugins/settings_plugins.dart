@@ -118,6 +118,16 @@ class _PluginsScreenState extends State<PluginsScreen> {
                             // TODO: MAYBE: rework this UI to make it more obvious to why its there and what it means
                             leadingWidget:
                                 buildOptionsSwitchLeadingWidget(index),
+                            trailingWidget: IconButton(
+                                onPressed: () {
+                                  showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return buildPluginOptions(title, index);
+                                      });
+                                  sendPluginsChangedEvent = true;
+                                },
+                                icon: const Icon(Icons.settings)),
                             title: title,
                             subTitle: subTitle,
                             switchState: PluginManager.enabledPlugins
@@ -125,7 +135,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
                             nonInteractive: PluginManager
                                 .unavailablePlugins.keys
                                 .contains(PluginManager.allPlugins[index]),
-                            showExtraSettingsButton: true,
+                            reduceHorizontalBordersOnly: true,
                             onToggled: (toggleValue) {
                               if (toggleValue) {
                                 PluginManager.enablePlugin(
@@ -145,15 +155,6 @@ class _PluginsScreenState extends State<PluginsScreen> {
                               }
                               sendPluginsChangedEvent = true;
                               setState(() {});
-                            },
-                            onPressedSettingsButton: () {
-                              // open popup with options
-                              showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return buildPluginOptions(title, index);
-                                  });
-                              sendPluginsChangedEvent = true;
                             },
                           );
                         },
