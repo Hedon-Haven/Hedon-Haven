@@ -133,10 +133,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void dispose() {
     commentsScrollController.dispose();
-    videoMetadata.plugin?.cancelGetVideoMetadata();
     videoMetadata.plugin?.cancelGetProgressThumbnails();
-    videoMetadata.plugin?.cancelGetVideoSuggestions();
-    videoMetadata.plugin?.cancelGetComments();
     super.dispose();
   }
 

@@ -237,39 +237,4 @@ class PluginInterface {
 
   // These functions are primarily for canceling isolates
 
-  void cancelDownloadThumbnail() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetSearchSuggestions() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetHomePage() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetSearchResults() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetVideoSuggestions() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetVideoMetadata() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetProgressThumbnails() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetComments() {
-    throw UnimplementedError();
-  }
-
-  void cancelGetVideoUriFromID() {
-    throw UnimplementedError();
-  }
 }

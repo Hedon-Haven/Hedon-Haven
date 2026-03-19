@@ -340,8 +340,6 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                           authorPage!.plugin!,
                                           authorPage!.iD,
                                           await authorVideos),
-                                  cancelLoadingHandler:
-                                      loadingHandler.cancelGetAuthorVideos,
                                   noResultsMessage:
                                       "This author has no videos on this platform",
                                   noResultsErrorMessage:

@@ -159,26 +159,9 @@ abstract class OfficialPlugin {
     return playListMap;
   }
 
-  // official plugins for now only use 1 isolate in getProgressThumbnails
-  void cancelDownloadThumbnail() {}
-
-  void cancelGetComments() {}
-
-  void cancelGetHomePage() {}
-
   void cancelGetProgressThumbnails() {
     if (getProgressThumbnailsIsolate != null) {
       getProgressThumbnailsIsolate!.kill(priority: Isolate.immediate);
     }
   }
-
-  void cancelGetSearchResults() {}
-
-  void cancelGetSearchSuggestions() {}
-
-  void cancelGetVideoMetadata() {}
-
-  void cancelGetVideoSuggestions() {}
-
-  void cancelGetVideoUriFromID() {}
 }

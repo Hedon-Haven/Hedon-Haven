@@ -155,8 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           reloadInitialResults: () =>
                               loadingHandler.getHomePages(null),
                           loadMoreResults: loadMoreResults,
-                          cancelLoadingHandler:
-                              loadingHandler.cancelGetHomePages,
                           noResultsMessage:
                               "Empty homepage but no error. Please report this to developers",
                           noResultsErrorMessage: "Error loading homepage",

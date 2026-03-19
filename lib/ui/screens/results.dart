@@ -149,8 +149,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   reloadInitialResults: () => widget.loadingHandler
                       .getSearchResults(widget.searchRequest),
                   loadMoreResults: loadMoreResults,
-                  cancelLoadingHandler:
-                      widget.loadingHandler.cancelGetSearchResults,
                   noResultsMessage: "No results found",
                   noResultsErrorMessage: "Error loading results",
                   showScrapingReportButton: true,
