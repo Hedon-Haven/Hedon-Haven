@@ -188,28 +188,30 @@ Future<List<UniversalSearchRequest>> getSearchHistory() async {
   List<UniversalSearchRequest> resultsList = [];
 
   logger.i("Converting search history");
-  for (var historyItem in results) {
-    resultsList.add(UniversalSearchRequest(
-      searchString: historyItem["searchString"] as String,
-      sortingType: historyItem["sortingType"] as String,
-      dateRange: historyItem["dateRange"] as String,
-      minQuality: historyItem["minQuality"] as int,
-      maxQuality: historyItem["maxQuality"] as int,
-      minDuration: historyItem["minDuration"] as int,
-      maxDuration: historyItem["maxDuration"] as int,
-      minFramesPerSecond: historyItem["minFramesPerSecond"] as int,
-      maxFramesPerSecond: historyItem["maxFramesPerSecond"] as int,
-      virtualReality: historyItem["virtualReality"] as int == 1,
-      categoriesInclude: List<String>.from(
-          jsonDecode(historyItem["categoriesInclude"] as String)),
-      categoriesExclude: List<String>.from(
-          jsonDecode(historyItem["categoriesExclude"] as String)),
-      keywordsInclude: List<String>.from(
-          jsonDecode(historyItem["keywordsInclude"] as String)),
-      keywordsExclude: List<String>.from(
-          jsonDecode(historyItem["keywordsExclude"] as String)),
-      historySearch: true,
-    ));
+  for (var raw in results) {
+    try {
+      // mutable copy
+      final historyItem = Map<String, Object?>.from(raw);
+      // Convert int back into bool
+      historyItem["virtualReality"] = historyItem["virtualReality"] as int == 1;
+
+      // Convert String to List
+      historyItem["categoriesInclude"] = List<String>.from(
+          jsonDecode(historyItem["categoriesInclude"] as String));
+      historyItem["categoriesExclude"] = List<String>.from(
+          jsonDecode(historyItem["categoriesExclude"] as String));
+      historyItem["keywordsInclude"] = List<String>.from(
+          jsonDecode(historyItem["keywordsInclude"] as String));
+      historyItem["keywordsExclude"] = List<String>.from(
+          jsonDecode(historyItem["keywordsExclude"] as String));
+
+      // mark as history search
+      historyItem["historySearch"] = true;
+
+      resultsList.add(UniversalSearchRequest.fromMap(historyItem));
+    } catch (e, st) {
+      logger.e("Error converting search history entry from database: $e\n$st");
+    }
   }
 
   return resultsList.reversed.toList();
@@ -219,45 +221,18 @@ Future<List<UniversalVideoPreview>> getWatchHistory() async {
   List<Map<String, Object?>> results = await _database.query("watch_history");
   List<UniversalVideoPreview> resultsList = [];
 
-  for (var historyItem in results) {
-    resultsList.add(UniversalVideoPreview(
-        iD: historyItem["iD"] == null
-            ? "iD database error"
-            : historyItem["iD"] as String,
-        title: historyItem["title"] == null
-            ? "title database error"
-            : historyItem["title"] as String,
-        plugin: PluginManager.getPluginByName(historyItem["plugin"] == null
-            ? "null"
-            : historyItem["plugin"] as String),
-        thumbnailBinary: historyItem["thumbnailBinary"] == null
-            ? Uint8List(0)
-            : historyItem["thumbnailBinary"] as Uint8List,
-        // previewVideos are not stored due to size
-        duration: historyItem["durationInSeconds"] as int == -1
-            ? null
-            : Duration(seconds: historyItem["durationInSeconds"] as int),
-        // viewsTotal and ratingsPositivePercent are not stored to prevent outdated data
-        maxQuality: historyItem["maxQuality"] as int == -1
-            ? null
-            : historyItem["maxQuality"] as int,
-        virtualReality: historyItem["virtualReality"] as int == 1,
-        authorName: historyItem["authorName"] == null
-            ? null
-            : historyItem["authorName"] as String,
-        authorID: historyItem["authorID"] == null
-            ? null
-            : historyItem["authorID"] as String,
-        verifiedAuthor: historyItem["verifiedAuthor"] as int == 1,
-        // convert string back to bool
-        lastWatched: DateTime.tryParse(historyItem["lastWatched"] == null
-            ? ""
-            : historyItem["lastWatched"] as String),
-        addedOn: DateTime.tryParse(historyItem["addedOn"] == null
-            ? ""
-            : historyItem["addedOn"] as String)
-        // No need to store the scrapeFailMessage
-        ));
+  for (var raw in results) {
+    try {
+      // mutable copy
+      final historyItem = Map<String, Object?>.from(raw);
+      // Convert int back into bool
+      historyItem["virtualReality"] = historyItem["virtualReality"] as int == 1;
+      historyItem["verifiedAuthor"] = historyItem["verifiedAuthor"] as int == 1;
+      resultsList.add(UniversalVideoPreview.fromMap(historyItem,
+          PluginManager.getPluginByName(historyItem["plugin"] as String?)));
+    } catch (e, st) {
+      logger.e("Error converting watch history entry from database: $e\n$st");
+    }
   }
   return resultsList.reversed.toList();
 }
@@ -266,39 +241,18 @@ Future<List<UniversalVideoPreview>> getFavorites() async {
   List<Map<String, Object?>> results = await _database.query("favorites");
   List<UniversalVideoPreview> resultsList = [];
 
-  for (var favorite in results) {
-    resultsList.add(UniversalVideoPreview(
-        iD: favorite["iD"] == null
-            ? "iD database error"
-            : favorite["iD"] as String,
-        title: favorite["title"] == null
-            ? "title database error"
-            : favorite["title"] as String,
-        plugin: PluginManager.getPluginByName(
-            favorite["plugin"] == null ? "null" : favorite["plugin"] as String),
-        thumbnailBinary: favorite["thumbnailBinary"] == null
-            ? Uint8List(0)
-            : favorite["thumbnailBinary"] as Uint8List,
-        // previewVideos are not stored due to size
-        duration: favorite["durationInSeconds"] as int == -1
-            ? null
-            : Duration(seconds: favorite["durationInSeconds"] as int),
-        // viewsTotal and ratingsPositivePercent are not stored to prevent outdated data
-        maxQuality: favorite["maxQuality"] as int == -1
-            ? null
-            : favorite["maxQuality"] as int,
-        virtualReality: favorite["virtualReality"] == "1",
-        authorName: favorite["authorName"] == null
-            ? null
-            : favorite["authorName"] as String,
-        authorID: favorite["authorID"] == null
-            ? null
-            : favorite["authorID"] as String,
-        verifiedAuthor: favorite["verifiedAuthor"] as int == 1,
-        addedOn: DateTime.tryParse(
-            favorite["addedOn"] == null ? "" : favorite["addedOn"] as String)
-        // No need to store the scrapeFailMessage
-        ));
+  for (var raw in results) {
+    try {
+      // mutable copy
+      final favorite = Map<String, Object?>.from(raw);
+      // Convert int back into bool
+      favorite["virtualReality"] = favorite["virtualReality"] as int == 1;
+      favorite["verifiedAuthor"] = favorite["verifiedAuthor"] as int == 1;
+      resultsList.add(UniversalVideoPreview.fromMap(favorite,
+          PluginManager.getPluginByName(favorite["plugin"] as String?)));
+    } catch (e, st) {
+      logger.e("Error converting favorites entry from database: $e\n$st");
+    }
   }
   return resultsList.toList();
 }
@@ -309,13 +263,19 @@ Future<void> addToSearchHistory(
     logger.i("Search history disabled, not adding");
     return;
   }
-
   if (request.searchString.isEmpty) {
     logger.w("Search string is empty, not adding to search history");
     return;
   }
 
-  logger.d("Adding to search history:\n${request.toMap()}");
+  Map<String, Object?> newEntryData = request.toMap();
+  logger.d("Adding to search history:\n$newEntryData");
+
+  // remove unnecessary fields
+  newEntryData.remove("historySearch");
+
+  // convert bool to int
+  newEntryData["virtualReality"] = newEntryData["virtualReality"] as int == 1;
 
   // Delete old entry
   List<Map<String, Object?>> oldEntry = await _database.query("search_history",
@@ -325,23 +285,8 @@ Future<void> addToSearchHistory(
     await _database.delete("search_history",
         where: "searchString = ?", whereArgs: [request.searchString]);
   }
-  logger.i("Adding new entry");
-  await _database.insert("search_history", {
-    "searchString": request.searchString,
-    "sortingType": request.sortingType,
-    "dateRange": request.dateRange,
-    "minQuality": request.minQuality,
-    "maxQuality": request.maxQuality,
-    "minDuration": request.minDuration,
-    "maxDuration": request.maxDuration,
-    "minFramesPerSecond": request.minFramesPerSecond,
-    "maxFramesPerSecond": request.maxFramesPerSecond,
-    "virtualReality": request.virtualReality ? 1 : 0,
-    "categoriesInclude": jsonEncode(request.categoriesInclude),
-    "categoriesExclude": jsonEncode(request.categoriesExclude),
-    "keywordsInclude": jsonEncode(request.keywordsInclude),
-    "keywordsExclude": jsonEncode(request.keywordsExclude)
-  });
+
+  await _database.insert("search_history", newEntryData);
 }
 
 Future<void> addToWatchHistory(UniversalVideoPreview result) async {
@@ -349,27 +294,31 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
     logger.i("Watch history disabled, not adding");
     return;
   }
-  logger.d("Adding to watch history:\n${result.toMap()}");
+  Map<String, Object?> newEntryData = result.toMap();
+  logger.d("Adding to watch history:\n$newEntryData");
+
+  // remove unnecessary values
+  newEntryData.remove("thumbnail");
+  newEntryData.remove("thumbnailHttpHeaders");
+  newEntryData.remove("previewVideo");
+  newEntryData.remove("viewsTotal");
+  newEntryData.remove("ratingsPositivePercent");
+  newEntryData.remove("scrapeFailMessage");
+
+  // update values
+  newEntryData["thumbnailBinary"] = await result.plugin
+          ?.downloadThumbnail(Uri.parse(result.thumbnail ?? "")) ??
+      Uint8List(0);
+  newEntryData["lastWatched"] = DateTime.now().toUtc().toString();
+  newEntryData["addedOn"] = DateTime.now().toUtc().toString();
+
+  // convert bool to int
+  newEntryData["virtualReality"] = result.virtualReality ? 1 : 0;
+  newEntryData["verifiedAuthor"] = result.verifiedAuthor ? 1 : 0;
 
   // If entry already exists, fetch its addedOn value
   List<Map<String, Object?>> oldEntry = await _database.query("watch_history",
       columns: ["addedOn"], where: "iD = ?", whereArgs: [result.iD]);
-  Map<String, Object?> newEntryData = {
-    "iD": result.iD,
-    "title": result.title,
-    "plugin": result.plugin?.codeName ?? "null",
-    "thumbnailBinary": await result.plugin
-            ?.downloadThumbnail(Uri.parse(result.thumbnail ?? "")) ??
-        Uint8List(0),
-    "durationInSeconds": result.duration?.inSeconds ?? -1,
-    "maxQuality": result.maxQuality ?? -1,
-    "virtualReality": result.virtualReality ? 1 : 0,
-    "authorName": result.authorName ?? "null",
-    "authorID": result.authorID ?? "null",
-    "verifiedAuthor": result.verifiedAuthor ? 1 : 0,
-    "lastWatched": DateTime.now().toUtc().toString(),
-    "addedOn": DateTime.now().toUtc().toString()
-  };
   if (oldEntry.isNotEmpty) {
     logger.i("Found old entry, updating everything except addedOn");
     newEntryData["addedOn"] = oldEntry.first["addedOn"];
@@ -387,22 +336,29 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
 }
 
 Future<void> addToFavorites(UniversalVideoPreview result) async {
-  logger.d("Adding to favorites:\n${result.toMap()}");
-  await _database.insert("favorites", <String, Object?>{
-    "iD": result.iD,
-    "title": result.title,
-    "plugin": result.plugin?.codeName ?? "null",
-    "thumbnailBinary": await result.plugin
-            ?.downloadThumbnail(Uri.parse(result.thumbnail ?? "")) ??
-        Uint8List(0),
-    "durationInSeconds": result.duration?.inSeconds ?? -1,
-    "maxQuality": result.maxQuality ?? -1,
-    "virtualReality": result.virtualReality ? 1 : 0,
-    "authorName": result.authorName ?? "null",
-    "authorID": result.authorID ?? "null",
-    "verifiedAuthor": result.verifiedAuthor ? 1 : 0,
-    "addedOn": DateTime.now().toUtc().toString(),
-  });
+  Map<String, Object?> newEntryData = result.toMap();
+  logger.d("Adding to favorites:\n$newEntryData");
+
+  // remove unnecessary values
+  newEntryData.remove("thumbnail");
+  newEntryData.remove("thumbnailHttpHeaders");
+  newEntryData.remove("previewVideo");
+  newEntryData.remove("viewsTotal");
+  newEntryData.remove("ratingsPositivePercent");
+  newEntryData.remove("scrapeFailMessage");
+  newEntryData.remove("lastWatched");
+
+  // update values
+  newEntryData["thumbnailBinary"] = await result.plugin
+          ?.downloadThumbnail(Uri.parse(result.thumbnail ?? "")) ??
+      Uint8List(0);
+  newEntryData["addedOn"] = DateTime.now().toUtc().toString();
+
+  // convert bool to int
+  newEntryData["virtualReality"] = result.virtualReality ? 1 : 0;
+  newEntryData["verifiedAuthor"] = result.verifiedAuthor ? 1 : 0;
+
+  await _database.insert("favorites", newEntryData);
 }
 
 Future<void> removeFromSearchHistory(UniversalSearchRequest request) async {
