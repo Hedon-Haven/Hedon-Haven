@@ -167,7 +167,10 @@ class PluginManager {
         }
         continue;
       }
-      allPlugins.add(tempPlugin);
+      if (await tempPlugin.initPlugin() == false) {
+        // TODO: Show error to user and prompt user to uninstall plugin
+        return;
+      }
       if (enabledResultsProvidersFromSettings.contains(tempPlugin.codeName) ||
           enabledHomepageProvidersFromSettings.contains(tempPlugin.codeName) ||
           enabledSearchSuggestionsProvidersFromSettings
