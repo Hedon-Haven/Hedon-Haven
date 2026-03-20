@@ -23,28 +23,27 @@ Future<bool> startUpgrade(String currentVersion) async {
       case "0.3.11":
       case "0.3.12":
         await migratePluginKeys();
-        continue case0_3_17;
+        continue case0_4_0;
       case "0.3.13":
       case "0.3.14":
       case "0.3.15":
       case "0.3.16":
-      case0_3_17:
       case "0.3.17":
-        // videoID was renamed to just iD in the database
-        await purgeDatabase();
-        break;
       case "0.3.18":
       case "0.3.19":
       case "0.3.20":
+      case0_4_0:
       case "0.4.0":
+        // videoID was renamed to just iD in the database in v0.3.17
         // Added authorID and renamed author to authorName in UniversalVideoPreviews -> reset db
         await purgeDatabase();
-        break;
+        continue case0_6_1;
       case "0.5.0":
       case "0.5.1":
       case "0.5.2":
       case "0.5.3":
       case "0.6.0":
+      case0_6_1:
       case "0.6.1":
         // Starting v0.6.2 the app name changed from "Hedon haven" to "Hedon Haven"
         await fixLauncherAppearanceString();
