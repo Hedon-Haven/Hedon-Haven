@@ -47,6 +47,13 @@ Future<bool> startUpgrade(String currentVersion) async {
       case "0.6.1":
         // Starting v0.6.2 the app name changed from "Hedon haven" to "Hedon Haven"
         await fixLauncherAppearanceString();
+        continue case0_6_2;
+      case0_6_2:
+      case "0.6.2":
+        // Starting v0.6.3 some fields in the db were made non-nullable
+        // Also durationInSeconds was renamed to duration
+        // recreate entire db
+        await purgeDatabase();
         break;
       default:
         logger.e("Unknown version: $currentVersion. Not changing anything");
