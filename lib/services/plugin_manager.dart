@@ -200,22 +200,22 @@ class PluginManager {
   static Future<bool> enablePlugin(PluginInterface plugin,
       [bool enableAllProviders = true]) async {
     try {
-      plugin.initPlugin();
+      await plugin.initPlugin();
     } catch (e, stacktrace) {
       logger.e("Failed to initiate ${plugin.codeName}: $e\n$stacktrace");
       unavailablePlugins[plugin] = e as Exception;
     }
     logger.i("Plugin ${plugin.codeName} enabled successfully");
     enabledPlugins.add(plugin);
-    writePluginListToSettings();
+    await writePluginListToSettings();
     if (enableAllProviders) {
       logger.i("Enabling all providers for plugin ${plugin.codeName}");
       enabledResultsProviders.add(plugin);
       enabledHomepageProviders.add(plugin);
       enabledSearchSuggestionsProviders.add(plugin);
-      writeProvidersListToSettings("results");
-      writeProvidersListToSettings("homepage");
-      writeProvidersListToSettings("search_suggestions");
+      await writeProvidersListToSettings("results");
+      await writeProvidersListToSettings("homepage");
+      await writeProvidersListToSettings("search_suggestions");
     }
     return true;
   }
