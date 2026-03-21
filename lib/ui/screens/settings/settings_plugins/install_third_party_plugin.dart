@@ -32,11 +32,14 @@ class _ThirdPartyPluginInstallScreenState
   @override
   void initState() {
     super.initState();
-    if (!thirdPartyPluginWarningShown) {
-      logger.d("Showing third party warning");
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => showThirdPartyWarning());
-    }
+    // Don't show warning in dev mode
+    sharedStorage.getBool("general_enable_dev_options").then((value) {
+      if (!thirdPartyPluginWarningShown && !value!) {
+        logger.d("Showing third party warning");
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => showThirdPartyWarning());
+      }
+    });
   }
 
   void resetProgress() {
