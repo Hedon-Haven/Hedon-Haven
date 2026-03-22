@@ -87,9 +87,9 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
   @override
   Future<List<String>> getSearchSuggestions(String searchString,
       [void Function(String body)? debugCallback]) async {
-    // Simulate a delay without blocking the entire app
+    // Simulate a small delay without blocking the entire app
     if (_simulateDelays) await Future.delayed(Duration(milliseconds: 200));
-    return List.generate(30, (index) => "$searchString-$index");
+    return List.generate(5, (index) => "$searchString-$index");
   }
 
   @override
@@ -98,6 +98,9 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
       [void Function(String body)? debugCallback]) async {
     // Simulate a delay without blocking the entire app
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+    if (page == 5) {
+      return [];
+    }
     return List.generate(
       10,
       (index) => UniversalVideoPreview(
@@ -287,6 +290,9 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
       [void Function(String body)? debugCallback]) async {
     // Simulate a delay without blocking the entire app
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+    if (page == 5) {
+      return [];
+    }
     return List.generate(
       10,
       (index) => UniversalVideoPreview(
@@ -318,7 +324,8 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
 
   @override
   Future<UniversalAuthorPage> getAuthorPage(String authorID,
-      [void Function(String body)? debugCallback]) {
+      [void Function(String body)? debugCallback]) async {
+    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return Future.value(UniversalAuthorPage(
         iD: authorID,
         name: "Test author name",
@@ -346,6 +353,10 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
   @override
   Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
       [void Function(String body)? debugCallback]) async {
+    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+    if (page == 5) {
+      return [];
+    }
     return List.generate(
       10,
       (index) => UniversalVideoPreview(
