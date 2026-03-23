@@ -80,6 +80,12 @@ class PluginInterface {
   bool _checkAndLoadFromConfig(String configPath) {
     try {
       var config = loadYaml(File(configPath).readAsStringSync());
+
+      if (config["apiVersion"] != 1.0) {
+        throw Exception("Unknown / unsupported plugin api version: "
+            "${config["apiVersion"]}");
+      }
+
       codeName = config["metadata"]["codeName"];
       prettyName = config["metadata"]["prettyName"];
       version = config["metadata"]["version"];
