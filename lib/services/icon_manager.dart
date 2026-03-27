@@ -27,8 +27,7 @@ Future<void> downloadPluginIcons({bool force = false}) async {
   if (!(await cacheDir.exists())) {
     await cacheDir.create();
   }
-  logger.d("Enabled plugins: ${PluginManager.enabledPlugins}");
-  for (PluginInterface plugin in PluginManager.enabledPlugins) {
+  for (PluginInterface plugin in await PluginManager.getAllPlugins()) {
     try {
       http.Response response = await client.get(plugin.iconUrl);
       if (response.statusCode == 200) {
