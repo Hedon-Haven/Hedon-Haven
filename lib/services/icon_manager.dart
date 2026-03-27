@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import "package:path/path.dart" as p;
 import 'package:path_provider/path_provider.dart';
 
 import '/utils/global_vars.dart';
@@ -20,11 +21,11 @@ Future<void> downloadPluginIcons({bool force = false}) async {
     logger.i("Force downloading plugin icons");
   }
   logger.i("Icon cache counter is 5. Downloading plugin icons");
-  Directory sysCache = await getApplicationCacheDirectory();
-  Directory cacheDir = Directory("${sysCache.path}/icons");
+  Directory cacheDir =
+      Directory(p.join((await getApplicationCacheDirectory()).path, "icons"));
   // Create icon cache dir if it doesn't exist
-  if (!cacheDir.existsSync()) {
-    cacheDir.create();
+  if (!(await cacheDir.exists())) {
+    await cacheDir.create();
   }
   logger.d("Enabled plugins: ${PluginManager.enabledPlugins}");
   for (PluginInterface plugin in PluginManager.enabledPlugins) {
