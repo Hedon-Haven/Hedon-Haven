@@ -190,14 +190,8 @@ class _Install3rdPartyPluginScreenState
     setState(() => isImportingPlugin = true);
     try {
       await PluginManager.importPlugin(pluginConfigMap!);
-      await PluginManager.discoverAndLoadPlugins();
-      PluginInterface? newPlugin = PluginManager.getPluginByName(
-          pluginConfigMap!["metadata"]["codeName"]);
-      if (newPlugin == null) {
-        throw Exception("PluginManager did not find the newly installed plugin"
-            " ${pluginConfigMap!["metadata"]["codeName"]} by codename");
-      }
-      PluginManager.enablePlugin(newPlugin);
+      // Tell videoLists to update
+      reloadVideoListEvent.add(null);
       setState(() => isImportingPlugin = false);
     } catch (e, stacktrace) {
       logger.e("Failed to import plugin: $e\n$stacktrace");
