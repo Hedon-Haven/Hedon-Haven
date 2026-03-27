@@ -5,12 +5,13 @@ import '/services/plugin_manager.dart';
 import '/ui/screens/bug_report.dart';
 import '/ui/screens/onboarding/onboarding_disclaimers.dart';
 import '/ui/screens/settings/settings_launcher_appearance.dart';
-import '/ui/screens/settings/settings_plugins/install_third_party_plugin.dart';
+import '/ui/screens/settings/settings_plugins/install_3rd_party_plugin.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
 import '/ui/widgets/options_switch.dart';
 import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
+import '/utils/plugin_interface/plugin_interface.dart';
 
 class PluginsScreen extends StatefulWidget {
   final bool partOfOnboarding;
@@ -25,9 +26,33 @@ class _PluginsScreenState extends State<PluginsScreen> {
   /// To avoid sending multiple events if multiple plugins/settings are changed
   bool sendPluginsChangedEvent = false;
 
-  void handleNextButton() {
+  // Cached lists from PluginManager
+  List<PluginInterface> _allPlugins = [];
+  List<PluginInterface> _enabledPlugins = [];
+  List<PluginInterface> _failedPlugins = [];
+
+  Future<void> _loadPluginLists() async {
+    final (all, enabled, failed) = await (
+      PluginManager.getAllPlugins(),
+      PluginManager.getEnabledPlugins(),
+      PluginManager.getFailedPlugins()
+    ).wait;
+    setState(() {
+      _allPlugins = all;
+      _enabledPlugins = enabled;
+      _failedPlugins = failed;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPluginLists();
+  }
+
+  void handleNextButton() async {
     // Check if user enabled at least one plugin
-    if (PluginManager.enabledPlugins.isNotEmpty) {
+    if ((await PluginManager.getEnabledPlugins()).isNotEmpty) {
       Navigator.push(
           context,
           PageTransition(
@@ -53,6 +78,107 @@ class _PluginsScreenState extends State<PluginsScreen> {
                     "Are you sure you want to continue without enabling any plugins?"));
           });
     }
+  }
+
+  /// TODO: Prompt user to delete plugin if not official plugin
+  void _togglePlugin(
+      List<PluginInterface> _allPlugins, int pluginIndex, bool newState) async {
+    if (newState) {
+      try {
+        await PluginManager.enablePlugin(_allPlugins[pluginIndex]);
+      } catch (e, st) {
+        showToast(
+            "Failed to enable ${_allPlugins[pluginIndex].prettyName} due to $e\n$st",
+            context);
+      }
+    } else {
+      try {
+        await PluginManager.disablePlugin(_allPlugins[pluginIndex]);
+      } catch (e, st) {
+        showToast(
+            "Failed to disable ${_allPlugins[pluginIndex].prettyName} due to $e\n$st",
+            context);
+      }
+    }
+    sendPluginsChangedEvent = true;
+    _loadPluginLists();
+  }
+
+  void _setAsProvider(PluginInterface plugin, Set<ProviderType> provides,
+      ProviderType updateType, bool newState) async {
+    // we can directly modify provides, since it'll be thrown away on setState call
+    if (newState) {
+      provides.add(updateType);
+    } else {
+      provides.remove(updateType);
+    }
+    await PluginManager.setAsProvider(plugin, provides);
+    sendPluginsChangedEvent = true;
+    _loadPluginLists();
+  }
+
+  void _showPluginInitErrorDialog(int index) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => FutureBuilder<(Exception, String)?>(
+            future: PluginManager.getPluginError(_allPlugins[index]),
+            builder: (context, snapshot) {
+              final bool customException = snapshot.data != null
+                  ? isCustomException(snapshot.data?.$1)
+                  : false;
+              final String errorMessage = snapshot.data != null
+                  ? snapshot.data!.$1.toString() + snapshot.data!.$2
+                  : "Unknown error!?";
+              return ThemedDialog(
+                  title: "Plugin initialization error",
+                  // TODO: Add a link to proxy settings in case of AgeGateException or BannedCountryException
+                  primaryText: customException ? "Ok" : "Report bug",
+                  onPrimary: () {
+                    if (customException) {
+                      Navigator.pop(context);
+                    } else {
+                      Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => BugReportScreen(
+                                      debugObject: [],
+                                      message: errorMessage,
+                                      issueType: "Plugin issue")))
+                          .then((value) => Navigator.pop(context));
+                    }
+                  },
+                  secondaryText: customException ? null : "Close",
+                  onSecondary: () =>
+                      customException ? null : Navigator.pop(context),
+                  content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                            "The ${_allPlugins[index].prettyName} plugin failed to initialize with the following error:",
+                            style: Theme.of(context).textTheme.titleMedium),
+                        SizedBox(height: 5),
+                        TextFormField(
+                            initialValue: errorMessage,
+                            readOnly: true,
+                            maxLines: null,
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface),
+                            textAlignVertical: TextAlignVertical.top,
+                            decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 10),
+                                filled: true,
+                                fillColor:
+                                    Theme.of(context).colorScheme.surface,
+                                hoverColor:
+                                    Theme.of(context).colorScheme.surface))
+                      ]));
+            }));
   }
 
   @override
@@ -95,8 +221,8 @@ class _PluginsScreenState extends State<PluginsScreen> {
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                ThirdPartyPluginInstallScreen())).then((_) {
-                      setState(() {});
+                                Install3rdPartyPluginScreen())).then((_) {
+                      _loadPluginLists();
                     });
                   },
                 ),
@@ -108,55 +234,32 @@ class _PluginsScreenState extends State<PluginsScreen> {
                     child: Column(children: [
                       Expanded(
                           child: ListView.builder(
-                        itemCount: PluginManager.allPlugins.length,
+                        itemCount: _allPlugins.length,
                         itemBuilder: (context, index) {
-                          String title =
-                              PluginManager.allPlugins[index].prettyName;
-                          String subTitle =
-                              PluginManager.allPlugins[index].providerUrl;
+                          String title = _allPlugins[index].prettyName;
+                          String subTitle = _allPlugins[index].providerUrl;
                           return OptionsSwitch(
-                            // TODO: MAYBE: rework this UI to make it more obvious to why its there and what it means
-                            leadingWidget:
-                                buildOptionsSwitchLeadingWidget(index),
-                            trailingWidget: IconButton(
-                                onPressed: () {
-                                  showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return buildPluginOptions(title, index);
-                                      });
-                                  sendPluginsChangedEvent = true;
-                                },
-                                icon: const Icon(Icons.settings)),
-                            title: title,
-                            subTitle: subTitle,
-                            switchState: PluginManager.enabledPlugins
-                                .contains(PluginManager.allPlugins[index]),
-                            nonInteractive: PluginManager
-                                .unavailablePlugins.keys
-                                .contains(PluginManager.allPlugins[index]),
-                            reduceHorizontalBordersOnly: true,
-                            onToggled: (toggleValue) {
-                              if (toggleValue) {
-                                PluginManager.enablePlugin(
-                                        PluginManager.allPlugins[index])
-                                    .then((initValue) {
-                                  if (!initValue) {
-                                    showToast(
-                                        "Failed to enable ${PluginManager.allPlugins[index].prettyName}",
-                                        context);
-                                    PluginManager.disablePlugin(
-                                        PluginManager.allPlugins[index]);
-                                  }
-                                });
-                              } else {
-                                PluginManager.disablePlugin(
-                                    PluginManager.allPlugins[index]);
-                              }
-                              sendPluginsChangedEvent = true;
-                              setState(() {});
-                            },
-                          );
+                              // TODO: MAYBE: rework this UI Widget to make it more obvious to why its there and what it means
+                              leadingWidget:
+                                  buildOptionsSwitchLeadingWidget(index),
+                              trailingWidget: IconButton(
+                                  onPressed: () {
+                                    showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) =>
+                                            buildPluginOptions(
+                                                _allPlugins[index]));
+                                  },
+                                  icon: const Icon(Icons.settings)),
+                              title: title,
+                              subTitle: subTitle,
+                              switchState:
+                                  _enabledPlugins.contains(_allPlugins[index]),
+                              nonInteractive:
+                                  _failedPlugins.contains(_allPlugins[index]),
+                              reduceHorizontalBordersOnly: true,
+                              onToggled: (toggleValue) => _togglePlugin(
+                                  _allPlugins, index, toggleValue));
                         },
                       )),
                       if (widget.partOfOnboarding) ...[
@@ -209,69 +312,10 @@ class _PluginsScreenState extends State<PluginsScreen> {
   }
 
   Widget buildOptionsSwitchLeadingWidget(int index) {
-    bool customException = isCustomException(
-        PluginManager.unavailablePlugins[PluginManager.allPlugins[index]]);
-    return PluginManager.unavailablePlugins.keys
-            .contains(PluginManager.allPlugins[index])
+    return _failedPlugins.contains(_allPlugins[index])
         ? IconButton(
             color: Theme.of(context).colorScheme.primary,
-            onPressed: () => showDialog(
-                context: context,
-                builder: (BuildContext context) => ThemedDialog(
-                    title: "Plugin initialization error",
-                    // TODO: Add a link to proxy settings in case of AgeGateException or BannedCountryException
-                    primaryText: customException ? "Ok" : "Report bug",
-                    onPrimary: () {
-                      if (customException) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => BugReportScreen(
-                                        debugObject: [],
-                                        message: PluginManager
-                                            .unavailablePlugins[
-                                                PluginManager.allPlugins[index]]
-                                            .toString(),
-                                        issueType: "Plugin issue")))
-                            .then((value) => Navigator.pop(context));
-                      }
-                    },
-                    secondaryText: customException ? null : "Close",
-                    onSecondary: () =>
-                        customException ? null : Navigator.pop(context),
-                    content: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                              "The ${PluginManager.allPlugins[index].prettyName} plugin failed to initialize with the following error:",
-                              style: Theme.of(context).textTheme.titleMedium),
-                          SizedBox(height: 5),
-                          TextFormField(
-                              initialValue: PluginManager.unavailablePlugins[
-                                      PluginManager.allPlugins[index]]
-                                  .toString(),
-                              readOnly: true,
-                              maxLines: null,
-                              style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface),
-                              textAlignVertical: TextAlignVertical.top,
-                              decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 10, horizontal: 10),
-                                  filled: true,
-                                  fillColor:
-                                      Theme.of(context).colorScheme.surface,
-                                  hoverColor:
-                                      Theme.of(context).colorScheme.surface))
-                        ]))),
+            onPressed: () => _showPluginInitErrorDialog(index),
             icon: Icon(
                 size: 30,
                 color: Theme.of(context).colorScheme.error,
@@ -282,95 +326,78 @@ class _PluginsScreenState extends State<PluginsScreen> {
             onPressed: () => showDialog(
                 context: context,
                 builder: (BuildContext context) => ThemedDialog(
-                    title: PluginManager.allPlugins[index].isOfficialPlugin
+                    title: _allPlugins[index].isOfficialPlugin
                         ? "Official plugin"
                         : "Third party plugin",
                     primaryText: "Ok",
                     onPrimary: () => Navigator.pop(context),
                     content: SingleChildScrollView(
-                        child: Text(PluginManager
-                                .allPlugins[index].isOfficialPlugin
+                        child: Text(_allPlugins[index].isOfficialPlugin
                             ? "This plugin was developed and tested by the official Hedon Haven developers."
-                            : "This plugin is from an unaffiliated third party.")))),
+                            : "This plugin is from the third party developer ${_allPlugins[index].developer}")))),
             icon: Icon(
                 size: 30,
-                color: PluginManager.allPlugins[index].isOfficialPlugin
+                color: _allPlugins[index].isOfficialPlugin
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.tertiary,
-                PluginManager.allPlugins[index].isOfficialPlugin
+                _allPlugins[index].isOfficialPlugin
                     ? Icons.verified
                     : Icons.extension),
           );
   }
 
-  Widget buildPluginOptions(String title, int index) {
-    return ThemedDialog(
-        title: "$title options",
-        primaryText: "Apply",
-        onPrimary: Navigator.of(context).pop,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            OptionsSwitch(
-                title: "Results provider",
-                subTitle: "Use this plugin to provide video results",
-                switchState: PluginManager.enabledResultsProviders
-                    .contains(PluginManager.allPlugins[index]),
-                onToggled: (value) {
-                  if (value) {
-                    PluginManager.enableProvider(
-                        PluginManager.allPlugins[index], "results");
-                  } else {
-                    PluginManager.disableProvider(
-                        PluginManager.allPlugins[index], "results");
-                  }
-                  setState(() {});
-                }),
-            OptionsSwitch(
-                title: "Homepage provider",
-                subTitle: "Show this plugins results on the homepage",
-                switchState: PluginManager.enabledHomepageProviders
-                    .contains(PluginManager.allPlugins[index]),
-                onToggled: (value) {
-                  if (value) {
-                    PluginManager.enableProvider(
-                        PluginManager.allPlugins[index], "homepage");
-                  } else {
-                    PluginManager.disableProvider(
-                        PluginManager.allPlugins[index], "homepage");
-                  }
-                  setState(() {});
-                }),
-            OptionsSwitch(
-                title: "Search suggestions provider",
-                subTitle: "Use this plugin to provide search suggestions",
-                switchState: PluginManager.enabledSearchSuggestionsProviders
-                    .contains(PluginManager.allPlugins[index]),
-                onToggled: (value) {
-                  if (value) {
-                    PluginManager.enableProvider(
-                        PluginManager.allPlugins[index], "search_suggestions");
-                  } else {
-                    PluginManager.disableProvider(
-                        PluginManager.allPlugins[index], "search_suggestions");
-                  }
-                  setState(() {});
-                }),
-            if (!PluginManager.allPlugins[index].isOfficialPlugin)
-              ListTile(
-                  trailing: const Icon(Icons.delete_forever,
-                      size: 40, color: Colors.red),
-                  contentPadding: EdgeInsets.only(left: 16, right: 8),
-                  title: const Text("Delete third-party plugin"),
-                  subtitle: Text(
-                      "Permanently delete all plugin binaries and configs"),
-                  onTap: () async {
-                    await PluginManager.deletePlugin(
-                        PluginManager.allPlugins[index]);
-                    setState(() {});
-                    Navigator.of(context).pop();
-                  }),
-          ],
-        ));
+  Widget buildPluginOptions(PluginInterface plugin) {
+    return FutureBuilder<Set<ProviderType>>(
+        future: PluginManager.getEnabledProviderTypesOf(plugin),
+        builder: (context, snapshot) {
+          // Don't show anything until the future is done
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox();
+          }
+          final Set<ProviderType> provides = snapshot.data!;
+          return ThemedDialog(
+              title: "${plugin.prettyName} options",
+              primaryText: "Apply",
+              onPrimary: Navigator.of(context).pop,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OptionsSwitch(
+                      title: "Search results provider",
+                      subTitle:
+                          "Use this plugin to provide video search results",
+                      switchState:
+                          provides.contains(ProviderType.searchResults),
+                      onToggled: (newState) => _setAsProvider(plugin, provides,
+                          ProviderType.searchResults, newState)),
+                  OptionsSwitch(
+                      title: "Homepage provider",
+                      subTitle: "Show this plugins results on the homepage",
+                      switchState: provides.contains(ProviderType.homepage),
+                      onToggled: (newState) => _setAsProvider(
+                          plugin, provides, ProviderType.homepage, newState)),
+                  OptionsSwitch(
+                      title: "Search suggestions provider",
+                      subTitle: "Use this plugin to provide search suggestions",
+                      switchState:
+                          provides.contains(ProviderType.searchSuggestions),
+                      onToggled: (newState) => _setAsProvider(plugin, provides,
+                          ProviderType.searchSuggestions, newState)),
+                  if (!plugin.isOfficialPlugin)
+                    ListTile(
+                        trailing: const Icon(Icons.delete_forever,
+                            size: 40, color: Colors.red),
+                        contentPadding: EdgeInsets.only(left: 16, right: 8),
+                        title: const Text("Delete third-party plugin"),
+                        subtitle: Text(
+                            "Permanently delete all plugin files and configs"),
+                        onTap: () async {
+                          await PluginManager.deletePlugin(plugin);
+                          _loadPluginLists();
+                          Navigator.of(context).pop();
+                        }),
+                ],
+              ));
+        });
   }
 }
