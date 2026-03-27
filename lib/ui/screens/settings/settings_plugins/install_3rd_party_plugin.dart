@@ -6,21 +6,19 @@ import 'package:flutter/material.dart';
 import '/services/plugin_manager.dart';
 import '/ui/widgets/alert_dialog.dart';
 import '/utils/global_vars.dart';
-import '/utils/plugin_interface/plugin_interface.dart';
 
-class ThirdPartyPluginInstallScreen extends StatefulWidget {
+class Install3rdPartyPluginScreen extends StatefulWidget {
   final bool partOfOnboarding;
 
-  const ThirdPartyPluginInstallScreen(
-      {super.key, this.partOfOnboarding = false});
+  const Install3rdPartyPluginScreen({super.key, this.partOfOnboarding = false});
 
   @override
-  State<ThirdPartyPluginInstallScreen> createState() =>
-      _ThirdPartyPluginInstallScreenState();
+  State<Install3rdPartyPluginScreen> createState() =>
+      _Install3rdPartyPluginScreenState();
 }
 
-class _ThirdPartyPluginInstallScreenState
-    extends State<ThirdPartyPluginInstallScreen> {
+class _Install3rdPartyPluginScreenState
+    extends State<Install3rdPartyPluginScreen> {
   String? fileName;
   Map<String, dynamic>? pluginConfigMap;
   String? configFormatted;
