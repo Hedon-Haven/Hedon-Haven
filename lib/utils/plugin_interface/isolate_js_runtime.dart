@@ -29,17 +29,17 @@ void initPluginIsolate(SendPort mainSendPort) async {
   }
 }
 
-void _setup(Map<String, dynamic> message) {
-  final rootToken = message["rootToken"] as RootIsolateToken;
-  final SendPort logPort = message["logPort"] as SendPort;
-  final SendPort fetchPort = message["fetchPort"] as SendPort;
-  final SendPort readyPort = message["readyPort"] as SendPort;
-  final String cachePath = message["cachePath"] as String;
+void _setup(Map<String, dynamic> initMessage) {
+  final rootToken = initMessage["rootToken"] as RootIsolateToken;
+  final SendPort logPort = initMessage["logPort"] as SendPort;
+  final SendPort fetchPort = initMessage["fetchPort"] as SendPort;
+  final SendPort readyPort = initMessage["readyPort"] as SendPort;
+  final String cachePath = initMessage["cachePath"] as String;
   BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
 
   _runtime = getJavascriptRuntime(xhr: false);
-  final jsCode =
-      File("${message["pluginPath"] as String}/bundle.js").readAsStringSync();
+  final jsCode = File("${initMessage["pluginPath"] as String}/bundle.js")
+      .readAsStringSync();
   _runtime.evaluate(jsCode);
 
   _runtime.onMessage(
@@ -62,7 +62,7 @@ void _setup(Map<String, dynamic> message) {
     });
   });
 
-  _runtime.onMessage("writeCacheFile", (dynamic args) {
+  _runtime.onMessage("writeCacheFile", (dynamic message) {
     final resolved = p.normalize(p.join(cachePath, message["filePath"]));
     if (!resolved.startsWith(cachePath + p.separator)) {
       return jsonEncode("Error: Invalid path");
@@ -82,7 +82,7 @@ void _setup(Map<String, dynamic> message) {
     return jsonEncode(true);
   });
 
-  _runtime.onMessage("readCacheFile", (dynamic args) {
+  _runtime.onMessage("readCacheFile", (dynamic message) {
     final resolved = p.normalize(p.join(cachePath, message["filePath"]));
     if (!resolved.startsWith(cachePath + p.separator)) {
       return jsonEncode("Error: Invalid path");
