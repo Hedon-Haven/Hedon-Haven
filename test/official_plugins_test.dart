@@ -64,7 +64,7 @@ void main() async {
   Directory dumpDir = Directory("${Directory.current.path}/dumps");
   if (dumpDir.existsSync()) dumpDir.deleteSync(recursive: true);
   dumpDir.createSync(recursive: true);
-  Directory("${Directory.current.path}/dumps/initPlugin").createSync();
+  Directory("${Directory.current.path}/dumps/init").createSync();
   Directory("${Directory.current.path}/dumps/getSearchSuggestions")
       .createSync();
   Directory("${Directory.current.path}/dumps/getHomePage").createSync();
@@ -83,13 +83,13 @@ void main() async {
   JsonEncoder encoder = JsonEncoder.withIndent("  ");
 
   group("Testing ${plugin.codeName}", () {
-    test("initPlugin", () async {
-      logger.i("Testing initPlugin");
+    test("init", () async {
+      logger.i("Testing init");
 
       try {
         await plugin.init(
             Directory("${Directory.current.path}/dumps/pluginCache").path,
-            (body) => File("${dumpDir.path}/initPlugin/initPlugin.html")
+            (body) => File("${dumpDir.path}/init/init.html")
                 .writeAsStringSync(body));
       } catch (e) {
         fail("plugin.init threw: $e");

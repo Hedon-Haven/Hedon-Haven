@@ -118,7 +118,7 @@ class PornhubPlugin extends OfficialPlugin implements PluginInterface {
   final String _modelEndpoint = "https://www.pornhub.com/model/";
   final String _pornstarEndpoint = "https://www.pornhub.com/pornstar/";
 
-  // Store session cookies created by initPlugin
+  // Store session cookies created by init
   final Map<String, String> _sessionCookies = {
     "ss": "",
     "token": "",

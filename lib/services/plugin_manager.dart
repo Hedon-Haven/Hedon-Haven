@@ -33,7 +33,7 @@ class PluginManager {
   /// All the currently enabled plugins (each plugin must serve as at least one provider), stored as PluginInterfaces and ready to be used
   static final Set<PluginInterface> _enabledPlugins = {};
 
-  /// All the plugins that failed to execute initPlugin() with the message to be displayed to the user
+  /// All the plugins that failed to initiate with the message to be displayed to the user
   static final Map<PluginInterface, (Exception, String)> _failedPlugins = {};
 
   /// All the currently enabled plugins grouped by the provider type they serve

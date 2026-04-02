@@ -206,7 +206,7 @@ class PluginInterface {
     _isolateReady = Completer();
   }
 
-  /// Initialize the plugin isolate and run initPlugin() inside it
+  /// Initialize the plugin isolate and init the plugin
   /// CAREFUL, this function doesn't handle errors!
   Future<void> init(String cachePath,
       [void Function(String body)? debugCallback]) async {
@@ -249,7 +249,7 @@ class PluginInterface {
     _isolateReady.complete();
 
     // Some plugins might need to be prepared before they can be used (e.g. fetch cookies)
-    await _callFunction("initPlugin", []) as bool;
+    await _callFunction("init", []) as bool;
   }
 
   /// Test full plugin functionality and return false if it fails
