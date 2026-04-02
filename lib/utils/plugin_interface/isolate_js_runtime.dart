@@ -65,6 +65,10 @@ void _setup(Map<String, dynamic> initMessage) {
   _runtime.onMessage("writeCacheFile", (dynamic message) {
     final resolved = p.normalize(p.join(cachePath, message["filePath"]));
     if (!resolved.startsWith(cachePath + p.separator)) {
+      logPort.send({
+        "level": "error",
+        "message": "Failed to write cache file due to invalid path: $resolved",
+      });
       return jsonEncode("Error: Invalid path");
     }
     try {
