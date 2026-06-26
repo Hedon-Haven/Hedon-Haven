@@ -63,7 +63,7 @@ jobs:
           echo "Real IP: $REAL_IP"
           
           SERVER_IDS=(187 197 233)
-          for ID in "${IDS[@]}"; do
+          for ID in "${SERVER_IDS[@]}"; do
             echo "Trying VPN server $ID"
             sudo openvpn --daemon --log /dev/stdout --data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC:CHACHA20-POLY1305 --config ".github/vpn_configs/vpngate_openvpn_$ID"
             echo "Waiting for VPN to connect for 60 seconds"
