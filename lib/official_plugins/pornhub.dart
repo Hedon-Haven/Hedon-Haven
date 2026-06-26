@@ -442,13 +442,14 @@ class PornhubPlugin extends OfficialPlugin implements PluginInterface {
     }
 
     if (setCookies != null) {
-      for (String cookie in setCookies.replaceAll(" secure, ", "").split(';')) {
+      for (String cookie
+          in setCookies.split("; ").expand((e) => e.split(", ")).toList()) {
         if (cookie.startsWith("ss=")) {
           _sessionCookies["ss"] = cookie.split("=").last;
           logger.i("Session cookie: ${_sessionCookies["ss"]}");
         }
       }
-      if (_sessionCookies["ss"] == null) {
+      if (_sessionCookies["ss"]?.isEmpty ?? true) {
         throw Exception("Failed to extract ss cookie");
       }
     } else {
