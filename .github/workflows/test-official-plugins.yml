@@ -76,9 +76,10 @@ jobs:
         run: |
           flutter pub get
           flutter pub run build_runner build
-          
-          # fix for quickjs plugin library.so not found error
-          export LIBQUICKJSC_TEST_PATH="$PWD/.github/libquickjs_c_bridge_plugin.so"
+          # build native libs
+          flutter build linux
+          # add native libs to LD_LIBRARY_PATH
+          export LD_LIBRARY_PATH="$(pwd)/build/linux/x64/release/bundle/lib:$(pwd)/build/linux/x64/release/plugins/flutter_js/bundle/lib:${LD_LIBRARY_PATH}"
           
           PLUGIN=${{ matrix.plugin }} flutter test --no-pub test/official_plugins_test.dart
 
