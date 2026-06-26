@@ -116,7 +116,7 @@ class PornhubPlugin extends OfficialPlugin implements PluginInterface {
       // This is the most watched video on pornhub (that is available in all regions)
       {"videoID": "ph5fa4d22a641bd", "progressThumbnailsAmount": 2025},
       // This is a more recent video
-      {"videoID": "ph61eb1d353f1bd", "progressThumbnailsAmount": 2250}
+      {"videoID": "67cc2add0ac5e", "progressThumbnailsAmount": 800}
     ],
     "testingAuthorPageIds": [
       // A channel-type author
