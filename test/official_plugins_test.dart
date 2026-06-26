@@ -13,6 +13,7 @@ import 'package:hedon_haven/utils/plugin_interface/plugin_interface.dart';
 import 'package:hedon_haven/utils/universal_formats.dart';
 import 'package:logger/logger.dart';
 import 'package:mockito/mockito.dart';
+import 'package:rhttp/rhttp.dart';
 
 // Keep in mind this import wont work until "flutter pub run build_runner build" is run
 import 'utils/generate_mocks.mocks.dart';
@@ -28,6 +29,7 @@ void timeout() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Rhttp.init();
 
   // Init global values
   logger = Logger(printer: TestingPrinter());
