@@ -57,20 +57,35 @@ jobs:
 
       - name: Connect to www.vpngate.net via openVPN
         run: |
+          sudo apt-get update && sudo apt-get install -y openvpn
+          
           REAL_IP=$(curl ifconfig.me)
           echo "Real IP: $REAL_IP"
-          sudo apt-get update && sudo apt-get install -y openvpn
-          sudo openvpn --daemon --log /dev/stdout --data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC:CHACHA20-POLY1305 --config .github/vpngate_openvpn.ovpn
-          echo "Waiting for VPN to connect for 60 seconds"
-          sleep 60
+          
+          SERVER_IDS=(187 197 233)
+          for ID in "${IDS[@]}"; do
+            echo "Trying VPN server $ID"
+            sudo openvpn --daemon --log /dev/stdout --data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC:CHACHA20-POLY1305 --config ".github/vpn_configs/vpngate_openvpn_$ID"
+            echo "Waiting for VPN to connect for 60 seconds"
+            sleep 60
+          
+            CURRENT_IP=$(curl ifconfig.me)
+            if [ "$REAL_IP" != "$CURRENT_IP" ]; then
+              echo "Connected to server $ID"
+              break
+            fi
+          
+            echo "Failed to connect to server $ID, killing daemon and trying next server..."
+            sudo pkill openvpn || true
+            sleep 5
+          done
+          
           NEW_IP=$(curl ifconfig.me)
           echo "New IP: $NEW_IP"
-          # Make sure the ip changed
           if [ "$REAL_IP" == "$NEW_IP" ]; then
-            echo "Couldn't connect to VPN."
+            echo "Couldn't connect to any VPN server!"
             exit 1
           fi
-
 
       - name: Testing ${{ matrix.plugin }}
         run: |
