@@ -91,8 +91,8 @@ void main() async {
       try {
         await plugin.init(
             Directory("${Directory.current.path}/dumps/pluginCache").path,
-            (body) => File("${dumpDir.path}/init/init.html")
-                .writeAsStringSync(body));
+            (body) =>
+                File("${dumpDir.path}/init/init.html").writeAsStringSync(body));
       } catch (e) {
         fail("plugin.init threw: $e");
       }
