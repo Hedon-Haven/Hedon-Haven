@@ -85,6 +85,11 @@ class _BugReportScreenState extends State<BugReportScreen> {
   @override
   initState() {
     super.initState();
+    // FIXME: Remove once new bug reporting system is in place
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showToast("Bug reporting system is being reworked", context);
+      Navigator.of(context).pop();
+    });
     emptyDebugObject = widget.debugObject.isEmpty;
     if (widget.issueType != null) {
       issueType = widget.issueType!;
