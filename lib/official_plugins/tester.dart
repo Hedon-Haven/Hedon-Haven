@@ -138,8 +138,10 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
         title: "Test homepage video $index, page $page",
         plugin: this,
         thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
         viewsTotal: (index * pi * 1000000).toInt(),
         ratingsPositivePercent:
@@ -182,8 +184,10 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
             "Test result video $index, page $page, request ${request.searchString}",
         plugin: this,
         thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
         viewsTotal: (index * pi * 1000000).toInt(),
         ratingsPositivePercent:
@@ -384,8 +388,10 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
         title: "Test suggestion video $index",
         plugin: this,
         thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
         viewsTotal: (index * pi * 1000000).toInt(),
         ratingsPositivePercent:
@@ -448,8 +454,10 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
         title: "Test author video $index, page $page",
         plugin: this,
         thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
         viewsTotal: (index * pi * 1000000).toInt(),
         ratingsPositivePercent:
