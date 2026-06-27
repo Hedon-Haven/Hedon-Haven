@@ -146,11 +146,14 @@ class UniversalVideoPreview {
   final PluginInterface? plugin;
 
   // NetworkImage wants Strings instead of Uri
+  // TODO: Convert to record ({String thumbnail, Map<String, String>? httpHeaders})
   final String? thumbnail;
   final Map<String, String>? thumbnailHttpHeaders;
 
   /// Only used for videos from storage. Use thumbnail for network images instead
   final Uint8List thumbnailBinary;
+
+  // TODO: Convert to record ({Uri previewVideo, Map<String, String>? httpHeaders})
   final Uri? previewVideo;
   final Map<String, String>? previewVideoHttpHeaders;
   final Duration? duration;
