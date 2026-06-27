@@ -225,11 +225,11 @@ class UniversalVideoPreview {
       "title": title,
       "plugin": plugin?.codeName,
       "thumbnail": thumbnail,
-      "thumbnailHttpHeaders": thumbnailHttpHeaders,
+      "thumbnailHttpHeaders": thumbnailHttpHeaders.toString(),
       "thumbnailBinary":
           "Uint8List(${thumbnailBinary.length} bytes) [${thumbnailBinary.take(8).toList()}...]",
       "previewVideo": previewVideo?.toString(),
-      "previewVideoHttpHeaders": previewVideoHttpHeaders,
+      "previewVideoHttpHeaders": previewVideoHttpHeaders.toString(),
       "duration": "${duration?.inSeconds}",
       "viewsTotal": viewsTotal,
       "ratingsPositivePercent": ratingsPositivePercent,
