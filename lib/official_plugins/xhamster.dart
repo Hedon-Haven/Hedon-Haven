@@ -184,8 +184,8 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
         duration = Duration(seconds: element["duration"]);
       } catch (_) {}
 
-      authorNamePassed ??=
-          element["landing"]?["name"] ?? "Unknown amateur author";
+      String authorName = authorNamePassed ??
+          (element["landing"]?["name"] ?? "Unknown amateur author");
 
       UniversalVideoPreview uniResult = UniversalVideoPreview(
         // Don't enforce null safety here
@@ -200,11 +200,11 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
         ratingsPositivePercent: null,
         maxQuality: element["isUHD"] == true ? 2160 : null,
         virtualReality: false,
-        authorName: authorNamePassed,
+        authorName: authorName,
         authorID:
             authorIDPassed ?? element["landing"]?["link"]?.split("/")?.last,
         verifiedAuthor: (element["landing"]?["type"] ?? "user") != "user" &&
-            authorNamePassed != "Unknown amateur author",
+            authorName != "Unknown amateur author",
       );
 
       // getHomepage, getSearchResults and getAuthorVideos use the same _parseVideoList
