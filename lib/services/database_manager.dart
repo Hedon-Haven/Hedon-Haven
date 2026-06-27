@@ -312,6 +312,7 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
   newEntryData.remove("thumbnail");
   newEntryData.remove("thumbnailHttpHeaders");
   newEntryData.remove("previewVideo");
+  newEntryData.remove("previewVideoHttpHeaders");
   newEntryData.remove("viewsTotal");
   newEntryData.remove("ratingsPositivePercent");
   newEntryData.remove("scrapeFailMessage");
@@ -354,6 +355,7 @@ Future<void> addToFavorites(UniversalVideoPreview result) async {
   newEntryData.remove("thumbnail");
   newEntryData.remove("thumbnailHttpHeaders");
   newEntryData.remove("previewVideo");
+  newEntryData.remove("previewVideoHttpHeaders");
   newEntryData.remove("viewsTotal");
   newEntryData.remove("ratingsPositivePercent");
   newEntryData.remove("scrapeFailMessage");
