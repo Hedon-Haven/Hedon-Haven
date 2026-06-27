@@ -146,6 +146,7 @@ abstract class OfficialPlugin {
   /// This is the actual function for getting thumbnails that is specific to each official plugin
   Future<void> isolateGetProgressThumbnails(SendPort sendPort);
 
+  // FIXME: Why is this function handling errors?
   Future<Uint8List> downloadThumbnail(
       Uri uri, Map<String, String>? thumbnailHttpHeaders) async {
     try {
