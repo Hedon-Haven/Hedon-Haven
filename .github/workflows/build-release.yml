@@ -68,6 +68,7 @@ jobs:
       - name: Preparing environment
         run: |
           mkdir ./release
+          rustup target add aarch64-apple-ios
 
       - uses: subosito/flutter-action@v2
         with:
