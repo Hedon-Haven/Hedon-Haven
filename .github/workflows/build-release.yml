@@ -235,10 +235,6 @@ jobs:
           flutter pub get
           
           # Replace fvp plugin symlink with junction (libarchive workaround)
-          Remove-Item "windows\flutter\ephemeral\.plugin_symlinks\fvp" -Force
-          cmd /c mklink /J "windows\flutter\ephemeral\.plugin_symlinks\fvp" (Get-Item $link -Force).Target
-          
-          # Replace fvp plugin symlink with junction (libarchive workaround)
           $fvpDir = (Get-ChildItem "$env:LOCALAPPDATA\Pub\Cache\hosted\pub.dev" -Filter "fvp-*" | Select-Object -First 1).FullName
           $link = "$env:GITHUB_WORKSPACE\windows\flutter\ephemeral\.plugin_symlinks\fvp"
           Remove-Item -LiteralPath $link -Force -Recurse
