@@ -13,7 +13,7 @@ jobs:
         run: |
           mkdir ./release
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'oracle'
           java-version: '21'
@@ -369,7 +369,7 @@ jobs:
           echo "**Full Changelog**: ${FULL_URL}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Publishing new release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: APK BUILD - ${{ steps.tag.outputs.tag }}
           body: ${{ steps.commit-body.outputs.body }}
