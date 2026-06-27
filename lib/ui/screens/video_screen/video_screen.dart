@@ -136,7 +136,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   // Return a page for the openBuilder
   Widget openAuthorPage(String authorID) {
-    beforeNavigate();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await beforeNavigate();
+    });
     return AuthorPageScreen(
       authorPage: _authorPageCache.putIfAbsent(
         authorID,
@@ -157,7 +159,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   // Pause video and exit fullscreen before navigating to another page
-  void beforeNavigate() async {
+  Future<void> beforeNavigate() async {
     videoPlayerWidgetKey.currentState?.pausePlayer();
     setState(() => isFullScreen = false);
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
@@ -232,14 +234,16 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             onPrimary: () => Navigator.pop(context),
             secondaryText: "Go to author page",
             onSecondary: () async {
-              beforeNavigate();
-              await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => AuthorPageScreen(
-                          authorPage: comment.plugin!
-                              .getAuthorPage(comment.authorID!))));
-              Navigator.of(context).pop();
+              await beforeNavigate();
+              if (context.mounted) {
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => AuthorPageScreen(
+                            authorPage: comment.plugin!
+                                .getAuthorPage(comment.authorID!))));
+              }
+              if (context.mounted) Navigator.of(context).pop();
             },
             content: SingleChildScrollView(
                 child: Image.network(
@@ -317,24 +321,29 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   void openCommentAuthor(UniversalComment comment) async {
-    beforeNavigate();
-    await Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => AuthorPageScreen(
-                authorPage: comment.plugin!.getAuthorPage(comment.authorID!))));
+    await beforeNavigate();
+    if (mounted) {
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => AuthorPageScreen(
+                  authorPage:
+                      comment.plugin!.getAuthorPage(comment.authorID!))));
+    }
     if (mounted) Navigator.of(context).pop();
   }
 
   void openBugReportScreenForComment(UniversalComment comment) async {
-    beforeNavigate();
-    await Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => BugReportScreen(
-                  debugObject: [comment.toMap()],
-                  plugin: comment.plugin,
-                )));
+    await beforeNavigate();
+    if (mounted) {
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => BugReportScreen(
+                    debugObject: [comment.toMap()],
+                    plugin: comment.plugin,
+                  )));
+    }
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -415,8 +424,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     return results;
   }
 
-  void handlePop() {
-    beforeNavigate();
+  void handlePop() async {
+    await beforeNavigate();
     if (showReplySection && isMobile) {
       setState(() {
         showReplySection = false;
