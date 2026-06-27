@@ -239,10 +239,10 @@ jobs:
           cmd /c mklink /J "windows\flutter\ephemeral\.plugin_symlinks\fvp" (Get-Item $link -Force).Target
           
           # Replace fvp plugin symlink with junction (libarchive workaround)
-          $link = "windows\flutter\ephemeral\.plugin_symlinks\fvp"
-          $target = (Get-Item $link -Force).Target
-          Remove-Item $link -Force
-          cmd /c mklink /J "$link" "$target"
+          $fvpDir = (Get-ChildItem "$env:LOCALAPPDATA\Pub\Cache\hosted\pub.dev" -Filter "fvp-*" | Select-Object -First 1).FullName
+          $link = "$env:GITHUB_WORKSPACE\windows\flutter\ephemeral\.plugin_symlinks\fvp"
+          Remove-Item -LiteralPath $link -Force -Recurse
+          cmd /c mklink /J "$link" "$fvpDir"
           
           echo "Building windows x64 release"
           flutter -v build windows --release
