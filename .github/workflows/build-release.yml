@@ -234,6 +234,10 @@ jobs:
           flutter clean
           flutter pub get
           
+          # Replace fvp plugin symlink with junction (libarchive workaround)
+          Remove-Item "windows\flutter\ephemeral\.plugin_symlinks\fvp" -Force
+          cmd /c mklink /J "windows\flutter\ephemeral\.plugin_symlinks\fvp" (Get-Item $link -Force).Target
+          
           echo "Building windows x64 release"
           flutter -v build windows --release
           
