@@ -4,7 +4,7 @@ import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
-import 'package:html_unescape/html_unescape_small.dart';
+import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart';
 
@@ -958,6 +958,9 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
     if (jscriptMap["aboutMeComponent"]?["text"] != null) {
       shortDescription = jscriptMap["aboutMeComponent"]["text"].trim();
       shortDescription = HtmlUnescape().convert(shortDescription!);
+      shortDescription = shortDescription
+          .replaceAll("<br\\/>", "\n")
+          .replaceAll("<br/>", "\n");
     }
 
     Map<String, Uri>? externalLinks;
