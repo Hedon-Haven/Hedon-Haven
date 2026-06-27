@@ -152,6 +152,7 @@ class UniversalVideoPreview {
   /// Only used for videos from storage. Use thumbnail for network images instead
   final Uint8List thumbnailBinary;
   final Uri? previewVideo;
+  final Map<String, String>? previewVideoHttpHeaders;
   final Duration? duration;
   final int? viewsTotal;
 
@@ -192,6 +193,7 @@ class UniversalVideoPreview {
     this.thumbnailHttpHeaders,
     Uint8List? thumbnailBinary,
     this.previewVideo,
+    this.previewVideoHttpHeaders,
     this.duration,
     this.viewsTotal,
     this.ratingsPositivePercent,
@@ -224,6 +226,7 @@ class UniversalVideoPreview {
       "thumbnailBinary":
           "Uint8List(${thumbnailBinary.length} bytes) [${thumbnailBinary.take(8).toList()}...]",
       "previewVideo": previewVideo?.toString(),
+      "previewVideoHttpHeaders": previewVideoHttpHeaders,
       "duration": "${duration?.inSeconds}",
       "viewsTotal": viewsTotal,
       "ratingsPositivePercent": ratingsPositivePercent,
@@ -252,6 +255,8 @@ class UniversalVideoPreview {
           : null,
       previewVideo:
           map["previewVideo"] != null ? Uri.parse(map["previewVideo"]) : null,
+      previewVideoHttpHeaders:
+          (map["previewVideoHttpHeaders"] as Map?)?.cast<String, String>(),
       duration:
           map["duration"] != null ? Duration(seconds: map["duration"]) : null,
       viewsTotal: map["viewsTotal"],

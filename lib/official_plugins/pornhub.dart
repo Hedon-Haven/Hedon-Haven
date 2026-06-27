@@ -239,6 +239,10 @@ class PornhubPlugin extends OfficialPlugin implements PluginInterface {
         },
         previewVideo:
             tryParse(() => Uri.parse(imageDiv!.attributes["data-webm"]!)),
+        previewVideoHttpHeaders: {
+          "User-Agent": httpUserAgent,
+          "Referer": "https://www.pornhub.com/"
+        },
         duration: duration,
         viewsTotal: views,
         ratingsPositivePercent: null,
