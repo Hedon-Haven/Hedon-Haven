@@ -447,17 +447,20 @@ Widget buildCommentSection(BuildContext context, VideoPlayerScreenState vps) {
   }
   return Stack(children: [
     Positioned.fill(child: buildTopLevelCommentSection(context, vps)),
-    Positioned.fill(
-      child: AnimatedSlide(
-        offset: vps.showReplySection ? Offset.zero : const Offset(1, 0),
-        duration: Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        child: IgnorePointer(
-          ignoring: !vps.showReplySection,
-          child: buildReplyCommentSection(context, vps, replyTopLevelComment),
+    // Don't render reply section if not shown,
+    // otherwise it renders under the suggested videos in desktop mode
+    if (vps.showReplySection)
+      Positioned.fill(
+        child: AnimatedSlide(
+          offset: vps.showReplySection ? Offset.zero : const Offset(1, 0),
+          duration: Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: IgnorePointer(
+            ignoring: !vps.showReplySection,
+            child: buildReplyCommentSection(context, vps, replyTopLevelComment),
+          ),
         ),
-      ),
-    )
+      )
   ]);
 }
 
