@@ -530,8 +530,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                             children: [
                               buildTitleWidget(context, this),
                               buildMetadataSection(context, this),
+                              if (descriptionExpanded)
+                                buildActorsList(context, this),
                               buildAuthorWidget(context, this),
-                              buildActorsList(context, this),
                               buildActionButtonsRow(context, this),
                               buildCommentButton(context, this),
                               SizedBox(height: 5),
