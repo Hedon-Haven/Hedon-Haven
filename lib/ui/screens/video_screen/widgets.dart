@@ -209,31 +209,29 @@ Widget buildActorWidget(BuildContext context, void Function() openContainer,
       ),
       child: TextButton(
           style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               )),
           onPressed: () => openContainer(),
           child: Row(spacing: 3, children: [
-            Padding(
-                padding: EdgeInsetsGeometry.symmetric(vertical: 5),
-                child: ClipOval(
-                  child: Image.network(
-                    width: 30,
-                    height: 30,
-                    actor.avatar ?? "Avatar url is null",
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, e, st) {
-                      if (!e.toString().contains("mockAvatar")) {
-                        logger.e("Failed to load network avatar: $e\n$st");
-                      }
-                      return FittedBox(
-                          fit: BoxFit.cover,
-                          child: Icon(Icons.person,
-                              color: Theme.of(context).colorScheme.onTertiary));
-                    },
-                  ),
-                )),
+            ClipOval(
+              child: Image.network(
+                width: 30,
+                height: 30,
+                actor.avatar ?? "Avatar url is null",
+                fit: BoxFit.cover,
+                errorBuilder: (context, e, st) {
+                  if (!e.toString().contains("mockAvatar")) {
+                    logger.e("Failed to load network avatar: $e\n$st");
+                  }
+                  return FittedBox(
+                      fit: BoxFit.cover,
+                      child: Icon(Icons.person,
+                          color: Theme.of(context).colorScheme.onTertiary));
+                },
+              ),
+            ),
             Text(actor.name)
           ])));
 }
