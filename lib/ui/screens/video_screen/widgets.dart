@@ -807,7 +807,7 @@ List<Widget> buildVideoSuggestions(
         floating: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
+            padding: EdgeInsets.only(bottom: 10),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Text(
                   "Related videos from ${vps.videoMetadata.plugin?.prettyName ?? ""}:",
@@ -820,6 +820,10 @@ List<Widget> buildVideoSuggestions(
                 IconButton(
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     icon: Icon(
                         color: Theme.of(context).colorScheme.error,
                         Icons.error_outline),
