@@ -5,12 +5,14 @@ class FloatingDynamicSliverHeader extends StatefulWidget {
   final Widget child;
   final Color? backgroundColor;
   final bool pinned;
+  final bool floating;
 
   const FloatingDynamicSliverHeader(
       {super.key,
       required this.child,
       this.backgroundColor,
-      this.pinned = false});
+      this.pinned = false,
+      this.floating = true});
 
   @override
   State<FloatingDynamicSliverHeader> createState() =>
@@ -25,7 +27,7 @@ class _FloatingDynamicSliverHeaderState
   Widget build(BuildContext context) {
     return SliverPersistentHeader(
         pinned: widget.pinned,
-        floating: !widget.pinned,
+        floating: widget.floating,
         delegate: _FloatingDynamicHeaderDelegate(
             height: _height,
             floating: !widget.pinned,

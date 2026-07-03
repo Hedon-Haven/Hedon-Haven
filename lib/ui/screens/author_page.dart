@@ -315,6 +315,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                       ])),
                               FloatingDynamicSliverHeader(
                                   pinned: true,
+                                  floating: false,
                                   backgroundColor:
                                       Theme.of(context).colorScheme.surface,
                                   child: Column(

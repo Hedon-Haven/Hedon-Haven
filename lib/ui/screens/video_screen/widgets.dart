@@ -794,6 +794,7 @@ List<Widget> buildVideoSuggestions(
   return [
     FloatingDynamicSliverHeader(
         pinned: true,
+        floating: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         child: Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
