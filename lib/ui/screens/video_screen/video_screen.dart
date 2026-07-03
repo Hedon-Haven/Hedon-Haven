@@ -560,35 +560,37 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Widget _buildDesktopLayout() {
     return SizedBox.expand(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Skeleton.shade(
-                    child: isLoadingMetadata
-                        ? Container(color: Colors.black)
-                        : VideoPlayerWidget(
-                            key: videoPlayerWidgetKey,
-                            videoMetadata: videoMetadata,
-                            progressThumbnails: progressThumbnails,
-                            toggleFullScreen: toggleFullScreen,
-                            isFullScreen: isFullScreen,
-                          ),
+      child: SingleChildScrollView(
+        controller: screenScrollController,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Skeleton.shade(
+                      child: isLoadingMetadata
+                          ? Container(color: Colors.black)
+                          : VideoPlayerWidget(
+                              key: videoPlayerWidgetKey,
+                              videoMetadata: videoMetadata,
+                              progressThumbnails: progressThumbnails,
+                              toggleFullScreen: toggleFullScreen,
+                              isFullScreen: isFullScreen,
+                            ),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
+                  Padding(
                     padding: const EdgeInsets.all(10),
                     child: Column(
                       spacing: 10,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         buildTitleWidget(context, this),
+                        if (descriptionExpanded) buildActorsList(context, this),
                         Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -596,24 +598,30 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               SizedBox(width: 20),
                               buildMetadataSection(context, this),
                             ]),
-                        buildActorsList(context, this),
                         buildActionButtonsRow(context, this),
-                        Expanded(child: buildCommentSection(context, this)),
+                        NotificationListener<ScrollNotification>(
+                          onNotification: (_) => true,
+                          child: SizedBox(
+                              height: 1200,
+                              child: buildCommentSection(context, this)),
+                        ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            flex: 1,
-            child: CustomScrollView(
-              controller: screenScrollController,
-              slivers: buildVideoSuggestions(context, this),
+            SizedBox(width: 10),
+            Expanded(
+              flex: 1,
+              child: CustomScrollView(
+                physics: NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                slivers: buildVideoSuggestions(context, this),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
