@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '/services/banner_manager.dart';
 import '/services/loading_handler.dart';
 import '/services/plugin_manager.dart';
 import '/ui/screens/scraping_report.dart';
+import '/ui/widgets/sliver_header.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/universal_formats.dart';
@@ -176,6 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 return snapshot.data!
                     ? CustomScrollView(slivers: [
+                        buildBanner(),
                         VideoList(
                           videoList: videoResults,
                           scrollController: ScrollController(),
@@ -199,5 +202,53 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(fontSize: 20, color: Colors.red)));
               })),
     );
+  }
+
+  Widget buildBanner() {
+    return FutureBuilder<({String title, String message})>(
+        future: getBanner(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SliverToBoxAdapter();
+          }
+          return FloatingDynamicSliverHeader(
+              pinned: false,
+              floating: false,
+              child: Container(
+                  margin: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                  ),
+                  child: Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 4,
+                          children: [
+                            Text(
+                              snapshot.data!.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                            ),
+                            Text(
+                              snapshot.data!.message,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ]))));
+        });
   }
 }
