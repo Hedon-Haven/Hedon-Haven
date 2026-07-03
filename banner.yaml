@@ -1,0 +1,5 @@
+# Contains information needed to display the banner inside the app
+title: "Disclaimer"
+message: >
+  The app is still under heavy development. 
+  Bugs, errors and crashes might occur.
