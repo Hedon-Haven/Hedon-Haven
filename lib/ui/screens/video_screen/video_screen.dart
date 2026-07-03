@@ -525,7 +525,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           backgroundColor:
                               Theme.of(context).colorScheme.surface,
                           child: Column(
-                            spacing: 10,
+                            spacing: 5,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               buildTitleWidget(context, this),
@@ -534,6 +534,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               buildActorsList(context, this),
                               buildActionButtonsRow(context, this),
                               buildCommentButton(context, this),
+                              SizedBox(height: 5),
                             ],
                           ),
                         ),
