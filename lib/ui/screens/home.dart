@@ -200,10 +200,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               "No homepage providers enabled. Enable at least one plugin's homepage provider setting",
                         )
                       ])
-                    : const Center(
-                        child: Text(
-                            "Homepage disabled in settings/appearance/enable homepage",
-                            style: TextStyle(fontSize: 20, color: Colors.red)));
+                    : CustomScrollView(slivers: [
+                        buildBanner(),
+                        SliverToBoxAdapter(
+                            child: Text(
+                                "Homepage disabled in settings/appearance/enable homepage",
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge!
+                                    .copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error)))
+                      ]);
               })),
     );
   }
