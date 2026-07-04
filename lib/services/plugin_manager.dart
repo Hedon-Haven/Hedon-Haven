@@ -9,10 +9,10 @@ import 'package:yaml/yaml.dart';
 
 import '/services/icon_manager.dart';
 import '/services/update_manager.dart';
+import '/utils/bundled_plugin.dart';
 import '/utils/filesystem.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
-import 'official_plugins_tracker.dart';
 
 enum ProviderType {
   homepage,
@@ -106,10 +106,10 @@ class PluginManager {
           providerSettings.values.expand((e) => e).toSet();
       logger.d("Provider settings Map: $providerSettings");
 
-      _allPlugins.addAll(await getAllOfficialPlugins());
-      final officialPluginsCount = _allPlugins.length;
-      logger.d("Official plugins found: $_allPlugins "
-          "($officialPluginsCount)");
+      _allPlugins.addAll(await getAllBundledPlugins());
+      final bundledPluginsCount = _allPlugins.length;
+      logger.d("Bundled plugins found: $_allPlugins "
+          "($bundledPluginsCount)");
 
       // If pluginsDir doesn't exist, no need to check for third party plugins inside it
       logger.d("Looking for 3rd party plugins in ${_pluginsDir!.path}");
@@ -141,7 +141,7 @@ class PluginManager {
         }
       }
       logger.d("3rd party plugins found in $_pluginsDir: "
-          "${_allPlugins.length - officialPluginsCount} "
+          "${_allPlugins.length - bundledPluginsCount} "
           "(${_allPlugins.length} total)");
 
       // Init plugin only if its actually in use as a provider since keeping
@@ -268,8 +268,8 @@ class PluginManager {
   }
 
   static Future<void> deletePlugin(PluginInterface plugin) async {
-    if (plugin.isOfficialPlugin) {
-      logger.w("Can't delete official plugin ${plugin.codeName}!");
+    if (plugin.isBundledPlugin) {
+      logger.w("Can't delete bundled plugin ${plugin.codeName}!");
       return;
     }
     await _lock.synchronized(() async {
@@ -490,8 +490,8 @@ class PluginManager {
   static Future<void> updatePlugin(PluginInterface oldPlugin) async {
     logger.i("Updating plugin ${oldPlugin.codeName}");
 
-    if (oldPlugin.isOfficialPlugin) {
-      throw Exception("Official plugins cannot be updated");
+    if (oldPlugin.isBundledPlugin) {
+      throw Exception("Bundled plugins cannot be updated");
     }
 
     UpdateInfo? updateInfo;

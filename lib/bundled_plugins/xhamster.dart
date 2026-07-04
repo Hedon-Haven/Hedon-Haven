@@ -11,14 +11,14 @@ import 'package:image/image.dart';
 import '/services/external_link_manager.dart';
 import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
-import '/utils/official_plugin.dart';
+import '/utils/bundled_plugin.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
 import '/utils/universal_formats.dart';
 
-class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
+class XHamsterPlugin extends BundledPlugin implements PluginInterface {
   @override
-  final bool isOfficialPlugin = true;
+  final bool isBundledPlugin = true;
   @override
   bool isInitialized = false;
   @override
@@ -60,7 +60,7 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
   @override
   String version = "";
 
-  // Set OfficialPlugin specific vars
+  // Set BundledPlugin specific vars
   @override
   Map<String, dynamic> testingMap = {
     "ignoreScrapedErrors": {
@@ -252,7 +252,7 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
 
   @override
   Future<bool> runFunctionalityTest() {
-    // There is no need to run functionality tests on official plugins
+    // There is no need to run functionality tests on bundled plugins
     // as they are not imported at any time in the app
     // Also, these plugins get checked for functionality via daily CIs
     return Future.value(true);
@@ -351,7 +351,7 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
         .cast<Map<String, dynamic>>());
   }
 
-  // downloadThumbnail is implemented at the OfficialPlugin level
+  // downloadThumbnail is implemented at the BundledPlugin level
 
   @override
   Future<List<String>> getSearchSuggestions(String searchString,
@@ -563,7 +563,7 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
     return metadata;
   }
 
-  // getProgressThumbnails is implemented at the OfficialPlugin level
+  // getProgressThumbnails is implemented at the BundledPlugin level
 
   @override
   Future<void> isolateGetProgressThumbnails(SendPort sendPort) async {
@@ -706,7 +706,7 @@ class XHamsterPlugin extends OfficialPlugin implements PluginInterface {
     }
   }
 
-  // cancelGetProgressThumbnails is implemented at the OfficialPlugin level
+  // cancelGetProgressThumbnails is implemented at the BundledPlugin level
 
   @override
   Future<Uri?> getCommentUriFromID(String commentID, String videoID) {

@@ -6,14 +6,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_hls_parser/flutter_hls_parser.dart';
 import 'package:html/dom.dart';
 
+import '/bundled_plugins/pornhub.dart';
+import '/bundled_plugins/tester.dart';
+import '/bundled_plugins/xhamster.dart';
 import '/utils/global_vars.dart';
+import '/utils/plugin_interface/plugin_interface.dart';
 
-/// This class contains internal functions / pre-implemented functions for official plugins
-abstract class OfficialPlugin {
+/// This class contains internal functions / pre-implemented functions for bundled plugins
+abstract class BundledPlugin {
   Isolate? getProgressThumbnailsIsolate;
 
-  // This Map must be overriden in plugins that extend this class
-  // It is only accessible if the plugin is initialized as an OfficialPlugin
+  // This Map must be overridden in plugins that extend this class
+  // It is only accessible if the plugin is initialized as an BundledPlugin
   // or from the plugin itself
   // The ignoreScrapedErrors vars are used in the plugin code and in tests
   // The rest are only used by CI-tests
@@ -34,7 +38,7 @@ abstract class OfficialPlugin {
     "testingAuthorPageIds": ["", "", ""]
   };
 
-  // No need for actual dispose in OfficialPlugins
+  // No need for actual dispose in BundledPlugins
   void dispose() {}
 
   /// Parse a master m3u8 into media m3u8s
@@ -68,7 +72,7 @@ abstract class OfficialPlugin {
 
   /// The pluginInterface runs all functions as isolates due to the nature of how third-party plugins are implemented
   /// However, most functions are not that performance heavy and can be run in the main isolate, except for getProgressThumbnails
-  /// This function is called by the main isolate and overrides the pluginInterface one in official plugins
+  /// This function is called by the main isolate and overrides the pluginInterface one in bundled plugins
   @nonVirtual
   Future<List<Uint8List>?> getProgressThumbnails(
       String videoID, Document rawHtml) async {
@@ -143,7 +147,7 @@ abstract class OfficialPlugin {
     return thumbnails;
   }
 
-  /// This is the actual function for getting thumbnails that is specific to each official plugin
+  /// This is the actual function for getting thumbnails that is specific to each bundled plugin
   Future<void> isolateGetProgressThumbnails(SendPort sendPort);
 
   // FIXME: Why is this function handling errors?
@@ -169,5 +173,53 @@ abstract class OfficialPlugin {
     if (getProgressThumbnailsIsolate != null) {
       getProgressThumbnailsIsolate!.kill(priority: Isolate.immediate);
     }
+  }
+}
+
+// While bundled plugins are also PluginInterface types, they in reality do not
+// communicate with any binaries, but are compiled directly into the app
+
+Future<PluginInterface?> getBundledPluginByName(String codename) async {
+  switch (codename) {
+    case "com.hedon_haven.tester_internal":
+      if (!(await sharedStorage.getBool("general_enable_dev_options"))!) {
+        logger.e("Tester plugin requested in non-debug mode");
+        throw Exception("Tester plugin requested in non-debug mode");
+      }
+      return TesterPlugin();
+    case "com.hedon_haven.pornhub":
+      return PornhubPlugin();
+    case "com.hedon_haven.xhamster":
+      return XHamsterPlugin();
+    default:
+      break;
+  }
+  return null;
+}
+
+Future<BundledPlugin?> getBundledPluginByNameAsBundledPlugin(
+    String codename) async {
+  switch (codename) {
+    case "com.hedon_haven.tester_internal":
+      if (!(await sharedStorage.getBool("general_enable_dev_options"))!) {
+        logger.e("Tester plugin requested in non-debug mode");
+        throw Exception("Tester plugin requested in non-debug mode");
+      }
+      return TesterPlugin();
+    case "com.hedon_haven.pornhub":
+      return PornhubPlugin();
+    case "com.hedon_haven.xhamster":
+      return XHamsterPlugin();
+    default:
+      break;
+  }
+  return null;
+}
+
+Future<List<PluginInterface>> getAllBundledPlugins() async {
+  if ((await sharedStorage.getBool("general_enable_dev_options"))!) {
+    return [TesterPlugin(), PornhubPlugin(), XHamsterPlugin()];
+  } else {
+    return [PornhubPlugin(), XHamsterPlugin()];
   }
 }

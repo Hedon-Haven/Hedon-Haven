@@ -90,7 +90,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
     }
   }
 
-  /// TODO: Prompt user to delete plugin if not official plugin
+  /// TODO: Prompt user to delete plugin if not bundled plugin
   void _togglePlugin(PluginInterface plugin, bool newState) async {
     if (newState) {
       try {
@@ -271,7 +271,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
         "Developer: ${plugin.developer}\n"
         "Contact email: ${plugin.contactEmail}\n"
         "Description: ${plugin.description}\n"
-        "Update URL: ${plugin.updateUrl ?? (plugin.isOfficialPlugin ? "Official plugins are updated with the app" : "Updates unsupported")}";
+        "Update URL: ${plugin.updateUrl ?? (plugin.isBundledPlugin ? "Bundled plugins are updated with the app" : "Updates unsupported")}";
     await showDialog(
         context: context,
         builder: (BuildContext context) => ThemedDialog(
@@ -284,8 +284,8 @@ class _PluginsScreenState extends State<PluginsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(
-                      plugin.isOfficialPlugin
-                          ? "Official plugin. Developed and tested by the Hedon Haven developers."
+                      plugin.isBundledPlugin
+                          ? "Bundled plugin. Developed and tested by the Hedon Haven developers."
                           : "Third-party plugin. Not tested or endorsed by Hedon Haven.",
                       style: Theme.of(context).textTheme.bodyLarge),
                   Container(
@@ -298,7 +298,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
                     child: SelectableText(metadata,
                         style: Theme.of(context).textTheme.bodyMedium),
                   ),
-                  if (!plugin.isOfficialPlugin)
+                  if (!plugin.isBundledPlugin)
                     ListTile(
                         trailing: const Icon(Icons.delete_forever,
                             size: 40, color: Colors.red),
@@ -519,10 +519,10 @@ class _PluginsScreenState extends State<PluginsScreen> {
                 offset: const Offset(5, 5),
                 child: Icon(
                     size: 30,
-                    color: plugin.isOfficialPlugin
+                    color: plugin.isBundledPlugin
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.tertiary,
-                    plugin.isOfficialPlugin
+                    plugin.isBundledPlugin
                         ? Icons.verified
                         : Icons.extension)));
   }
@@ -572,7 +572,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
                           provides.contains(ProviderType.externalLinkHandler),
                       onToggled: (newState) => _setAsProvider(plugin, provides,
                           ProviderType.externalLinkHandler, newState)),
-                  if (!plugin.isOfficialPlugin)
+                  if (!plugin.isBundledPlugin)
                     ListTile(
                         trailing: const Icon(Icons.delete_forever,
                             size: 40, color: Colors.red),

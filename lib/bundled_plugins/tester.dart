@@ -6,14 +6,14 @@ import 'package:html/dom.dart';
 import 'package:image/image.dart';
 
 import '/services/external_link_manager.dart';
-import '/utils/official_plugin.dart';
+import '/utils/bundled_plugin.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/universal_formats.dart';
 
 /// This plugin is only used for testing and is hidden in the release version
-class TesterPlugin extends OfficialPlugin implements PluginInterface {
+class TesterPlugin extends BundledPlugin implements PluginInterface {
   @override
-  bool isOfficialPlugin = true;
+  bool isBundledPlugin = true;
   @override
   bool isInitialized = false;
   @override
@@ -157,7 +157,7 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
     );
   }
 
-  // downloadThumbnail is implemented at the OfficialPlugin level
+  // downloadThumbnail is implemented at the BundledPlugin level
 
   @override
   Future<List<String>> getSearchSuggestions(String searchString,
@@ -263,7 +263,7 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
     );
   }
 
-  // getProgressThumbnails is implemented at the OfficialPlugin level
+  // getProgressThumbnails is implemented at the BundledPlugin level
 
   @override
   Future<void> isolateGetProgressThumbnails(SendPort sendPort) async {
@@ -305,7 +305,7 @@ class TesterPlugin extends OfficialPlugin implements PluginInterface {
     resultsPort.send(completedProcessedImages);
   }
 
-  // cancelGetProgressThumbnails is implemented at the OfficialPlugin level
+  // cancelGetProgressThumbnails is implemented at the BundledPlugin level
 
   @override
   Future<Uri?> getCommentUriFromID(String commentID, String videoID) {

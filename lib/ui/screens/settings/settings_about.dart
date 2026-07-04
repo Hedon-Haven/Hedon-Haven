@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '/services/official_plugins_tracker.dart';
 import '/services/plugin_manager.dart';
 import '/services/update_manager.dart';
 import '/ui/screens/bug_report.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/utils/update_dialog.dart';
+import '/utils/bundled_plugin.dart';
 import '/utils/global_vars.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -70,8 +70,8 @@ class _AboutScreenState extends State<AboutScreen> {
                                 if (devSettingsEnabled) {
                                   // disable tester plugin if leaving debug mode
                                   PluginManager.disablePlugin(
-                                      (await getOfficialPluginByName(
-                                          "tester-official"))!);
+                                      (await getBundledPluginByName(
+                                          "com.hedon_haven.tester_internal"))!);
                                 }
 
                                 devSettingsEnabled = !devSettingsEnabled;

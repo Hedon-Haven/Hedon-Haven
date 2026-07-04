@@ -13,8 +13,8 @@ import '/utils/plugin_interface/isolate_js_runtime.dart';
 import '/utils/universal_formats.dart';
 
 class PluginInterface {
-  /// This is overridden to true in official plugins
-  final bool isOfficialPlugin = false;
+  /// This is overridden to true in bundled plugins
+  final bool isBundledPlugin = false;
 
   /// Whether the plugin has already been initialized
   bool isInitialized = false;
@@ -22,7 +22,7 @@ class PluginInterface {
   /// codeName must be a unique identifier for the plugin, to avoid conflicts.
   /// 3 alphanumeric segments separated by dots, underscores allowed mid-word,
   /// e.g. "com.hedon_haven.tester".
-  /// Cannot conflict with official, internal plugins
+  /// Cannot conflict with bundled plugins
   late String codeName;
 
   /// prettyName must be the official, correctly cased name of the provider. Cannot be empty

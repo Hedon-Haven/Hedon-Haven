@@ -6,9 +6,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hedon_haven/services/http_manager.dart';
-import 'package:hedon_haven/services/official_plugins_tracker.dart';
+import 'package:hedon_haven/utils/bundled_plugin.dart';
 import 'package:hedon_haven/utils/global_vars.dart';
-import 'package:hedon_haven/utils/official_plugin.dart';
+import 'package:hedon_haven/utils/bundled_plugin.dart';
 import 'package:hedon_haven/utils/plugin_interface/plugin_interface.dart';
 import 'package:hedon_haven/utils/universal_formats.dart';
 import 'package:logger/logger.dart';
@@ -47,20 +47,20 @@ void main() async {
     return;
   }
 
-  PluginInterface? plugin = await getOfficialPluginByName(pluginFromEnv);
+  PluginInterface? plugin = await getBundledPluginByName(pluginFromEnv);
   if (plugin == null) {
     logger.f("Plugin with name $pluginFromEnv not found");
     return;
   }
 
-  OfficialPlugin pluginAsOfficial =
-      (await getOfficialPluginByNameAsOfficialPlugin(plugin.codeName))!;
+  BundledPlugin pluginAsBundled =
+      (await getBundledPluginByNameAsBundledPlugin(plugin.codeName))!;
   Map<String, dynamic> scrapedErrorsMap =
-      pluginAsOfficial.testingMap["ignoreScrapedErrors"];
+      pluginAsBundled.testingMap["ignoreScrapedErrors"];
   List<Map<String, dynamic>> videosMap =
-      pluginAsOfficial.testingMap["testingVideos"];
+      pluginAsBundled.testingMap["testingVideos"];
   List<String> authorPageIds =
-      pluginAsOfficial.testingMap["testingAuthorPageIds"];
+      pluginAsBundled.testingMap["testingAuthorPageIds"];
 
   // Create dump dirs
   Directory dumpDir = Directory("${Directory.current.path}/dumps");

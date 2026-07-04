@@ -1,4 +1,4 @@
-name: Test official plugins
+name: Test bundled plugins
 on:
   workflow_dispatch:
   schedule:
@@ -22,14 +22,14 @@ jobs:
           dart --disable-analytics
           flutter config --disable-analytics
 
-      - name: Get all official plugins
+      - name: Get all bundled plugins
         id: generate-matrix
         run: |
           # generate mocks
           flutter pub get
           flutter pub run build_runner build
           # Run the flutter-test script
-          ALL_PLUGINS=$(flutter test --no-pub --reporter silent test/utils/print_all_official_plugins.dart)
+          ALL_PLUGINS=$(flutter test --no-pub --reporter silent test/utils/print_all_bundled_plugins.dart)
           echo "All plugins: $ALL_PLUGINS"
           echo "matrix=$ALL_PLUGINS" >> "$GITHUB_OUTPUT"
 
@@ -97,7 +97,7 @@ jobs:
           # add native libs to LD_LIBRARY_PATH
           export LD_LIBRARY_PATH="$(pwd)/build/linux/x64/release/bundle/lib:$(pwd)/build/linux/x64/release/plugins/flutter_js/bundle/lib:${LD_LIBRARY_PATH}"
           
-          PLUGIN=${{ matrix.plugin }} flutter test --no-pub test/official_plugins_test.dart
+          PLUGIN=${{ matrix.plugin }} flutter test --no-pub test/bundled_plugins_test.dart
 
       # Disconnect before uploading dumps
       - name: Disconnect from openVPN
