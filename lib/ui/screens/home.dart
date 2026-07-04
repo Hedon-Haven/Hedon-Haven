@@ -30,9 +30,13 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
   bool noPluginsEnabled = false;
 
+  late Future<({String severity, String title, String message})?> banner;
+
   @override
   void initState() {
     super.initState();
+
+    banner = getBanner(context);
 
     // Listen for changes to appearance_homepage_enabled setting
     reloadVideoListEvent.stream.listen((_) {
@@ -206,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget buildBanner() {
     return FutureBuilder<({String title, String message})>(
-        future: getBanner(),
+        future: banner,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SliverToBoxAdapter();
