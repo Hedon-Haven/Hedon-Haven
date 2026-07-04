@@ -16,9 +16,6 @@ class PluginInterface {
   /// This is overridden to true in bundled plugins
   final bool isBundledPlugin = false;
 
-  /// Whether the plugin has already been initialized
-  bool isInitialized = false;
-
   /// codeName must be a unique identifier for the plugin, to avoid conflicts.
   /// 3 alphanumeric segments separated by dots, underscores allowed mid-word,
   /// e.g. "com.hedon_haven.tester".
@@ -68,6 +65,9 @@ class PluginInterface {
   late int initialAuthorVideosPage;
 
   // Internal variables
+
+  bool _pluginIsInitialized = false;
+
   /// The path to the root of the plugin
   final String _pluginPath;
 
@@ -192,10 +192,10 @@ class PluginInterface {
   /// CAREFUL, this function doesn't handle errors!
   Future<void> init(String cachePath,
       [void Function(String body)? debugCallback]) async {
-    if (isInitialized) {
+    if (_pluginIsInitialized) {
       return;
     }
-    isInitialized = true;
+    _pluginIsInitialized = true;
 
     if (!codeNameIsValid(codeName)) {
       throw Exception("Invalid plugin codeName: $codeName");
@@ -235,7 +235,7 @@ class PluginInterface {
   }
 
   void dispose() {
-    if (!isInitialized) {
+    if (!_pluginIsInitialized) {
       return;
     }
     logger.d("Disposing $codeName plugin's isolate");
@@ -263,7 +263,7 @@ class PluginInterface {
     // This is technically set before the isolate force-kill happens, but users
     // might toggle the plugin quicker -> rather have 2 instances for a few
     // seconds than failing to initialize
-    isInitialized = false;
+    _pluginIsInitialized = false;
     _isolateReady = Completer();
   }
 

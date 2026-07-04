@@ -15,8 +15,6 @@ class TesterPlugin extends BundledPlugin implements PluginInterface {
   @override
   bool isBundledPlugin = true;
   @override
-  bool isInitialized = false;
-  @override
   String codeName = "com.hedon_haven.tester_internal";
   @override
   String prettyName = "Tester plugin";
@@ -49,6 +47,8 @@ class TesterPlugin extends BundledPlugin implements PluginInterface {
   @override
   int initialAuthorVideosPage = 0;
 
+  bool _pluginIsInitialized = false;
+
   // The following fields are inherited from PluginInterface, but not needed due to this class not actually being an interface
   @override
   Uri? updateUrl;
@@ -63,10 +63,10 @@ class TesterPlugin extends BundledPlugin implements PluginInterface {
   @override
   Future<void> init(String cachePath,
       [void Function(String body)? debugCallback]) async {
-    if (isInitialized) {
+    if (_pluginIsInitialized) {
       return;
     }
-    isInitialized = true;
+    _pluginIsInitialized = true;
   }
 
   @override

@@ -9,9 +9,9 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart';
 
 import '/services/external_link_manager.dart';
+import '/utils/bundled_plugin.dart';
 import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
-import '/utils/bundled_plugin.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
 import '/utils/universal_formats.dart';
@@ -19,8 +19,6 @@ import '/utils/universal_formats.dart';
 class XHamsterPlugin extends BundledPlugin implements PluginInterface {
   @override
   final bool isBundledPlugin = true;
-  @override
-  bool isInitialized = false;
   @override
   String codeName = "com.hedon_haven.xhamster";
   @override
@@ -53,6 +51,8 @@ class XHamsterPlugin extends BundledPlugin implements PluginInterface {
   int initialVideoSuggestionsPage = 1;
   @override
   int initialAuthorVideosPage = 1;
+
+  bool _pluginIsInitialized = false;
 
   // The following fields are inherited from PluginInterface, but not needed due to this class not actually being an interface
   @override
@@ -229,10 +229,10 @@ class XHamsterPlugin extends BundledPlugin implements PluginInterface {
   @override
   Future<void> init(String cachePath,
       [void Function(String body)? debugCallback]) async {
-    if (isInitialized) {
+    if (_pluginIsInitialized) {
       return;
     }
-    isInitialized = true;
+    _pluginIsInitialized = true;
     // Request main page to check for age gate / banned country
     http.Response response =
         await client.get(Uri.parse("https://xhamster.com"));

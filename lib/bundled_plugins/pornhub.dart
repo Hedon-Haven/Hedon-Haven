@@ -11,9 +11,9 @@ import 'package:http/http.dart';
 import 'package:image/image.dart';
 
 import '/services/external_link_manager.dart';
+import '/utils/bundled_plugin.dart';
 import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
-import '/utils/bundled_plugin.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
 import '/utils/universal_formats.dart';
@@ -21,8 +21,6 @@ import '/utils/universal_formats.dart';
 class PornhubPlugin extends BundledPlugin implements PluginInterface {
   @override
   final bool isBundledPlugin = true;
-  @override
-  bool isInitialized = false;
   @override
   String codeName = "com.hedon_haven.pornhub";
   @override
@@ -61,6 +59,8 @@ class PornhubPlugin extends BundledPlugin implements PluginInterface {
   int initialVideoSuggestionsPage = 1;
   @override
   int initialAuthorVideosPage = 1;
+
+  bool _pluginIsInitialized = false;
 
   // The following fields are inherited from PluginInterface, but not needed due to this class not actually being an interface
   @override
@@ -419,10 +419,10 @@ class PornhubPlugin extends BundledPlugin implements PluginInterface {
   @override
   Future<void> init(String cachePath,
       [void Function(String body)? debugCallback]) async {
-    if (isInitialized) {
+    if (_pluginIsInitialized) {
       return;
     }
-    isInitialized = true;
+    _pluginIsInitialized = true;
     logger.i("Initializing $codeName plugin");
     // To be able to make search suggestion requests later, both a session cookie and a token are needed
     // Get the sessions cookie (called ss) from the response headers
