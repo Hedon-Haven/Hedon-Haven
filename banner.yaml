@@ -1,12 +1,13 @@
-# Contains information needed to display the banner inside the app
+# Contains information needed to display the banner inside the app. Accessed via banner.hedon-haven.top
 severity: "normal"  # can be "normal" or "important"
 title: "Disclaimer"
 message: >
   The app is still under heavy development. Bugs, errors and crashes might occur.
 
-# Overrides for specific versions only
+# Overrides for specific versions
 overrides:
-  "0.6.6":
+  # technically this one doesn't work since banners were added in v0.6.6
+  "0.6.5":
     severity: "normal"
     title: "New Banner feature"
     message: >
