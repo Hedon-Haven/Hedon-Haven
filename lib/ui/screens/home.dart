@@ -219,10 +219,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget buildBanner() {
-    return FutureBuilder<({String title, String message})>(
+    return FutureBuilder<({String severity, String title, String message})?>(
         future: banner,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting ||
+              snapshot.data == null) {
             return const SliverToBoxAdapter();
           }
           return FloatingDynamicSliverHeader(
@@ -232,7 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   margin: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: snapshot.data!.severity == "important"
+                        ? Theme.of(context).colorScheme.errorContainer
+                        : Theme.of(context).colorScheme.surfaceVariant,
                   ),
                   child: Padding(
                       padding: const EdgeInsets.all(5),
