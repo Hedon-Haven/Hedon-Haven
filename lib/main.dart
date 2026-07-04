@@ -39,7 +39,7 @@ void main() async {
     },
   );
   await initGlobalVars();
-  logger.i("Initializing app");
+  logger.i("Initializing app v${packageInfo.version}");
   await setDefaultSettings();
   await initDb();
   await PluginManager.init();
