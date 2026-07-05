@@ -187,6 +187,11 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
         }
       });
     }
+
+    // sync initial tab with navigator observer
+    navigatorPathObserver.routeStack
+      ..clear()
+      ..add(["home", "library", "settings"][_selectedIndex]);
   }
 
   @override
@@ -352,6 +357,7 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
                 ),
                 themeMode: snapshot.data ?? ThemeMode.system,
                 navigatorKey: materialAppKey,
+                navigatorObservers: [navigatorPathObserver],
                 home: DropRegion(
                   // Formats this region can accept.
                   formats: [Formats.uri],
@@ -454,6 +460,10 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
             onDestinationSelected: (index) {
               setState(() {
                 _selectedIndex = index;
+                // Update navigator path observer root
+                navigatorPathObserver.routeStack
+                  ..clear()
+                  ..add(["home", "library", "settings"][index]);
               });
             }),
         body: ClipRect(

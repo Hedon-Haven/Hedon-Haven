@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '/services/http_manager.dart';
+import '/ui/utils/navigator_path_observer.dart';
 import 'custom_logger.dart';
 
 // Make these late-initialized to allow mocking them in tests
@@ -42,6 +43,8 @@ bool hidePreview = true;
 // Make this bool a global var, -> user only sees the warning once per session
 bool thirdPartyPluginWarningShown = false;
 
+late NavigatorPathObserver navigatorPathObserver;
+
 // Each initialization is a separate function to allow mocking only some parts
 // of the app
 Future<void> initGlobalVars() async {
@@ -50,6 +53,7 @@ Future<void> initGlobalVars() async {
   await initPackageInfo();
   await initHttpClient();
   await initEvents();
+  await initNavigatorPathObserver();
 }
 
 // This function is not called by the main initGlobalVars as it has to be set
@@ -84,4 +88,8 @@ Future<void> initEvents() async {
   logger.i("Initializing stream controllers");
   reloadVideoListEvent = StreamController<void>.broadcast();
   pluginUpdatesAvailableEvent = StreamController<int>.broadcast();
+}
+
+Future<void> initNavigatorPathObserver() async {
+  navigatorPathObserver = NavigatorPathObserver();
 }
