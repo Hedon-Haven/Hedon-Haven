@@ -9,13 +9,13 @@ class NavigatorPathObserver extends NavigatorObserver {
   String get currentPath {
     // Remove empty strings
     routeStack.removeWhere((element) => element.isEmpty);
-    logger.f("Current path: $routeStack");
+    logger.i("Current path: $routeStack");
     return "/${routeStack.join("/")}";
   }
 
   @override
   void didPush(Route route, Route? previousRoute) {
-    logger.f("Pushed route: ${route.settings.name}");
+    logger.i("Pushed route: ${route.settings.name}");
     routeStack.add(route.settings.name?.isNotEmpty == true
         ? route.settings.name!.replaceAll("/", "")
         : "unknown");
@@ -23,7 +23,7 @@ class NavigatorPathObserver extends NavigatorObserver {
 
   @override
   void didPop(Route route, Route? previousRoute) {
-    logger.f("Popped route: ${route.settings.name}");
+    logger.i("Popped route: ${route.settings.name}");
     routeStack.remove(route.settings.name?.isNotEmpty == true
         ? route.settings.name!.replaceAll("/", "")
         : "unknown");
@@ -31,7 +31,7 @@ class NavigatorPathObserver extends NavigatorObserver {
 
   @override
   void didRemove(Route route, Route? previousRoute) {
-    logger.f("Removed route: ${route.settings.name}");
+    logger.i("Removed route: ${route.settings.name}");
     routeStack.remove(route.settings.name?.isNotEmpty == true
         ? route.settings.name!.replaceAll("/", "")
         : "unknown");
@@ -39,7 +39,7 @@ class NavigatorPathObserver extends NavigatorObserver {
 
   @override
   void didReplace({Route? newRoute, Route? oldRoute}) {
-    logger.f(
+    logger.i(
         "Replaced route: ${oldRoute?.settings.name} with ${newRoute?.settings.name}");
     routeStack.remove(oldRoute?.settings.name?.isNotEmpty == true
         ? oldRoute!.settings.name!.replaceAll("/", "")
