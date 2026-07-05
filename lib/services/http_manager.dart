@@ -1,8 +1,9 @@
 import 'dart:math';
 
-import 'package:hedon_haven/utils/global_vars.dart';
 import 'package:http/http.dart' as http;
 import 'package:rhttp/rhttp.dart';
+
+import '/utils/global_vars.dart';
 
 final _rand = Random();
 

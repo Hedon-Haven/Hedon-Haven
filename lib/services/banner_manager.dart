@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hedon_haven/ui/utils/toast_notification.dart';
 import 'package:yaml/yaml.dart';
 
+import '/ui/utils/toast_notification.dart';
 import '/utils/global_vars.dart';
 
 Future<({String severity, String title, String message})?> getBanner(
