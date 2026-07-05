@@ -610,6 +610,7 @@ class PluginManager {
     );
   }
 
+  // FIXME: Rename to getPluginByCodeName
   static Future<PluginInterface?> getPluginByName(String? name) async {
     if (name == null) {
       return null;
