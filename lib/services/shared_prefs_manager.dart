@@ -5,7 +5,7 @@ import '/services/database_manager.dart';
 import '/services/shared_prefs_manager_upgrades.dart';
 import '/utils/global_vars.dart';
 
-Future<void> setDefaultSettings([forceReset = false]) async {
+Future<void> setDefaultSettings([bool forceReset = false]) async {
   String? settingsVersion =
       await sharedStorage.getString("general_settings_version");
   if (settingsVersion != null && !forceReset) {
