@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '/services/analytics_manager.dart';
 import '/services/database_manager.dart';
 import '/services/icon_manager.dart';
 import '/services/plugin_manager.dart';
@@ -238,7 +239,18 @@ class DeveloperScreen extends StatelessWidget {
                             }
                             downloadCustomUpdate(context);
                           },
-                        )
+                        ),
+                        ListTile(
+                            leading: const Icon(Icons.network_ping),
+                            title: const Text("Send usage ping"),
+                            onTap: () async {
+                              try {
+                                await sendUsagePing();
+                                showToast("Usage ping sent if opted-in", context);
+                              } catch (e) {
+                                showToast(e.toString(), context);
+                              }
+                            }),
                       ],
                     )))));
   }

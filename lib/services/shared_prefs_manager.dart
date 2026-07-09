@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -75,6 +77,7 @@ Future<void> setDefaultSettings([bool forceReset = false]) async {
   await _setCommentsSettings();
   await _setHistorySettings();
   await _setPrivacySettings();
+  await _setAnalyticsSettings();
   await setDefaultFilterSettings();
 }
 
@@ -132,6 +135,17 @@ Future<void> _setPrivacySettings() async {
   await sharedStorage.setBool("privacy_hide_app_preview", true);
   await sharedStorage.setBool("privacy_keyboard_incognito_mode", true);
   await sharedStorage.setBool("privacy_show_external_link_warning", true);
+}
+
+Future<void> _setAnalyticsSettings() async {
+  /// Generate a unique 128-bit entropy salt for privacy-preserving analytics
+  /// This salt is never sent directly to analytics!
+  final salt =
+      List.generate(32, (_) => Random.secure().nextInt(16).toRadixString(16))
+          .join();
+  await sharedStorage.setString("analytics_salt", salt);
+  await sharedStorage.setBool("analytics_enable_usage_ping", false);
+  await sharedStorage.setBool("analytics_enable_automatic_bug_reports", false);
 }
 
 Future<void> setDefaultFilterSettings() async {

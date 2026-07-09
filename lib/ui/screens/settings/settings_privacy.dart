@@ -93,10 +93,81 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) => const ProxyScreen()));
-                        })
+                        }),
+                    ...buildAnalyticsOptions()
                   ],
                 ))));
   }
+}
+
+List<Widget> buildAnalyticsOptions({bool reduceBorders = false}) {
+  return [
+    FutureBuilder<bool?>(
+        future: sharedStorage.getBool("analytics_enable_usage_ping"),
+        builder: (context, snapshot) {
+          String description = "Sends a small anonymous ping "
+              "on app startup with app details "
+              "(version, build, install source) "
+              "and OS details "
+              "(type, version, architecture). "
+              "Used to estimate user counts and platform "
+              "distribution. "
+              "\nRead more: https://docs.hedon-haven.top/analytics.md";
+          return OptionsSwitch(
+              title: "Enable usage pings",
+              subTitle: "Sends an anonymous ping on startup",
+              maxSubTitleLines: 2,
+              trailingWidget: IconButton(
+                icon: const Icon(Icons.info_outline),
+                onPressed: () => showDialog(
+                    context: context,
+                    builder: (BuildContext context) => ThemedDialog(
+                          title: "Anonymous Pings",
+                          primaryText: "Ok",
+                          onPrimary: () => Navigator.pop(context),
+                          content: SelectableText(description,
+                              style: Theme.of(context).textTheme.bodyLarge),
+                        )),
+              ),
+              switchState: snapshot.data ?? false,
+              reduceBorders: reduceBorders,
+              onToggled: (value) =>
+                  sharedStorage.setBool("analytics_enable_usage_ping", value));
+        }),
+    FutureBuilder<bool?>(
+        future: sharedStorage.getBool("analytics_enable_automatic_bug_reports"),
+        builder: (context, snapshot) {
+          String description = "Automatically submit anonymous"
+              " bug reports whenever they are created. These "
+              "contain app details (version, build, "
+              "install source), OS details "
+              "(type, version, architecture) and error message,"
+              " code trace, screen path, plugin name and "
+              "debug info. \nBug reports will not be "
+              "automatically submitted for third party plugins. "
+              "\nRead more: https://docs.hedon-haven.top/analytics.md";
+          return OptionsSwitch(
+              title: "Enable automatic bug reports",
+              subTitle: "Automatically submit anonymous bug reports",
+              maxSubTitleLines: 2,
+              trailingWidget: IconButton(
+                icon: const Icon(Icons.info_outline),
+                onPressed: () => showDialog(
+                    context: context,
+                    builder: (BuildContext context) => ThemedDialog(
+                          title: "Anonymous Pings",
+                          primaryText: "Ok",
+                          onPrimary: () => Navigator.pop(context),
+                          content: SelectableText(description,
+                              style: Theme.of(context).textTheme.bodyLarge),
+                        )),
+              ),
+              switchState: snapshot.data ?? false,
+              reduceBorders: reduceBorders,
+              onToggled: (value) => sharedStorage.setBool(
+                  "analytics_enable_automatic_bug_reports", value));
+        })
+  ];
 }
 
 class ProxyScreen extends StatefulWidget {

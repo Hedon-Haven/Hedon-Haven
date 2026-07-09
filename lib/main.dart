@@ -11,6 +11,7 @@ import 'package:secure_app_switcher/secure_app_switcher.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '/services/analytics_manager.dart';
 import '/services/database_manager.dart';
 import '/services/external_link_manager.dart';
 import '/services/icon_manager.dart';
@@ -41,6 +42,7 @@ void main() async {
   await initGlobalVars();
   logger.i("Initializing app v${packageInfo.version}");
   await setDefaultSettings();
+  sendUsagePing();
   await initDb();
   await PluginManager.init();
   // Icons are not critical to startup -> don't await
