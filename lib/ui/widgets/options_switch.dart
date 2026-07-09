@@ -6,6 +6,7 @@ import '/ui/utils/toast_notification.dart';
 class OptionsSwitch extends StatefulWidget {
   final String title;
   late String? subTitle;
+  late int? maxSubTitleLines;
   late bool switchState;
   late bool reduceBorders;
   late bool reduceHorizontalBordersOnly;
@@ -29,7 +30,8 @@ class OptionsSwitch extends StatefulWidget {
       // can be just null
       this.leadingWidget,
       this.trailingWidget,
-      this.subTitle})
+      this.subTitle,
+      this.maxSubTitleLines})
       : reduceBorders = reduceBorders ?? false,
         reduceHorizontalBordersOnly = reduceHorizontalBordersOnly ?? false,
         nonInteractive = nonInteractive ?? false,
@@ -70,7 +72,8 @@ class _OptionsSwitchWidgetState extends State<OptionsSwitch> {
                     title: Text(widget.title),
                     subtitle: widget.subTitle != null
                         ? Text(widget.subTitle!,
-                            maxLines: 1, overflow: TextOverflow.ellipsis)
+                            maxLines: widget.maxSubTitleLines ?? 1,
+                            overflow: TextOverflow.ellipsis)
                         : null,
                     visualDensity: widget.reduceBorders
                         ? const VisualDensity(horizontal: 0, vertical: -4)
