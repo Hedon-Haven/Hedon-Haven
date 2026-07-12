@@ -43,6 +43,13 @@ An adult content aggregator app.
     - To test just one plugin, set the `PLUGIN` environment variable:
       `PLUGIN=com.hedon_haven.tester_internal flutter test`
 
+## Generate icons
+
+1. Edit `flutter_launcher_icons.yaml` and uncomment the section you want to generate icons for
+2. Generate icons: `flutter pub run flutter_launcher_icons`
+3. Fix file names: `./assets/launcher-icon/rename-generated-icons.sh stock` (or `fake_settings` or
+   `reminders`)
+
 ## Credit
 
 * Search bar design inspired by [InnerTune](https://github.com/z-huang/InnerTune)

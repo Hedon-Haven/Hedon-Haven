@@ -6,20 +6,20 @@ flutter_launcher_icons:
   adaptive_icon_background: "#FFFFFF"
 
   # Only run each android "section" one at a time
-#  android: "stock"
-#  image_path_android: "assets/launcher-icon/android/stock.png"
-#  adaptive_icon_foreground: "assets/launcher-icon/android/stock.png"
-#  adaptive_icon_monochrome: "assets/launcher-icon/android/monochrome/stock.png"
+  android: "stock"
+  image_path_android: "assets/launcher-icon/android/stock.png"
+  adaptive_icon_foreground: "assets/launcher-icon/android/stock.png"
+  adaptive_icon_monochrome: "assets/launcher-icon/android/monochrome/stock.png"
 
 #  android: "fake_settings"
 #  image_path_android: "assets/launcher-icon/android/fake_settings.png"
 #  adaptive_icon_foreground: "assets/launcher-icon/android/fake_settings.png"
 #  adaptive_icon_monochrome: "assets/launcher-icon/android/monochrome/fake_settings.png"
 
-  android: "reminders"
-  image_path_android: "assets/launcher-icon/android/reminders.png"
-  adaptive_icon_foreground: "assets/launcher-icon/android/reminders.png"
-  adaptive_icon_monochrome: "assets/launcher-icon/android/monochrome/reminders.png"
+#  android: "reminders"
+#  image_path_android: "assets/launcher-icon/android/reminders.png"
+#  adaptive_icon_foreground: "assets/launcher-icon/android/reminders.png"
+#  adaptive_icon_monochrome: "assets/launcher-icon/android/monochrome/reminders.png"
 
   ios: true
   remove_alpha_ios: true
