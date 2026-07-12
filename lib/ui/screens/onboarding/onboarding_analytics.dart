@@ -57,7 +57,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               "help improve this app? All data is fully "
                               "anonymized before being sent, making it "
                               "impossible to identify any single user.",
-                              style: Theme.of(context).textTheme.bodyLarge)),
+                              style: Theme.of(context).textTheme.bodyMedium)),
                       Container(
                           width: double.infinity,
                           padding: EdgeInsets.all(8),
@@ -68,7 +68,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           child: SelectableText(
                               "These settings can be adjusted anytime in "
                               "Settings > Privacy.",
-                              style: Theme.of(context).textTheme.bodyLarge)),
+                              style: Theme.of(context).textTheme.bodyMedium)),
                       Container(
                           width: double.infinity,
                           padding: EdgeInsets.all(8),
@@ -78,7 +78,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                           child: SelectableText(
                               "Read more: https://docs.hedon-haven.top/analytics.md",
-                              style: Theme.of(context).textTheme.bodyLarge)),
+                              style: Theme.of(context).textTheme.bodyMedium)),
                       ...buildAnalyticsOptions(),
                       Spacer(),
                       Row(children: [

@@ -34,7 +34,7 @@ class DisclaimersScreen extends StatelessWidget {
                               "any warranties, express or implied. The developer "
                               "assumes no responsibility for any issues, damages, "
                               "or losses resulting from its use.",
-                              style: Theme.of(context).textTheme.bodyLarge)),
+                              style: Theme.of(context).textTheme.bodyMedium)),
                       // this is padding around the entire widget
                       Padding(
                           padding: const EdgeInsets.only(top: 20),
@@ -54,7 +54,7 @@ class DisclaimersScreen extends StatelessWidget {
                                   "accessed through built-in plugins or user-installed"
                                   " ones.",
                                   style:
-                                      Theme.of(context).textTheme.bodyLarge))),
+                                      Theme.of(context).textTheme.bodyMedium))),
                       // this is padding around the entire widget
                       Padding(
                           padding: const EdgeInsets.only(top: 20),
@@ -79,7 +79,7 @@ class DisclaimersScreen extends StatelessWidget {
                                   "jurisdiction. It is the user's responsibility to "
                                   "ensure compliance with the relevant laws and TOS.",
                                   style:
-                                      Theme.of(context).textTheme.bodyLarge))),
+                                      Theme.of(context).textTheme.bodyMedium))),
                       Spacer(),
                       Row(children: [
                         Align(
