@@ -82,7 +82,7 @@ class BetterSimplePrinter extends LogPrinter {
     logger.i("Log file initialized at ${logFile!.path}");
     // Warn about logging being disabled
     if (!kDebugMode &&
-        !(await sharedStorage.getBool("general_enable_logging"))!) {
+        !(await sharedStorage.getBool("general_enable_logging") ?? false)) {
       logFile!.writeAsStringSync(
           "Logging is currently disabled. Logs can be enabled via the developer settings.",
           mode: FileMode.append,
