@@ -17,8 +17,9 @@ class WelcomeScreen extends StatelessWidget {
                       child: FractionallySizedBox(
                           widthFactor: 0.5,
                           heightFactor: 0.5,
-                          child:
-                              Image.asset("assets/launcher-icon/stock.png"))),
+                          child: Image.asset(kDebugMode
+                              ? "assets/launcher-icon/stock_debug.png"
+                              : "assets/launcher-icon/stock.png"))),
                   Padding(
                       padding: const EdgeInsets.only(top: 50),
                       child: Text("Welcome to Hedon Haven",
