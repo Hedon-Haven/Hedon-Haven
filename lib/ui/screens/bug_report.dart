@@ -1,323 +1,465 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:system_info2/system_info2.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '/services/analytics_manager.dart' as analytics;
 import '/services/bug_report_manager.dart';
+import '/services/plugin_manager.dart';
+import '/ui/screens/scraping_report.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
-import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 
 class BugReportScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> debugObject;
-
-  /// The plugin that is being reported
-  final PluginInterface? plugin;
-
-  /// Message to include before debugObject Map
-  final String? message;
-
-  /// Can be one of the following: "Graphical glitch", "Performance issue",
-  /// "Plugin issue", "Functional issue", "UI/UX suggestion", "Other"
-  final String? issueType;
+  final List<BugReport> bugReportsList;
+  final SubmissionType submissionType;
 
   const BugReportScreen(
-      {super.key,
-      required this.debugObject,
-      required this.plugin,
-      this.message,
-      this.issueType});
+      {super.key, required this.bugReportsList, required this.submissionType});
 
   @override
   State<BugReportScreen> createState() => _BugReportScreenState();
 }
 
 class _BugReportScreenState extends State<BugReportScreen> {
-  String submissionType = "";
-  String issueType = "";
-  TextEditingController generatedController = TextEditingController();
+  TextEditingController appInfoController = TextEditingController();
   TextEditingController userInputController = TextEditingController();
-  bool canPopYes = false;
-  bool emptyDebugObject = true;
+  bool allowPop = false;
+  late List<BugReport> bugReportsList;
 
-  List<String> submissionTypes = [
-    "Anonymous report",
-    "Private email report",
-    "Public github report"
-  ];
-
-  List<String> submissionTypesSubtitles = [
-    "Send and forget. Report will be fully anonymous. Least useful option for the developers.",
-    "Use email to send a report. Developers might contact you if needed. Only use this option if you are able to respond to emails, otherwise use 'Anonymous report'. Your report may get anonymized and converted into a GitHub issue.",
-    "Create a public github issue. Most useful option, as not only active maintainers will be able to help."
-  ];
-
-  List<String> issueTypes = [
-    "Graphical glitch",
-    "Performance issue",
-    "Plugin issue",
-    "Functional issue",
-    "UI/UX suggestion",
-    "Other"
-  ];
-
-  List<String> issueTypesSubtitles = [
-    "Purely graphical glitches. E.g. overlapping widgets, too big/small widgets, etc.",
-    "Use this option if you can pin-point the exact cause of a performance issue.",
-    "For issues that are likely related to plugins (aka websites) and not to the application itself.",
-    "For issues that are directly related to the functionality of the app.",
-    "Suggestions for improving the UI/UX of the app. If you have a specific UI ISSUE, use the Graphical glitch option instead.",
-    "For issues that dont fit into any of the above categories."
-  ];
-
-  String getAppInfo() {
-    return "App info:\n"
-        "\t\t${packageInfo.packageName}: v${packageInfo.version}\n"
-        "\t\tInstalled from: ${packageInfo.installerStore}\n"
-        "\t\tSignature: ${packageInfo.buildSignature}\n"
-        "\t\tRunning on: ${Platform.operatingSystem}-"
-        "${SysInfo.kernelArchitecture.toString().toLowerCase()}"
-        " (${Platform.operatingSystemVersion})\n";
-  }
+  late ({
+    List<BugReport>? appReports,
+    Map<String, List<BugReport>>? bundledPluginGroups,
+    Map<String, List<BugReport>>? thirdPartyPluginGroups
+  }) groupedBugReports;
 
   @override
   initState() {
     super.initState();
-    // FIXME: Remove once new bug reporting system is in place
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showToast("Bug reporting system is being reworked", context);
-      Navigator.of(context).pop();
-    });
-    emptyDebugObject = widget.debugObject.isEmpty;
-    if (widget.issueType != null) {
-      issueType = widget.issueType!;
-      generateReport();
+    bugReportsList = widget.bugReportsList;
+    groupedBugReports = groupBugReports(bugReportsList);
+    if (bugReportsList.isEmpty) {
+      showEmptyWarning();
+    }
+    appInfoController.text = getAppAndDeviceInfo()
+        .entries
+        .map((e) => "${e.key}: ${e.value}")
+        .join("\n")
+        .trim();
+  }
+
+  void showEmptyWarning() {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => ThemedDialog(
+            title: "Create empty bug report?",
+            primaryText: "Continue",
+            onPrimary: () => Navigator.of(context).pop(),
+            secondaryText: "Cancel report",
+            onSecondary: () {
+              // Close dialog
+              Navigator.of(context).pop();
+              // Go back a screen
+              Navigator.of(context).pop([]);
+            },
+            content: const Text(
+                "Long tap anything in the app to create a specific bug report.\n\n"
+                "Ignore this message if you want to create a suggestion.")));
+  }
+
+  void handlePop(bool goingToPop) {
+    if (!goingToPop) {
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return ThemedDialog(
+              title: "Cancel bug report?",
+              primaryText: "Stay",
+              onPrimary: () => Navigator.of(context).pop(),
+              secondaryText: "Cancel bug report",
+              onSecondary: () {
+                allowPop = true;
+                // close popup
+                Navigator.of(context).pop;
+                // Go back a screen
+                Navigator.of(context).pop([]);
+              },
+            );
+          });
     }
   }
 
-  void generateReport() {
-    String formattedList =
-        "${widget.message != null ? "Message: ${widget.message}\n" : ""}Debug objects:\n";
-    for (Map<String, dynamic> entry in widget.debugObject) {
-      // Convert all dynamics to strings + format with indent
-      String temp = JsonEncoder.withIndent("  ")
-          .convert(entry.map((key, value) => MapEntry(key, value.toString())));
-      formattedList += "$temp,\n";
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+  }
+
+  String combinedReport({bool includeThirdParty = false}) {
+    return JsonEncoder.withIndent("  ")
+        .convert(combinedReportMap(includeThirdParty: includeThirdParty));
+  }
+
+  Map<String, dynamic> combinedReportMap({bool includeThirdParty = false}) {
+    return {
+      "appInfo": getAppAndDeviceInfo(),
+      "userMessage": userInputController.text,
+      "submissionType": widget.submissionType,
+      "bugReports": {
+        if (groupedBugReports.appReports?.isNotEmpty ?? false)
+          "appReports": groupedBugReports.appReports,
+        if (groupedBugReports.bundledPluginGroups?.isNotEmpty ?? false)
+          "bundledPluginBugReports": groupedBugReports
+              .bundledPluginGroups?.values
+              .expand((e) => e)
+              .toList(),
+        if (includeThirdParty &&
+            (groupedBugReports.thirdPartyPluginGroups?.isNotEmpty ?? false))
+          "thirdPartyPluginBugReports": groupedBugReports
+              .thirdPartyPluginGroups?.values
+              .expand((e) => e)
+              .toList(),
+      }
+    };
+  }
+
+  Future<void> copyCombinedReport() async {
+    await Clipboard.setData(
+        ClipboardData(text: combinedReport(includeThirdParty: true)));
+    showToast("Entire bug report copied to clipboard as JSON", context);
+  }
+
+  void showRawDialog() async {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => ThemedDialog(
+            title: "Bug report in JSON form",
+            primaryText: "Close",
+            onPrimary: () => Navigator.pop(context),
+            secondaryText: "Copy",
+            onSecondary: () => copyCombinedReport(),
+            content: SingleChildScrollView(
+                child: Column(
+                    spacing: 10,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                    padding: const EdgeInsets.all(5.0),
+                    child: SelectableText(
+                        combinedReport(includeThirdParty: true),
+                        style: Theme.of(context).textTheme.bodyMedium),
+                  )
+                ]))));
+  }
+
+  Future<bool> showSubmitOptionsDialog() async {
+    return await showDialog(
+        context: context,
+        builder: (BuildContext context) => ThemedDialog(
+            title: "Submit to Hedon Haven developers",
+            primaryText: "Cancel",
+            onPrimary: () => Navigator.pop(context, false),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              ListTile(
+                title: Text("Submit anonymously"),
+                subtitle: Text("https://eu.posthog.com"),
+                leading: Icon(Icons.person_off),
+                onTap: () async {
+                  bool submitted =
+                      await analytics.submitBugReport(combinedReportMap());
+                  if (context.mounted) Navigator.pop(context, submitted);
+                },
+              ),
+              ListTile(
+                title: Text("Submit via email"),
+                subtitle: Text("contact@hedon-haven.top"),
+                leading: Icon(Icons.email),
+                onTap: () async {
+                  await launchUrl(Uri(
+                      scheme: "mailto",
+                      path: "contact@hedon-haven.top",
+                      query: _encodeQueryParameters(<String, String>{
+                        "subject": "Bug report",
+                        "body": combinedReport()
+                      })));
+                  if (context.mounted) Navigator.pop(context, true);
+                },
+              ),
+              ListTile(
+                title: Text("Create issue in issue tracker"),
+                subtitle: Text("https://issues.hedon-haven.top"),
+                leading: Icon(Icons.bug_report),
+                onTap: () async {
+                  await copyCombinedReport();
+                  await launchUrl(Uri.parse("https://issues.hedon-haven.top"));
+                  if (context.mounted) Navigator.pop(context, true);
+                },
+              )
+            ])));
+  }
+
+  Future<bool> showThirdPartySubmitOptionsDialog(
+      List<BugReport> bugReports) async {
+    // Get Plugin from the first bug report
+    String pluginCodeName =
+        (bugReports.first as PluginBugReport).pluginCodeName;
+    PluginInterface? plugin =
+        await PluginManager.getPluginByName(pluginCodeName);
+    if (plugin == null && mounted) {
+      await showDialog(
+          context: context,
+          builder: (BuildContext context) => ThemedDialog(
+              title: "Plugin not found",
+              primaryText: "Ok",
+              onPrimary: () => Navigator.pop(context, false),
+              content: Text("Could not find third party plugin with"
+                  " codeName: $pluginCodeName. It might not be installed "
+                  "anymore. Cannot submit bug report!")));
+      return false;
     }
-    formattedList = formattedList.substring(0, formattedList.length - 2);
-    generatedController.text = "${getAppInfo()}\n$formattedList".trim();
+    return await showDialog(
+        context: context,
+        builder: (BuildContext context) => ThemedDialog(
+            title: "Submit to third party developers",
+            primaryText: "Cancel",
+            onPrimary: () => Navigator.pop(context, false),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text("Submit ${bugReports.length} "
+                  "${bugReports.length == 1 ? "bug report" : "bug reports"} "
+                  "to the ${plugin!.prettyName} "
+                  "developer ${plugin.developer}:"),
+              const SizedBox(height: 10),
+              ListTile(
+                title: Text("Submit via email"),
+                subtitle: Text(plugin.contactEmail),
+                leading: Icon(Icons.email),
+                onTap: () async {
+                  await launchUrl(Uri(
+                      scheme: "mailto",
+                      path: plugin.contactEmail,
+                      query: _encodeQueryParameters(<String, String>{
+                        "subject": "${plugin.prettyName} Hedon Haven "
+                            "plugin bug report",
+                        "body": JsonEncoder.withIndent("  ").convert(bugReports)
+                      })));
+                  if (context.mounted) Navigator.pop(context, true);
+                },
+              ),
+              ListTile(
+                title: Text("Create issue in third party tracker"),
+                subtitle: Text(plugin.issueTrackerUrl),
+                leading: Icon(Icons.bug_report),
+                onTap: () async {
+                  await copyCombinedReport();
+                  await launchUrl(Uri.parse(plugin.issueTrackerUrl));
+                  if (context.mounted) Navigator.pop(context, true);
+                },
+              )
+            ])));
+  }
+
+  void submitReports() async {
+    List<BugReport> submittedBugReports = [];
+
+    if ((groupedBugReports.appReports?.isNotEmpty ?? false) ||
+        (groupedBugReports.bundledPluginGroups?.isNotEmpty ?? false)) {
+      if (await showSubmitOptionsDialog()) {
+        submittedBugReports.addAll(groupedBugReports.appReports ?? []);
+        submittedBugReports.addAll(groupedBugReports.bundledPluginGroups?.values
+                .expand((x) => x)
+                .toList() ??
+            []);
+      }
+    }
+
+    if (groupedBugReports.thirdPartyPluginGroups?.isNotEmpty ?? false) {
+      for (var reportGroup
+          in groupedBugReports.thirdPartyPluginGroups!.values) {
+        if (await showThirdPartySubmitOptionsDialog(reportGroup)) {
+          submittedBugReports.addAll(reportGroup);
+        }
+      }
+    }
+
+    if (submittedBugReports.isNotEmpty) {
+      Navigator.of(context).pop(submittedBugReports);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    int totalAppReports = groupedBugReports.appReports?.length ?? 0;
+    int totalBundledPluginReports = groupedBugReports
+            .bundledPluginGroups?.values
+            .fold<int>(0, (sum, list) => sum + list.length) ??
+        0;
+    int totalThirdPartyPluginReports = groupedBugReports
+            .thirdPartyPluginGroups?.values
+            .fold<int>(0, (sum, list) => sum + list.length) ??
+        0;
     return PopScope(
-        canPop: canPopYes,
-        onPopInvoked: (goingToPop) {
-          if (!goingToPop) {
-            showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return ThemedDialog(
-                    title: "Cancel bug report?",
-                    primaryText: "Stay",
-                    onPrimary: Navigator.of(context).pop,
-                    secondaryText: "Cancel bug report",
-                    onSecondary: () {
-                      canPopYes = true;
-                      // close popup
-                      Navigator.pop(context);
-                      // Go back a screen
-                      Navigator.of(context).pop(false);
-                    },
-                  );
-                });
-          }
-        },
+        canPop: allowPop,
+        onPopInvokedWithResult: (goingToPop, _) => handlePop(goingToPop),
         child: Scaffold(
             appBar: AppBar(
-              // FIXME: This color changes when scrolling the the TextFields
               backgroundColor: Theme.of(context).colorScheme.surface,
               title: const Text("Bug Report"),
             ),
             body: SafeArea(
                 child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: emptyDebugObject
-                        ? ThemedDialog(
-                            title: "Create empty bug report?",
-                            primaryText: "Continue",
-                            onPrimary: () =>
-                                setState(() => emptyDebugObject = false),
-                            secondaryText: "Go back",
-                            // No need to return a value here, as empty reports
-                            // can only be triggered from the about section in settings
-                            onSecondary: Navigator.of(context).pop,
-                            content: const Text(
-                                "Long tap anything in the app to create a specific bug report.\n\n"
-                                "Ignore this message if you want to create a suggestion."))
-                        : submissionType == ""
-                            ? buildSubmissionTypeDialog()
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: buildMainList())))));
+                    padding: const EdgeInsets.only(
+                        left: 20, right: 20, top: 10, bottom: 40),
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("App info: ",
+                              style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 5),
+                          buildAppInfoField(),
+                          const SizedBox(height: 15),
+                          if (totalAppReports > 0)
+                            ListTile(
+                                title:
+                                    Text("App bug reports ($totalAppReports)"),
+                                trailing: const Icon(Icons.arrow_forward),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 0),
+                                onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            ScrapingReportScreen(
+                                              bugReportsList:
+                                                  groupedBugReports.appReports!,
+                                            )))),
+                          if (totalBundledPluginReports > 0)
+                            ListTile(
+                                title: Text(
+                                    "Bundled plugin bug reports ($totalBundledPluginReports)"),
+                                trailing: const Icon(Icons.arrow_forward),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 0),
+                                onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            ScrapingReportScreen(
+                                              bugReportsList: groupedBugReports
+                                                  .bundledPluginGroups!.values
+                                                  .expand((list) => list)
+                                                  .toList(),
+                                            )))),
+                          if (totalThirdPartyPluginReports > 0)
+                            ListTile(
+                                title: Text(
+                                    "Third party plugin bug reports ($totalThirdPartyPluginReports)"),
+                                trailing: const Icon(Icons.arrow_forward),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 0),
+                                onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            ScrapingReportScreen(
+                                              bugReportsList: groupedBugReports
+                                                  .thirdPartyPluginGroups!
+                                                  .values
+                                                  .expand((list) => list)
+                                                  .toList(),
+                                            )))),
+                          const SizedBox(height: 10),
+                          Text("Additional details: ",
+                              style: Theme.of(context).textTheme.titleMedium),
+                          buildUserMessageField(),
+                          Spacer(),
+                          buildActionButtons()
+                        ])))));
   }
 
-  Widget buildSubmissionTypeDialog() {
-    return ThemedDialog(
-        title: "Select submission type",
-        content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              submissionTypes.length,
-              (index) => ListTile(
-                title: Text(submissionTypes[index]),
-                subtitle: Text(submissionTypesSubtitles[index]),
-                onTap: () {
-                  setState(() {
-                    if (submissionTypes[index] == "Anonymous report") {
-                      showToast("Anonymous reports not yet supported", context);
-                      return;
-                    }
-                    submissionType = submissionTypes[index];
-                  });
-                },
-              ),
-            )));
-  }
-
-  Widget buildIssueTypeDialog() {
-    return ThemedDialog(
-        title: "Select problem type",
-        content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              issueTypes.length,
-              (index) => ListTile(
-                title: Text(issueTypes[index]),
-                subtitle: Text(issueTypesSubtitles[index]),
-                onTap: () {
-                  generateReport();
-                  setState(() {
-                    issueType = issueTypes[index];
-                  });
-                },
-              ),
-            )));
-  }
-
-  List<Widget> buildMainList() {
-    return [
-      ListTile(
-          title: const Text("Submission type"),
-          subtitle: Text(submissionType),
-          onTap: () => setState(() => submissionType = "")),
-      const SizedBox(height: 4),
-      issueType == ""
-          ? buildIssueTypeDialog()
-          : ListTile(
-              title: const Text("Problem type"),
-              subtitle: Text(issueType),
-              onTap: () => setState(() => issueType = "")),
-      const SizedBox(height: 4),
-      if (submissionType != "" && issueType != "") ...[
-        ListTile(
-          title: Text("Auto-generated report: ",
-              style: Theme.of(context).textTheme.titleMedium),
+  Widget buildAppInfoField() {
+    return TextFormField(
+        controller: appInfoController,
+        readOnly: true,
+        maxLines: null,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
         ),
-        Expanded(
-            child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, left: 16, right: 20),
-                child: TextFormField(
-                    controller: generatedController,
-                    readOnly: true,
-                    maxLines: null,
-                    expands: true,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface),
-                    textAlignVertical: TextAlignVertical.top,
-                    decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface), // Set border color
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface), // Set border color
-                      ),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface), // Set border color
-                      ),
-                    )))),
-        ListTile(
-          title: Text("Additional information: ",
-              style: Theme.of(context).textTheme.titleMedium),
-        ),
-        Expanded(
-            child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, left: 16, right: 20),
-                child: TextField(
-                    maxLines: null,
-                    expands: true,
-                    textAlignVertical: TextAlignVertical.top,
-                    keyboardType: TextInputType.multiline,
-                    controller: userInputController,
-                    decoration: InputDecoration(
-                      hintText: "Any other relevant context for the problem: ",
-                      border: const OutlineInputBorder(),
-                      disabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Theme.of(context).colorScheme.primary),
-                      ),
-                    )))),
-        Center(
-            child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 20),
-                    ),
-                    onPressed: () {
-                      // Check if both fields are empty
-                      if (generatedController.text.endsWith("Debug objects") &&
-                          userInputController.text.isEmpty) {
-                        showToast(
-                            "Please describe your issue/suggestion in "
-                            "the \"Additional information\" field",
-                            context);
-                        return;
-                      }
-                      canPopYes = true;
-                      submitReport(
-                              submissionType,
-                              issueType,
-                              generatedController.text,
-                              userInputController.text,
-                              widget.plugin?.contactEmail ??
-                                  "contact@hedon-haven.top")
-                          .whenComplete(() => Navigator.of(context).pop(true))
-                          .onError((error, stackTrace) =>
-                              Navigator.of(context).pop(false));
-                    },
-                    child: Text("Submit report",
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium!
-                            .copyWith(
-                                color:
-                                    Theme.of(context).colorScheme.onPrimary)))))
-      ]
-    ];
+        textAlignVertical: TextAlignVertical.top,
+        decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceVariant,
+            contentPadding: const EdgeInsets.all(5),
+            enabledBorder: OutlineInputBorder(
+                borderSide:
+                    BorderSide(color: Theme.of(context).colorScheme.onSurface)),
+            focusedBorder: OutlineInputBorder(
+                borderSide:
+                    BorderSide(color: Theme.of(context).colorScheme.onSurface)),
+            border: OutlineInputBorder(
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.onSurface))));
+  }
+
+  Widget buildUserMessageField() {
+    return TextField(
+        controller: userInputController,
+        maxLines: null,
+        minLines: 3,
+        textAlignVertical: TextAlignVertical.top,
+        keyboardType: TextInputType.multiline,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surfaceVariant,
+          contentPadding: const EdgeInsets.all(5),
+          hintText: "Any other relevant context for the problem: ",
+          border: const OutlineInputBorder(),
+          disabledBorder: OutlineInputBorder(
+            borderSide:
+                BorderSide(color: Theme.of(context).colorScheme.primary),
+          ),
+        ));
+  }
+
+  Widget buildActionButtons() {
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      IconButton(
+          style: IconButton.styleFrom(
+              backgroundColor:
+                  Theme.of(context).colorScheme.secondaryContainer),
+          icon: Icon(Icons.raw_on,
+              color: Theme.of(context).colorScheme.onSecondaryContainer),
+          onPressed: () => showRawDialog()),
+      ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          ),
+          onPressed: () => submitReports(),
+          child: Text(
+              bugReportsList.length > 1
+                  ? "Submit bug reports"
+                  : "Submit bug report",
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium!
+                  .copyWith(color: Theme.of(context).colorScheme.onPrimary))),
+      IconButton(
+          style: IconButton.styleFrom(
+              backgroundColor:
+                  Theme.of(context).colorScheme.secondaryContainer),
+          icon: Icon(Icons.copy_all,
+              color: Theme.of(context).colorScheme.onSecondaryContainer),
+          onPressed: () => copyCombinedReport())
+    ]);
   }
 }
