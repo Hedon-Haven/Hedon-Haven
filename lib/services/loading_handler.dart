@@ -2,8 +2,10 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:html/dom.dart';
 import 'package:linkify/linkify.dart';
 
+import '/services/bug_report_manager.dart';
 import '/services/database_manager.dart';
 import '/services/plugin_manager.dart';
+import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/universal_formats.dart';
@@ -15,10 +17,15 @@ class LoadingHandler {
   int videoSuggestionsPageCounter = 0;
   int authorVideosPageCounter = 0;
 
-  Map<PluginInterface, Map<String, List<dynamic>>> resultsIssues = {};
-  Map<String, List<dynamic>> commentsIssues = {};
-  Map<String, List<dynamic>> videoSuggestionsIssues = {};
-  Map<String, List<dynamic>> authorVideosIssues = {};
+  List<BugReport> resultsBugReports = [];
+  List<BugReport> commentsBugReports = [];
+  List<BugReport> videoSuggestionsBugReports = [];
+  List<BugReport> authorVideosBugReports = [];
+
+  final String navPath;
+
+  // constructor that takes nav path
+  LoadingHandler({required this.navPath});
 
   Future<List<UniversalVideoPreview>?> getSearchResults(
       UniversalSearchRequest searchRequest,
@@ -94,16 +101,6 @@ class LoadingHandler {
     Map<String, List<UniversalVideoPreview>> pluginResults = {};
     for (var plugin in plugins) {
       // Init resultsIssues if needed
-      if (!resultsIssues.containsKey(plugin)) {
-        resultsIssues[plugin] = {
-          // Critical means issue with entire request
-          "Critical": [],
-          // Error means a uvp failed to scrape completely and cannot be shown to user
-          "Error": [],
-          // Warning means a uvp partially failed scrape but can still be shown to user
-          "Warning": []
-        };
-      }
       if (resultsPageCounter[plugin] != -1) {
         List<UniversalVideoPreview>? results;
         try {
@@ -115,33 +112,17 @@ class LoadingHandler {
             results = await plugin.getSearchResults(
                 searchRequest, resultsPageCounter[plugin]!);
           }
-        } catch (e, stacktrace) {
-          switch (e.runtimeType.toString()) {
-            case "AgeGateException":
-              logger.e("Age gate detected for results from "
-                  "${plugin.codeName}: $e\n$stacktrace");
-              resultsIssues[plugin]!["Critical"]!.add(
-                  "Age gate encountered. Try setting a proxy in settings / privacy");
-            case "BannedCountry":
-              logger.e("Banned country detected for results from "
-                  "${plugin.codeName}: $e\n$stacktrace");
-              resultsIssues[plugin]!["Critical"]!.add(
-                  "Banned country encountered. Try setting a proxy in settings / privacy");
-            case "UnreachableException":
-              logger.e(
-                  "Couldn't connect to ${plugin.serviceUrl} to get search results:"
-                  " $e\n$stacktrace");
-              resultsIssues[plugin]!["Critical"]!.add(
-                  "Couldn't connect to ${plugin.serviceUrl} to get search results");
-            case "NotFoundException":
-              logger.e(
-                  "No results from ${plugin.codeName}. Soft 404, NOT adding to resultsIssuesMap");
-              results = [];
-            default:
-              logger.e("Error getting search results from ${plugin.codeName}:"
-                  " $e\n$stacktrace");
-              resultsIssues[plugin]!["Critical"]!.add("$e\n$stacktrace");
-          }
+        } catch (exception, stacktrace) {
+          logger.e("Error getting search results from ${plugin.codeName}:"
+              " $exception\n$stacktrace");
+          resultsBugReports.add(PluginBugReport(
+              navigatorPath: navPath,
+              errorMessage: exception.toString(),
+              codeTrace: stacktrace.toString(),
+              isCustomException: isCustomException(exception as Exception),
+              pluginCodeName: plugin.codeName,
+              isBundledPlugin: plugin.isBundledPlugin,
+              debugObject: {}));
         }
 
         if (results != null) {
@@ -175,41 +156,23 @@ class LoadingHandler {
           // Check if the plugin has results and if there is a result at the current index
           if (pluginResults.containsKey(plugin.codeName) &&
               pluginResults[plugin.codeName]!.length > currentIndex) {
-            // Don't show to user and add to error list
             if (pluginResults[plugin.codeName]![currentIndex]
-                        .scrapeFailMessage !=
-                    null &&
-                (pluginResults[plugin.codeName]![currentIndex]
-                        .scrapeFailMessage
-                        ?.startsWith("Error") ??
-                    false)) {
-              resultsIssues[plugin]!["Error"]!
-                  .add(pluginResults[plugin.codeName]![currentIndex]);
-            } else {
-              // Add to warning list
-              if (pluginResults[plugin.codeName]![currentIndex]
-                      .scrapeFailMessage !=
-                  null) {
-                resultsIssues[plugin]!["Warning"]!
-                    .add(pluginResults[plugin.codeName]![currentIndex]);
-              }
-              // Show to user
-              combinedResults
-                  .add(pluginResults[plugin.codeName]![currentIndex]);
-              resultsRemaining = true;
+                    .scrapeFailMessage !=
+                null) {
+              resultsBugReports.add(PluginBugReport(
+                  navigatorPath: navPath,
+                  errorMessage: pluginResults[plugin.codeName]![currentIndex]
+                      .scrapeFailMessage!,
+                  pluginCodeName: plugin.codeName,
+                  isBundledPlugin: plugin.isBundledPlugin,
+                  debugObject:
+                      pluginResults[plugin.codeName]![currentIndex].toMap()));
             }
+            combinedResults.add(pluginResults[plugin.codeName]![currentIndex]);
+            resultsRemaining = true;
           }
         }
         currentIndex++;
-      }
-    }
-
-    // remove plugins without issues from the map
-    for (var plugin in plugins) {
-      if (resultsIssues[plugin]!["Critical"]!.isEmpty &&
-          resultsIssues[plugin]!["Error"]!.isEmpty &&
-          resultsIssues[plugin]!["Warning"]!.isEmpty) {
-        resultsIssues.remove(plugin);
       }
     }
 
@@ -322,18 +285,6 @@ class LoadingHandler {
       [List<UniversalComment>? previousResults]) async {
     List<UniversalComment>? combinedResults = [];
 
-    // init commentsIssues if needed
-    if (commentsIssues.isEmpty) {
-      commentsIssues = {
-        // Critical means issue with entire request
-        "Critical": [],
-        // Error means a comment failed to scrape completely and cannot be shown to user
-        "Error": [],
-        // Warning means a comment partially failed scrape but can still be shown to user
-        "Warning": []
-      };
-    }
-
     if (previousResults != null) {
       combinedResults = previousResults;
     }
@@ -361,32 +312,17 @@ class LoadingHandler {
             await plugin.getComments(videoID, rawHtml, commentsPageCounter);
         logger.i(
             "Got ${newResults.length} comments from ${plugin.codeName} for page $commentsPageCounter");
-      } catch (e, stacktrace) {
-        switch (e.runtimeType.toString()) {
-          case "AgeGateException":
-            logger.e("Age gate detected for results from "
-                "${plugin.codeName}: $e\n$stacktrace");
-            commentsIssues["Critical"]!.add(
-                "Age gate encountered. Try setting a proxy in settings / privacy");
-          case "BannedCountry":
-            logger.e("Banned country detected for results from "
-                "${plugin.codeName}: $e\n$stacktrace");
-            commentsIssues["Critical"]!.add(
-                "Banned country encountered. Try setting a proxy in settings / privacy");
-          case "UnreachableException":
-            logger.e(
-                "Couldn't connect to ${plugin.serviceUrl} to get comments: $e\n$stacktrace");
-            commentsIssues["Critical"]!.add(
-                "Couldn't connect to ${plugin.serviceUrl} to get comments");
-          case "NotFoundException":
-            logger.e(
-                "No comments from ${plugin.codeName}. Soft 404, NOT adding to commentsIssuesMap");
-            newResults = [];
-          default:
-            logger.e("Error getting comments from ${plugin.codeName}:"
-                " $e\n$stacktrace");
-            commentsIssues["Critical"]!.add("$e\n$stacktrace");
-        }
+      } catch (exception, stacktrace) {
+        logger.e("Error getting comments from ${plugin.codeName}:"
+            " $exception\n$stacktrace");
+        commentsBugReports.add(PluginBugReport(
+            navigatorPath: navPath,
+            errorMessage: exception.toString(),
+            codeTrace: stacktrace.toString(),
+            isCustomException: isCustomException(exception as Exception),
+            pluginCodeName: plugin.codeName,
+            isBundledPlugin: plugin.isBundledPlugin,
+            debugObject: {}));
       }
       if (newResults?.isNotEmpty ?? false) {
         List<UniversalComment> filteredComments = [];
@@ -395,16 +331,13 @@ class LoadingHandler {
         int totalValidComments = newResults!.length;
         for (var comment in newResults) {
           // Don't show to user
-          if (comment.scrapeFailMessage != null &&
-              (comment.scrapeFailMessage?.startsWith("Error") ?? false)) {
-            commentsIssues["Error"]!.add(comment);
-            // Failure to scrape != filtered comment
-            // -> reduce total amount of to-be filtered comments
-            totalValidComments--;
-            continue;
-          }
           if (comment.scrapeFailMessage != null) {
-            commentsIssues["Warning"]!.add(comment);
+            commentsBugReports.add(PluginBugReport(
+                navigatorPath: navPath,
+                errorMessage: comment.scrapeFailMessage!,
+                pluginCodeName: plugin.codeName,
+                isBundledPlugin: plugin.isBundledPlugin,
+                debugObject: comment.toMap()));
           }
 
           if ((await sharedStorage.getBool("comments_hide_hidden"))!) {
@@ -459,9 +392,6 @@ class LoadingHandler {
       }
     }
 
-    // delete empty lists from issues map
-    commentsIssues.removeWhere((key, value) => value.isEmpty);
-
     logger.d("Prev comment res amount: ${previousResults?.length}");
     logger.d("New comment res amount: ${combinedResults?.length}");
     return combinedResults;
@@ -470,18 +400,6 @@ class LoadingHandler {
   Future<List<UniversalVideoPreview>?> getVideoSuggestions(
       PluginInterface plugin, String videoID, Document rawHtml,
       [List<UniversalVideoPreview>? previousResults]) async {
-    // init videoSuggestionsIssues if needed
-    if (videoSuggestionsIssues.isEmpty) {
-      videoSuggestionsIssues = {
-        // Critical means issue with entire request
-        "Critical": [],
-        // Error means a video suggestion failed to scrape completely and cannot be shown to user
-        "Error": [],
-        // Warning means a video suggestion partially failed scrape but can still be shown to user
-        "Warning": []
-      };
-    }
-
     List<UniversalVideoPreview>? combinedResults = [];
     if (previousResults != null) {
       combinedResults = previousResults;
@@ -510,42 +428,27 @@ class LoadingHandler {
             videoID, rawHtml, videoSuggestionsPageCounter);
         logger.i(
             "Got ${newResults.length} video suggestions from ${plugin.codeName} for page $videoSuggestionsPageCounter");
-      } catch (e, stacktrace) {
-        switch (e.runtimeType.toString()) {
-          case "AgeGateException":
-            logger.e("Age gate detected for results from "
-                "${plugin.codeName}: $e\n$stacktrace");
-            videoSuggestionsIssues["Critical"]!.add(
-                "Age gate encountered. Try setting a proxy in settings / privacy");
-          case "BannedCountry":
-            logger.e("Banned country detected for results from "
-                "${plugin.codeName}: $e\n$stacktrace");
-            videoSuggestionsIssues["Critical"]!.add(
-                "Banned country encountered. Try setting a proxy in settings / privacy");
-          case "UnreachableException":
-            logger.e(
-                "Couldn't connect to ${plugin.serviceUrl} get video suggestions: "
-                "$e\n$stacktrace");
-            videoSuggestionsIssues["Critical"]!.add(
-                "Couldn't connect to ${plugin.serviceUrl} to get video suggestions");
-          case "NotFoundException":
-            logger.e(
-                "No video suggestions from ${plugin.codeName}. Soft 404, NOT adding to commentsIssuesMap");
-            newResults = [];
-          default:
-            logger.e("Error getting video suggesting from ${plugin.codeName}:"
-                " $e\n$stacktrace");
-            videoSuggestionsIssues["Critical"]!.add("$e\n$stacktrace");
-        }
+      } catch (exception, stacktrace) {
+        logger.e("Error getting video suggestions from ${plugin.codeName}:"
+            " $exception\n$stacktrace");
+        videoSuggestionsBugReports.add(PluginBugReport(
+            navigatorPath: navPath,
+            errorMessage: exception.toString(),
+            codeTrace: stacktrace.toString(),
+            isCustomException: isCustomException(exception as Exception),
+            pluginCodeName: plugin.codeName,
+            isBundledPlugin: plugin.isBundledPlugin,
+            debugObject: {}));
       }
       if (newResults?.isNotEmpty ?? false) {
         for (var video in newResults!) {
-          if (video.scrapeFailMessage != null &&
-              (video.scrapeFailMessage?.startsWith("Error") ?? false)) {
-            videoSuggestionsIssues["Error"]!.add(video);
-            continue;
-          } else if (video.scrapeFailMessage != null) {
-            videoSuggestionsIssues["Warning"]!.add(video);
+          if (video.scrapeFailMessage != null) {
+            videoSuggestionsBugReports.add(PluginBugReport(
+                navigatorPath: navPath,
+                errorMessage: video.scrapeFailMessage!,
+                pluginCodeName: plugin.codeName,
+                isBundledPlugin: plugin.isBundledPlugin,
+                debugObject: video.toMap()));
           }
           combinedResults.add(video);
         }
@@ -566,9 +469,6 @@ class LoadingHandler {
       }
     }
 
-    // delete empty lists from issues map
-    videoSuggestionsIssues.removeWhere((key, value) => value.isEmpty);
-
     logger.d("Prev video suggestions amount: ${previousResults?.length}");
     logger.d("New video suggestions amount: ${combinedResults?.length}");
     return combinedResults;
@@ -577,18 +477,6 @@ class LoadingHandler {
   Future<List<UniversalVideoPreview>?> getAuthorVideos(
       PluginInterface plugin, String authorID,
       [List<UniversalVideoPreview>? previousResults]) async {
-    // init authorVideosIssues if needed
-    if (authorVideosIssues.isEmpty) {
-      authorVideosIssues = {
-        // Critical means issue with entire request
-        "Critical": [],
-        // Error means a video preview failed to scrape completely and cannot be shown to user
-        "Error": [],
-        // Warning means a video preview partially failed scrape but can still be shown to user
-        "Warning": []
-      };
-    }
-
     List<UniversalVideoPreview>? combinedResults = previousResults;
     combinedResults ??= [];
 
@@ -615,38 +503,27 @@ class LoadingHandler {
             await plugin.getAuthorVideos(authorID, authorVideosPageCounter);
         logger.i(
             "Got ${newResults.length} author videos from ${plugin.codeName} for page $authorVideosPageCounter");
-      } catch (e, stacktrace) {
-        switch (e.runtimeType.toString()) {
-          case "AgeGateException":
-            logger.e("Age gate detected for results from "
-                "${plugin.codeName}: $e\n$stacktrace");
-            authorVideosIssues["Critical"]!.add(
-                "Age gate encountered. Try setting a proxy in settings / privacy");
-          case "BannedCountry":
-            logger.e("Banned country detected for results from "
-                "${plugin.codeName}: $e\n$stacktrace");
-            authorVideosIssues["Critical"]!.add(
-                "Banned country encountered. Try setting a proxy in settings / privacy");
-          case "UnreachableException":
-            logger.e(
-                "Couldn't connect to ${plugin.serviceUrl} to get author videos: "
-                "$e\n$stacktrace");
-            authorVideosIssues["Critical"]!.add(
-                "Couldn't connect to ${plugin.serviceUrl} to get author videos");
-          default:
-            logger.e("Error getting author videos from ${plugin.codeName}:"
-                " $e\n$stacktrace");
-            authorVideosIssues["Critical"]!.add("$e\n$stacktrace");
-        }
+      } catch (exception, stacktrace) {
+        logger.e("Error getting author videos from ${plugin.codeName}:"
+            " $exception\n$stacktrace");
+        authorVideosBugReports.add(PluginBugReport(
+            navigatorPath: navPath,
+            errorMessage: exception.toString(),
+            codeTrace: stacktrace.toString(),
+            isCustomException: isCustomException(exception as Exception),
+            pluginCodeName: plugin.codeName,
+            isBundledPlugin: plugin.isBundledPlugin,
+            debugObject: {}));
       }
       if (newResults?.isNotEmpty ?? false) {
         for (var video in newResults!) {
-          if (video.scrapeFailMessage != null &&
-              (video.scrapeFailMessage?.startsWith("Error") ?? false)) {
-            authorVideosIssues["Error"]!.add(video);
-            continue;
-          } else if (video.scrapeFailMessage != null) {
-            authorVideosIssues["Warning"]!.add(video);
+          if (video.scrapeFailMessage != null) {
+            authorVideosBugReports.add(PluginBugReport(
+                navigatorPath: navPath,
+                errorMessage: video.scrapeFailMessage!,
+                pluginCodeName: plugin.codeName,
+                isBundledPlugin: plugin.isBundledPlugin,
+                debugObject: video.toMap()));
           }
           combinedResults.add(video);
         }
@@ -666,9 +543,6 @@ class LoadingHandler {
         authorVideosPageCounter = -1;
       }
     }
-
-    // delete empty lists from issues map
-    authorVideosIssues.removeWhere((key, value) => value.isEmpty);
 
     logger.d("Prev author videos amount: ${previousResults?.length}");
     logger.d("New author videos amount: ${combinedResults?.length}");
