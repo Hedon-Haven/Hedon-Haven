@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '/services/analytics_manager.dart' as analytics;
 import '/services/bug_report_manager.dart';
 import '/services/plugin_manager.dart';
-import '/ui/screens/scraping_report.dart';
+import 'scraping_report.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
