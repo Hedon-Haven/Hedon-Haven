@@ -145,23 +145,25 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
     pluginUpdatesAvailableEvent.stream
         .listen((value) => setState(() => showSettingsBadge = value != 0));
 
-    // Listen to URL sharing coming from outside the app while app is in memory.
-    ReceiveSharingIntent.instance
-        .getMediaStream()
-        .listen((value) => handleSharedLink(value), onError: (e) {
-      logger.e("Failed to process shared item: $e");
-      showToastViaOverlay("Failed to process shared item: $e",
-          materialAppKey.currentState!.overlay!, 5);
-    });
+    if (Platform.isAndroid || Platform.isIOS) {
+      // Listen to URL sharing coming from outside the app while app is in memory.
+      ReceiveSharingIntent.instance
+          .getMediaStream()
+          .listen((value) => handleSharedLink(value), onError: (e) {
+        logger.e("Failed to process shared item: $e");
+        showToastViaOverlay("Failed to process shared item: $e",
+            materialAppKey.currentState!.overlay!, 5);
+      });
 
-    // Get the media sharing coming from outside the app while the app is closed.
-    ReceiveSharingIntent.instance
-        .getInitialMedia()
-        .then((value) => handleSharedLink(value), onError: (e) {
-      logger.e("Failed to process shared item: $e");
-      showToastViaOverlay("Failed to process shared item: $e",
-          materialAppKey.currentState!.overlay!, 5);
-    });
+      // Get the media sharing coming from outside the app while the app is closed.
+      ReceiveSharingIntent.instance
+          .getInitialMedia()
+          .then((value) => handleSharedLink(value), onError: (e) {
+        logger.e("Failed to process shared item: $e");
+        showToastViaOverlay("Failed to process shared item: $e",
+            materialAppKey.currentState!.overlay!, 5);
+      });
+    }
 
     performUpdate();
 
