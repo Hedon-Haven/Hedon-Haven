@@ -6,16 +6,16 @@ import '/services/bug_report_manager.dart';
 import '/services/plugin_manager.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 
-class ScrapingReportScreen extends StatefulWidget {
+class BugReportsListScreen extends StatefulWidget {
   final List<BugReport> bugReportsList;
 
-  const ScrapingReportScreen({super.key, required this.bugReportsList});
+  const BugReportsListScreen({super.key, required this.bugReportsList});
 
   @override
-  State<ScrapingReportScreen> createState() => _ScrapingReportScreenState();
+  State<BugReportsListScreen> createState() => _BugReportsListScreenState();
 }
 
-class _ScrapingReportScreenState extends State<ScrapingReportScreen> {
+class _BugReportsListScreenState extends State<BugReportsListScreen> {
   /// Concatenated list of all bug reports
   late Map<String, List<BugReport>> sortedBugReports;
 
