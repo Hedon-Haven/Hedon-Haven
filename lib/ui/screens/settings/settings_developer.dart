@@ -246,7 +246,8 @@ class DeveloperScreen extends StatelessWidget {
                             onTap: () async {
                               try {
                                 await sendUsagePing();
-                                showToast("Usage ping sent if opted-in", context);
+                                showToast(
+                                    "Usage ping sent if opted-in", context);
                               } catch (e) {
                                 showToast(e.toString(), context);
                               }
