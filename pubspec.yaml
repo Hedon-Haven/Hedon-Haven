@@ -12,20 +12,20 @@ dependencies:
   http: ^1.6.0
   html: ^0.15.6
   shared_preferences: ^2.5.5
-  fvp: ^0.37.3
-  video_player: ^2.11.1
+  fvp: ^0.38.1
+  video_player: ^2.14.0
   audio_video_progress_bar: ^2.0.3
   auto_orientation: #^2.3.1
     git: https://github.com/Kanwarpalsingh1986/auto_orientation
   window_manager: ^0.5.2
   flutter_hls_parser: ^2.0.1
   url_launcher: ^6.3.2
-  dynamic_color: ^1.8.1
+  dynamic_color: ^1.9.0
   wakelock_plus: ^1.5.2
   package_info_plus: ^9.0.1
   connectivity_plus: ^7.1.1
   skeletonizer: ^2.1.3
-  sqflite_common_ffi: ^2.4.2
+  sqflite_common_ffi: ^2.4.2+1
   sqlite3_flutter_libs: ^0.6.0+eol
   path_provider: ^2.1.6
   toastification: ^3.2.0
@@ -36,7 +36,7 @@ dependencies:
   yaml: ^3.1.3
   logger: ^2.7.0
   archive: ^4.0.9
-  file_picker: ^11.0.2
+  file_picker: ^11.0.3
   image: ^4.9.1
   crypto: ^3.0.7
   share_plus: ^12.0.2
@@ -49,7 +49,7 @@ dependencies:
   flutter_js: ^0.8.7
   animations: ^2.2.0
   path: ^1.9.1
-  synchronized: ^3.4.1
+  synchronized: ^3.4.1+2
   super_drag_and_drop: ^0.9.1
   receive_sharing_intent: ^1.9.0
   rhttp: ^0.18.0
