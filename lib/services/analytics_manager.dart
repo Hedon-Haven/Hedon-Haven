@@ -70,7 +70,7 @@ Future<void> sendUsagePing() async {
     "properties": {
       // Create anonymous ping
       r"$process_person_profile": false,
-      "appInfo": getAppInfo(),
+      "appInfo": getAppAndDeviceInfo(),
     }
   });
 
