@@ -12,10 +12,7 @@ import 'package:http/http.dart';
 import '/services/bug_report_manager.dart';
 import '/utils/global_vars.dart';
 
-Future<bool> submitBugReport(
-    {String? userMessage,
-    List<BugReport>? appReports,
-    List<BugReport>? bundledPluginReports}) async {
+Future<bool> submitBugReport(Map<String, dynamic> combinedBugReport) async {
   // No need to use the salt here, since we just need a random id for this report
   String randomID =
       List.generate(12, (_) => Random.secure().nextInt(16).toRadixString(16))
@@ -27,15 +24,7 @@ Future<bool> submitBugReport(
     "properties": {
       // Create anonymous report
       r"$process_person_profile": false,
-      "appInfo": getAppInfo(),
-      "userMessage": userMessage,
-      "bugReports": {
-        if (appReports?.isNotEmpty ?? false)
-          "appReports": appReports!.map((x) => x.toMap()).toList(),
-        if (bundledPluginReports?.isNotEmpty ?? false)
-          "bundledPluginBugReports":
-              bundledPluginReports!.map((x) => x.toMap()).toList()
-      }
+      "bugReportData": combinedBugReport
     },
   });
 
