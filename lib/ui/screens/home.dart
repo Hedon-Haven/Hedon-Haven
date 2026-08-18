@@ -26,7 +26,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<List<UniversalVideoPreview>?> videoResults = Future.value([]);
-  LoadingHandler loadingHandler = LoadingHandler();
+  LoadingHandler loadingHandler =
+      LoadingHandler(navPath: navigatorPathObserver.currentPath);
   bool isLoading = true;
   bool noPluginsEnabled = false;
 
@@ -42,7 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
     reloadVideoListEvent.stream.listen((_) {
       sharedStorage.getBool("appearance_homepage_enabled").then((value) {
         if (value!) {
-          loadingHandler = LoadingHandler();
+          loadingHandler =
+              LoadingHandler(navPath: navigatorPathObserver.currentPath);
           videoResults = loadingHandler.getHomePages(null).whenComplete(() {
             logger.d("ResultsIssues Map: ${loadingHandler.resultsIssues}");
           });

@@ -164,7 +164,8 @@ Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
       ));
       break;
     case ContentType.searchResultsPage:
-      LoadingHandler searchHandler = LoadingHandler();
+      LoadingHandler searchHandler =
+          LoadingHandler(navPath: navigatorPathObserver.currentPath);
       Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => ResultsScreen(
           videoResults: searchHandler.getSearchResults(

@@ -21,6 +21,8 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  LoadingHandler searchHandler =
+      LoadingHandler(navPath: navigatorPathObserver.currentPath);
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool keyboardIncognitoMode = false;
@@ -70,7 +72,6 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void startSearchQuery(UniversalSearchRequest query) async {
-    LoadingHandler searchHandler = LoadingHandler();
     widget.previousSearch = query;
     Navigator.of(context)
         .push(PageRouteBuilder(
@@ -123,7 +124,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   autocorrect: !keyboardIncognitoMode && Platform.isIOS,
                   onChanged: (query) async {
                     searchSuggestions =
-                        await LoadingHandler().getSearchSuggestions(query);
+                        await searchHandler.getSearchSuggestions(query);
                     widget.previousSearch =
                         widget.previousSearch.copyWith(searchString: query);
                     setState(() {});
@@ -220,7 +221,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             setState(() => noSearchProvidersEnabled = true);
                             logger.w("No search suggestion providers enabled");
                           }
-                          searchSuggestions = await LoadingHandler()
+                          searchSuggestions = await searchHandler
                               .getSearchSuggestions(_controller.text);
                           setState(() {});
                         })

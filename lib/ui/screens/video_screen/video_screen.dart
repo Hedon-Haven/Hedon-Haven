@@ -43,7 +43,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   ScrollController screenScrollController = ScrollController();
   bool showControls = false;
   bool isMobile = true;
-  LoadingHandler loadingHandler = LoadingHandler();
+  LoadingHandler loadingHandler =
+      LoadingHandler(navPath: navigatorPathObserver.currentPath);
   final videoPlayerWidgetKey = GlobalKey<VideoPlayerWidgetState>();
 
   List<Uint8List>? progressThumbnails;

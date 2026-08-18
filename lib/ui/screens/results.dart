@@ -36,7 +36,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     widget.videoResults.whenComplete(() {
-      logger.d("ResultsIssues Map: ${widget.loadingHandler.resultsIssues}");
+      logger.d("ResultsIssues Map: ${widget.loadingHandler.resultsBugReports}");
       // Update the scraping report button
       setState(() => isLoading = false);
     });

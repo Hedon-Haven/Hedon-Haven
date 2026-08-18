@@ -30,7 +30,8 @@ class AuthorPageScreen extends StatefulWidget {
 }
 
 class _AuthorPageScreenState extends State<AuthorPageScreen> {
-  LoadingHandler loadingHandler = LoadingHandler();
+  LoadingHandler loadingHandler =
+      LoadingHandler(navPath: navigatorPathObserver.currentPath);
   Future<List<UniversalVideoPreview>?> authorVideos =
       Future.value(List.filled(12, UniversalVideoPreview.skeleton()));
 
