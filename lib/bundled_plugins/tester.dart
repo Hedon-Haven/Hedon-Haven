@@ -23,6 +23,8 @@ class TesterPlugin extends BundledPlugin implements PluginInterface {
   @override
   String contactEmail = "contact@hedon-haven.top";
   @override
+  String issueTrackerUrl = "https://issues.hedon-haven.top";
+  @override
   String description = "Allows quickly testing all plugin-related functionality"
       " of the app without scraping actual websites";
   @override

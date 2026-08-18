@@ -34,6 +34,9 @@ class PluginInterface {
   /// Contact email (e.g. for bug reports)
   late String contactEmail;
 
+  /// Contact email (e.g. for bug reports)
+  late String issueTrackerUrl;
+
   /// Short description (e.g. to mention functionality limitations)
   late String description;
 
@@ -113,6 +116,7 @@ class PluginInterface {
       version = config["metadata"]["version"];
       developer = config["metadata"]["developer"];
       contactEmail = config["metadata"]["contactEmail"];
+      issueTrackerUrl = config["metadata"]["issueTrackerUrl"];
       description = config["metadata"]["description"];
       updateUrl = Uri.parse(config["metadata"]["updateUrl"]);
       iconUrl = Uri.parse(config["providerData"]["iconUrl"]);

@@ -30,6 +30,8 @@ class PornhubPlugin extends BundledPlugin implements PluginInterface {
   @override
   String contactEmail = "contact@hedon-haven.top";
   @override
+  String issueTrackerUrl = "https://issues.hedon-haven.top";
+  @override
   String description = "Full account-less functionality for pornhub.com";
   @override
   Uri iconUrl = Uri.parse("https://www.pornhub.com/favicon.ico");
