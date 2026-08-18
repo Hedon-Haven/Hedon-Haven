@@ -39,14 +39,14 @@ Future<bool> submitBugReport(
     },
   });
 
-  logger.i("Sending bug reports to PostHot with body $body");
+  logger.i("Sending bug reports to PostHog with body $body");
   Response response = await client.post(
       Uri.parse("https://eu.i.posthog.com/i/v0/e/"),
       headers: {"Content-Type": "application/json"},
       body: body);
   logger.i("Bug report analytics response: ${response.body}");
   if (response.statusCode != 200) {
-    logger.e("Failed to send bug reports to PostHot: "
+    logger.e("Failed to send bug reports to PostHog: "
         "${response.statusCode} - ${response.body}");
   }
   return response.statusCode == 200;
@@ -61,7 +61,7 @@ Future<void> sendUsagePing() async {
     logger.i("Usage ping not opted-in, not sending!");
     return;
   }
-  logger.i("Sending usage ping to PostHot");
+  logger.i("Sending usage ping to PostHog");
   String salt = (await sharedStorage.getString("analytics_salt"))!;
   // Extract the current date with day-precision (i.e. strip hours and minutes)
   final now = DateTime.now().toUtc();
@@ -91,7 +91,7 @@ Future<void> sendUsagePing() async {
       body: body);
   logger.i("Usage ping analytics response: ${response.body}");
   if (response.statusCode != 200) {
-    logger.e("Failed to send usage ping to PostHot: "
+    logger.e("Failed to send usage ping to PostHog: "
         "${response.statusCode} - ${response.body}");
   }
   return;
