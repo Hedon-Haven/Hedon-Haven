@@ -192,13 +192,7 @@ class _LauncherAppearanceScreenState extends State<LauncherAppearance> {
                           style: TextButton.styleFrom(
                               backgroundColor:
                                   Theme.of(context).colorScheme.surfaceVariant),
-                          onPressed: () => Navigator.push(
-                              context,
-                              PageTransition(
-                                  type: PageTransitionType.leftToRightJoined,
-                                  childCurrent: widget,
-                                  child:
-                                      PluginsScreen(partOfOnboarding: true))),
+                          onPressed: () => Navigator.of(context).pop(),
                           child: Text("Back",
                               style: Theme.of(context)
                                   .textTheme
