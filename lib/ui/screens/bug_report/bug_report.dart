@@ -82,7 +82,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
               onSecondary: () {
                 allowPop = true;
                 // close popup
-                Navigator.of(context).pop;
+                Navigator.of(context).pop();
                 // Go back a screen
                 Navigator.of(context).pop([]);
               },
