@@ -333,8 +333,9 @@ class _BugReportScreenState extends State<BugReportScreen> {
       }
     }
 
-    if (submittedBugReports.isNotEmpty) {
+    if (submittedBugReports.isNotEmpty && mounted) {
       logger.i("Returning ${submittedBugReports.length} submitted bug reports");
+      showToast("Thank you for submitting the bug report!", context);
       Navigator.of(context).pop(submittedBugReports);
     }
   }
