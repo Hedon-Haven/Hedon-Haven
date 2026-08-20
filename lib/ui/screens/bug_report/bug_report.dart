@@ -79,7 +79,8 @@ class _BugReportScreenState extends State<BugReportScreen> {
               Navigator.of(context).pop([]);
             },
             content: const Text(
-                "Long tap anything in the app to create a specific bug report.\n\n"
+                "Long press anything in the app to create a more specific "
+                "bug report.\n\n"
                 "Ignore this message if you want to create a suggestion.")));
   }
 
