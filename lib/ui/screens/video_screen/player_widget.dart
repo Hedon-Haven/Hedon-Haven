@@ -342,34 +342,6 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           }
         },
         child: GestureDetector(
-            onLongPress: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (BuildContext context) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      ListTile(
-                        leading: const Icon(Icons.bug_report),
-                        title: const Text("Create bug report"),
-                        onTap: () {
-                          Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => BugReportScreen(
-                                            debugObject: [
-                                              widget.videoMetadata.toMap()
-                                            ],
-                                            plugin: widget.videoMetadata.plugin,
-                                          )))
-                              .then((value) => Navigator.of(context).pop());
-                        },
-                      )
-                    ],
-                  );
-                },
-              );
-            },
             // pass taps to elements below
             behavior: HitTestBehavior.translucent,
             onTap: showControlsOverlay,
