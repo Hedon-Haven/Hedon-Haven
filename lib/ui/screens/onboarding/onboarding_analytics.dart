@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '/ui/screens/settings/settings_plugins/settings_plugins.dart';
 import '/ui/screens/settings/settings_privacy.dart';
@@ -76,9 +77,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             color: Theme.of(context).colorScheme.surfaceVariant,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: SelectableText(
-                              "Read more: https://docs.hedon-haven.top/analytics.md",
-                              style: Theme.of(context).textTheme.bodyMedium)),
+                          child: GestureDetector(
+                              onTap: () => launchUrl(Uri.parse(
+                                  "https://docs.hedon-haven.top/analytics.md")),
+                              child: Text(
+                                  "Read more: https://docs.hedon-haven.top/analytics.md",
+                                  style:
+                                      Theme.of(context).textTheme.bodyMedium))),
                       ...buildAnalyticsOptions(),
                       Spacer(),
                       Row(children: [
