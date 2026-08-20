@@ -8,9 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
-import '/ui/screens/bug_report.dart';
-import '/ui/screens/scraping_report.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/screens/video_list.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
@@ -67,7 +67,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             loadingHandler.getAuthorVideos(authorPage!.plugin!, authorPage!.iD);
       } catch (e, stacktrace) {
         logger.e("Error loading author videos: $e\n$stacktrace");
-        loadingHandler.authorVideosIssues ==
+        loadingHandler.authorVideosBugReports ==
             {
               "Critical": ["Error calling getAuthorVideos: $e\n$stacktrace"]
             };
@@ -162,6 +162,76 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             }, fit: BoxFit.contain))));
   }
 
+  void createAuthorScreenBugReport() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+          submissionType: SubmissionType.userApproved,
+          bugReportsList: [
+            PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              errorMessage: authorPage!.scrapeFailMessage!,
+              codeTrace: loadErrorStacktrace,
+              pluginCodeName: authorPage!.plugin!.codeName,
+              isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
+              debugObject: authorPage!.toMap(),
+            )
+          ],
+        ),
+      ),
+    );
+    // Clear scrape failure message to avoid further reports
+    authorPage!.scrapeFailMessage = null;
+  }
+
+  void createFailureBugReport() {
+    // Immediately pop to avoid a duplicate bug report
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+          submissionType: SubmissionType.userApproved,
+          bugReportsList: [
+            PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              errorMessage:
+                  "Failed to load ${widget.authorID}: $failedToLoadReason",
+              codeTrace: loadErrorStacktrace,
+              pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown",
+              isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
+              debugObject: authorPage?.toMap() ?? {},
+            )
+          ],
+        ),
+      ),
+    ).then((value) => Navigator.of(context).pop());
+  }
+
+  void createManualBugReport() {
+    // Ignore return value due to manual trigger
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+          submissionType: SubmissionType.manual,
+          bugReportsList: [
+            PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              errorMessage: "Author page action button manual bug report",
+              pluginCodeName: authorPage!.plugin!.codeName,
+              isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
+              debugObject: authorPage!.toMap(),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     isMobile = MediaQuery.of(context).size.width < 600;
@@ -178,17 +248,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                     icon: Icon(
                         color: Theme.of(context).colorScheme.error,
                         Icons.error_outline),
-                    onPressed: () async {
-                      await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ScrapingReportScreen(
-                                    singleMessage:
-                                        authorPage!.scrapeFailMessage,
-                                    singleDebugObject: authorPage!.toMap(),
-                                  )));
-                      setState(() {});
-                    })
+                    onPressed: () => createAuthorScreenBugReport())
               ]
             ]),
         body: SafeArea(
@@ -213,7 +273,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                 style: TextButton.styleFrom(
                                     backgroundColor:
                                         Theme.of(context).colorScheme.primary),
-                                child: Text("Open scraping report",
+                                child: Text("Create bug report",
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
@@ -221,22 +281,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                             color: Theme.of(context)
                                                 .colorScheme
                                                 .onPrimary)),
-                                onPressed: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ScrapingReportScreen(
-                                                singleProviderMap: {
-                                              "Critical": [
-                                                "Failed to load ${authorPage?.iD ?? "unknown author"}: $failedToLoadReason"
-                                                    "\n$detailedFailReason"
-                                              ]
-                                            },
-                                                singleDebugObject:
-                                                    authorPage?.toMap()),
-                                      ));
-                                })
+                                onPressed: () => createFailureBugReport())
                           ]
                         ])))
                 : Skeletonizer(
@@ -347,13 +392,11 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                   noResultsErrorMessage:
                                       "Failed to load videos from this author",
                                   showScrapingReportButton: true,
-                                  scrapingReportMap:
-                                      loadingHandler.authorVideosIssues,
+                                  bugReports:
+                                      loadingHandler.authorVideosBugReports,
                                   ignoreInternetError: false,
                                   noListPadding: true,
-                                  hideAuthors: true,
-                                  singleProviderDebugObject:
-                                      authorPage?.toMap())
+                                  hideAuthors: true)
                             ])))));
   }
 
@@ -635,16 +678,8 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                       foregroundColor:
                           Theme.of(context).colorScheme.onSecondary,
                       backgroundColor: Theme.of(context).colorScheme.secondary),
-                  onPressed: isLoadingResults
-                      ? null
-                      : () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => BugReportScreen(
-                                      debugObject: [authorPage!.toMap()],
-                                      plugin: authorPage?.plugin)));
-                        },
+                  onPressed:
+                      isLoadingResults ? null : () => createManualBugReport(),
                   child: Row(children: [
                     Icon(
                         size: 20,

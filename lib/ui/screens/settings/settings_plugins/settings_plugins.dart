@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 
+import '/services/bug_report_manager.dart';
 import '/services/plugin_manager.dart';
-import '/ui/screens/bug_report.dart';
-import '/ui/screens/onboarding/onboarding_disclaimers.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/screens/settings/settings_launcher_appearance.dart';
 import '/ui/screens/settings/settings_plugins/install_3rd_party_plugin.dart';
 import '/ui/utils/toast_notification.dart';
@@ -176,15 +176,24 @@ class _PluginsScreenState extends State<PluginsScreen> {
               if (customException) {
                 Navigator.pop(context);
               } else {
+                // TODO: Prevent user from submitting a duplicate report
                 Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => BugReportScreen(
-                                debugObject: [],
-                                plugin: plugin,
-                                message: errorMessage,
-                                issueType: "Plugin issue")))
-                    .then((value) => Navigator.pop(context));
+                  context,
+                  MaterialPageRoute(
+                    settings: RouteSettings(name: "/bug-report"),
+                    builder: (context) => BugReportScreen(
+                        submissionType: SubmissionType.userApproved,
+                        bugReportsList: [
+                          PluginBugReport(
+                              navigatorPath: navigatorPathObserver.currentPath,
+                              errorMessage: data!.$1.toString(),
+                              codeTrace: data.$2.toString(),
+                              pluginCodeName: plugin.codeName,
+                              isBundledPlugin: plugin.isBundledPlugin,
+                              debugObject: {})
+                        ]),
+                  ),
+                ).then((value) => Navigator.pop(context));
               }
             },
             secondaryText: customException ? null : "Close",

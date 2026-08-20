@@ -9,11 +9,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '/services/bug_report_manager.dart';
 import '/services/database_manager.dart';
 import '/services/loading_handler.dart';
 import '/ui/screens/author_page.dart';
-import '/ui/screens/bug_report.dart';
-import '/ui/screens/scraping_report.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/screens/settings/settings_comments.dart';
 import '/ui/screens/video_screen/player_widget.dart';
 import '/ui/screens/video_screen/widgets.dart';
@@ -51,7 +51,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Timer? hideControlsTimer;
   bool isFullScreen = false;
   String? failedToLoadReason;
-  String? detailedFailReason;
+  String? loadErrorStacktrace;
   bool firstPlay = true;
   bool isLoadingMetadata = true;
   bool loadedCommentsOnce = false;
@@ -122,7 +122,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       if (failedToLoadReason != "No internet connection") {
         setState(() {
           failedToLoadReason = e.toString();
-          detailedFailReason = stacktrace.toString();
+          loadErrorStacktrace = stacktrace.toString();
         });
       }
     });
@@ -148,15 +148,21 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     );
   }
 
-  void openSuggestionsScrapingReport() async {
-    await Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => ScrapingReportScreen(
-                  singleProviderMap: loadingHandler.videoSuggestionsIssues,
-                  singleDebugObject: videoMetadata.toMap(),
-                )));
-    setState(() {});
+  /// To report all suggestionVideoBugReports
+  void createSuggestionVideosBugReport() async {
+    List<BugReport> reportedBugs = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+            submissionType: SubmissionType.userApproved,
+            bugReportsList: loadingHandler.videoSuggestionsBugReports),
+      ),
+    );
+
+    // Remove all reported bugs
+    loadingHandler.videoSuggestionsBugReports
+        .removeWhere((uvp) => reportedBugs.contains(uvp));
   }
 
   // Pause video and exit fullscreen before navigating to another page
@@ -282,13 +288,26 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (mounted) openExternalLinkWithWarningDialog(context, videoUri);
   }
 
-  void openBugReportScreen() {
+  void createManualVideoMetadataBugReport() {
+    // Ignore return value since bug report was manually initiated
     Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => BugReportScreen(
-                debugObject: [videoMetadata.toMap()],
-                plugin: videoMetadata.plugin)));
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+          submissionType: SubmissionType.manual,
+          bugReportsList: [
+            PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              errorMessage: "Video action button manual bug report",
+              pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
+              isBundledPlugin: videoMetadata.plugin?.isBundledPlugin ?? false,
+              debugObject: videoMetadata.toMap(),
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   void copyComment(String body) {
@@ -334,16 +353,27 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  void openBugReportScreenForComment(UniversalComment comment) async {
+  void createManualBugReportForComment(UniversalComment comment) async {
     await beforeNavigate();
     if (mounted) {
       await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => BugReportScreen(
-                    debugObject: [comment.toMap()],
-                    plugin: comment.plugin,
-                  )));
+        context,
+        MaterialPageRoute(
+          settings: RouteSettings(name: "/bug-report"),
+          builder: (context) => BugReportScreen(
+            submissionType: SubmissionType.manual,
+            bugReportsList: [
+              PluginBugReport(
+                navigatorPath: navigatorPathObserver.currentPath,
+                errorMessage: "Comment modal menu manual bug report",
+                pluginCodeName: comment.plugin?.codeName ?? "Unknown",
+                isBundledPlugin: comment.plugin?.isBundledPlugin ?? false,
+                debugObject: comment.toMap(),
+              )
+            ],
+          ),
+        ),
+      );
     }
     if (mounted) Navigator.of(context).pop();
   }
@@ -408,13 +438,19 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   void openCommentsScrapingReport() async {
-    await Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => ScrapingReportScreen(
-                singleProviderMap: loadingHandler.commentsIssues,
-                singleDebugObject: videoMetadata.toMap())));
-    setState(() {});
+    List<BugReport> reportedBugs = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+            submissionType: SubmissionType.userApproved,
+            bugReportsList: loadingHandler.commentsBugReports),
+      ),
+    );
+
+    // Remove all reported bugs
+    loadingHandler.commentsBugReports
+        .removeWhere((uc) => reportedBugs.contains(uc));
   }
 
   Future<List<UniversalVideoPreview>?> loadMoreResults() async {
@@ -440,22 +476,34 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
-  void openScrapingReport() {
+  /// Used when the entire video screen fails to load
+  void createVideoScreenBugReport() {
+    // Immediately pop to avoid a duplicate bug report
     Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ScrapingReportScreen(singleProviderMap: {
-            // Pass videoID from widget in case the entire videoMetadata failed to scrape
-            "Critical": [
-              "Failed to load ${widget.videoID}: $failedToLoadReason"
-                  "\n$detailedFailReason"
-            ]
-          }, singleDebugObject: videoMetadata.toMap()),
-        ));
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+          submissionType: SubmissionType.userApproved,
+          bugReportsList: [
+            PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              errorMessage:
+                  "Failed to load ${widget.videoID}: $failedToLoadReason",
+              codeTrace: loadErrorStacktrace,
+              pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
+              isBundledPlugin: videoMetadata.plugin?.isBundledPlugin ?? false,
+              debugObject: videoMetadata.toMap(),
+            )
+          ],
+        ),
+      ),
+    ).then((value) => Navigator.of(context).pop());
   }
 
   @override
   Widget build(BuildContext context) {
+    // TODO: Add "warning button" when scraping partially fails for entire UVM
     isMobile = MediaQuery.of(context).size.width < 1100;
     if (!isMobile) openCommentSection();
     return Scaffold(

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '/services/banner_manager.dart';
+import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
 import '/services/plugin_manager.dart';
-import '/ui/screens/scraping_report.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
           loadingHandler =
               LoadingHandler(navPath: navigatorPathObserver.currentPath);
           videoResults = loadingHandler.getHomePages(null).whenComplete(() {
-            logger.d("ResultsIssues Map: ${loadingHandler.resultsIssues}");
+            logger.d("ResultsIssues Map: ${loadingHandler.resultsBugReports}");
           });
         } else {
           videoResults = Future.value([]);
@@ -63,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (widget.provider != null && widget.pageCount != null) {
       videoResults = loadingHandler
           .getHomePages(null, [widget.provider!]).whenComplete(() {
-        logger.d("ResultsIssues Map: ${loadingHandler.resultsIssues}");
+        logger.d("ResultsIssues Map: ${loadingHandler.resultsBugReports}");
         // Update the scraping report button
         setState(() => isLoading = false);
       });
@@ -71,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
       sharedStorage.getBool("appearance_homepage_enabled").then((value) {
         if (value!) {
           videoResults = loadingHandler.getHomePages(null).whenComplete(() {
-            logger.d("ResultsIssues Map: ${loadingHandler.resultsIssues}");
+            logger.d("ResultsIssues Map: ${loadingHandler.resultsBugReports}");
             // Update the scraping report button
             setState(() => isLoading = false);
           });
@@ -100,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
         actions: [
-          if (loadingHandler.resultsIssues.isNotEmpty && !isLoading) ...[
+          if (loadingHandler.resultsBugReports.isNotEmpty && !isLoading) ...[
             IconButton(
                 icon: Icon(
                     color: Theme.of(context).colorScheme.error,
@@ -108,9 +109,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => ScrapingReportScreen(
-                                multiProviderMap:
-                                    loadingHandler.resultsIssues)))
+                            settings: RouteSettings(name: "/bug-report"),
+                            builder: (context) => BugReportScreen(
+                                submissionType: SubmissionType.userApproved,
+                                bugReportsList:
+                                    loadingHandler.resultsBugReports)))
                     .whenComplete(() => setState(() {})))
           ],
           Spacer(),
@@ -195,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               "Empty homepage but no error. Please report this to developers",
                           noResultsErrorMessage: "Error loading homepage",
                           showScrapingReportButton: true,
-                          scrapingReportMap: loadingHandler.resultsIssues,
+                          bugReports: loadingHandler.resultsBugReports,
                           ignoreInternetError: false,
                           noPluginsEnabled: noPluginsEnabled,
                           noPluginsMessage:

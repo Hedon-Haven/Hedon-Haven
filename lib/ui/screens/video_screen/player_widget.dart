@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-import '/ui/screens/bug_report.dart';
+import '/services/bug_report_manager.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
 
@@ -329,6 +330,28 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  void createPlayerBugReport(String message) {
+    // Pop immediately to avoid another bug report
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+          submissionType: SubmissionType.userApproved,
+          bugReportsList: [
+            PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              errorMessage: message,
+              pluginCodeName: widget.videoMetadata.plugin!.codeName,
+              isBundledPlugin: widget.videoMetadata.plugin!.isBundledPlugin,
+              debugObject: widget.videoMetadata.toMap(),
+            )
+          ],
+        ),
+      ),
+    ).then((value) => Navigator.of(context).pop());
+  }
+
   @override
   Widget build(BuildContext context) {
     final double maxDrag = MediaQuery.of(context).size.width * 9 / 16 * 0.4;
@@ -529,14 +552,8 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     .textTheme
                     .titleMedium
                     ?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => BugReportScreen(
-                        debugObject: [widget.videoMetadata.toMap()],
-                        plugin: widget.videoMetadata.plugin,
-                        message: videoPlayerError,
-                        issueType: "Functional issue"))))
+            onPressed: () => createPlayerBugReport(
+                videoPlayerError ?? "unknown video error"))
       ]
     ]));
   }

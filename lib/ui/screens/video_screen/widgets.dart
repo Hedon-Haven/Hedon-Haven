@@ -32,10 +32,10 @@ Widget buildFailedToLoadWidget(
               ElevatedButton(
                   style: TextButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary),
-                  child: Text("Open scraping report",
+                  child: Text("Create bug report",
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onPrimary)),
-                  onPressed: () => vps.openScrapingReport())
+                  onPressed: () => vps.createVideoScreenBugReport())
             ]
           ])));
 }
@@ -415,7 +415,7 @@ Widget buildActionButtonsRow(BuildContext context, VideoPlayerScreenState vps) {
                     Icons.bug_report),
                 Text(" Report bug")
               ]),
-              onPressed: () => vps.openBugReportScreen(),
+              onPressed: () => vps.createManualVideoMetadataBugReport(),
             ))
           ]));
 }
@@ -488,7 +488,7 @@ Widget buildTopLevelCommentSection(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500)),
               const Spacer(),
-              if (vps.loadingHandler.commentsIssues.isNotEmpty &&
+              if (vps.loadingHandler.commentsBugReports.isNotEmpty &&
                   !vps.isLoadingComments &&
                   !vps.isLoadingMoreComments) ...[
                 IconButton(
@@ -692,7 +692,7 @@ Widget buildComment(
                   ListTile(
                       leading: const Icon(Icons.bug_report),
                       title: const Text("Create bug report"),
-                      onTap: () => vps.openBugReportScreenForComment(comment))
+                      onTap: () => vps.createManualBugReportForComment(comment))
                 ],
               );
             });
@@ -815,7 +815,7 @@ List<Widget> buildVideoSuggestions(
                       ? Theme.of(context).textTheme.titleMedium!
                       : Theme.of(context).textTheme.bodyMedium!),
               Spacer(),
-              if (vps.loadingHandler.videoSuggestionsIssues.isNotEmpty &&
+              if (vps.loadingHandler.videoSuggestionsBugReports.isNotEmpty &&
                   !vps.isLoadingMetadata) ...[
                 IconButton(
                     constraints: const BoxConstraints(),
@@ -827,7 +827,7 @@ List<Widget> buildVideoSuggestions(
                     icon: Icon(
                         color: Theme.of(context).colorScheme.error,
                         Icons.error_outline),
-                    onPressed: () => vps.openSuggestionsScrapingReport())
+                    onPressed: () => vps.createSuggestionVideosBugReport())
               ]
             ]))),
     VideoList(
@@ -838,10 +838,9 @@ List<Widget> buildVideoSuggestions(
         noResultsMessage: "No video suggestions found",
         noResultsErrorMessage: "Error getting video suggestions",
         showScrapingReportButton: true,
-        scrapingReportMap: vps.loadingHandler.videoSuggestionsIssues,
+        bugReports: vps.loadingHandler.videoSuggestionsBugReports,
         ignoreInternetError: false,
         noListPadding: true,
-        overrideListViewTo: "Card",
-        singleProviderDebugObject: vps.videoMetadata.toMap())
+        overrideListViewTo: "Card")
   ];
 }

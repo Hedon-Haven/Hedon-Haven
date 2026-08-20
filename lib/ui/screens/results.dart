@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
 import '/services/plugin_manager.dart';
-import '/ui/screens/scraping_report.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/screens/search.dart';
 import '/ui/screens/video_list.dart';
 import '/utils/global_vars.dart';
@@ -67,6 +68,22 @@ class _ResultsScreenState extends State<ResultsScreen> {
     Navigator.of(context).pop();
   }
 
+  void createResultsBugReport() async {
+    List<BugReport> reportedBugs = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+            submissionType: SubmissionType.userApproved,
+            bugReportsList: widget.loadingHandler.resultsBugReports),
+      ),
+    );
+
+    // Remove all reported bugs
+    widget.loadingHandler.resultsBugReports
+        .removeWhere((uvp) => reportedBugs.contains(uvp));
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -113,19 +130,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     ),
                   )),
               actions: [
-                if (widget.loadingHandler.resultsIssues.isNotEmpty &&
+                if (widget.loadingHandler.resultsBugReports.isNotEmpty &&
                     !isLoading)
                   IconButton(
                       icon: Icon(
                           color: Theme.of(context).colorScheme.error,
                           Icons.error_outline),
-                      onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ScrapingReportScreen(
-                                      multiProviderMap:
-                                          widget.loadingHandler.resultsIssues)))
-                          .whenComplete(() => setState(() {}))),
+                      onPressed: () => createResultsBugReport()),
                 IconButton(
                   color: Theme.of(context).colorScheme.primary,
                   icon: const Icon(Icons.filter_alt),
@@ -164,7 +175,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   noResultsMessage: "No results found",
                   noResultsErrorMessage: "Error loading results",
                   showScrapingReportButton: true,
-                  scrapingReportMap: widget.loadingHandler.resultsIssues,
+                  bugReports: widget.loadingHandler.resultsBugReports,
                   ignoreInternetError: false,
                   noPluginsEnabled: noPluginsEnabled,
                   noPluginsMessage:

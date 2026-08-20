@@ -10,17 +10,15 @@ import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:video_player/video_player.dart';
 
+import '/services/bug_report_manager.dart';
 import '/services/database_manager.dart';
 import '/ui/screens/author_page.dart';
-import '/ui/screens/bug_report.dart';
-import '/ui/screens/scraping_report.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/screens/video_screen/video_screen.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/external_link_warning.dart';
 import '/utils/convert.dart';
 import '/utils/global_vars.dart';
-import '/utils/plugin_interface/plugin_interface.dart';
-import '/utils/try_parse.dart';
 import '/utils/universal_formats.dart';
 import 'settings/settings_plugins/settings_plugins.dart';
 
@@ -64,7 +62,7 @@ class VideoList extends StatefulWidget {
   final bool showScrapingReportButton;
 
   /// Can be either a singleProviderMap or multiProviderMap
-  Map<dynamic, dynamic>? scrapingReportMap;
+  final List<BugReport>? bugReports;
 
   /// Don't pad the video list (other padding might still apply)
   final bool noListPadding;
@@ -83,8 +81,6 @@ class VideoList extends StatefulWidget {
   /// Load thumbnails from the network instead of trying to use thumbnailBinary data
   final bool useNetworkThumbnails;
 
-  final Map<String, dynamic>? singleProviderDebugObject;
-
   VideoList(
       {super.key,
       required this.videoList,
@@ -98,7 +94,7 @@ class VideoList extends StatefulWidget {
       required this.noResultsMessage,
       required this.noResultsErrorMessage,
       this.showScrapingReportButton = false,
-      this.scrapingReportMap,
+      this.bugReports,
       this.ignoreInternetError = true,
       this.noPluginsEnabled = false,
       this.noPluginsMessage = "",
@@ -107,8 +103,7 @@ class VideoList extends StatefulWidget {
       this.hideAuthors = false,
       this.hideFavoriteButton = false,
       this.playPreviews = true,
-      this.useNetworkThumbnails = true,
-      this.singleProviderDebugObject});
+      this.useNetworkThumbnails = true});
 
   @override
   State<VideoList> createState() => _VideoListState();
@@ -169,6 +164,28 @@ class _VideoListState extends State<VideoList> {
     widget.scrollController.removeListener(scrollListener);
     widget.cancelLoadingHandler?.call();
     super.dispose();
+  }
+
+  void createModalBugReport(int index) {
+    // Ignore return value of bug report due to manual init
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+          submissionType: SubmissionType.manual,
+          bugReportsList: [
+            PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              errorMessage: "UVP modal menu user initiated",
+              pluginCodeName: videoList![index].plugin!.codeName,
+              isBundledPlugin: videoList![index].plugin!.isBundledPlugin,
+              debugObject: videoList![index].toMap(),
+            )
+          ],
+        ),
+      ),
+    ).then((value) => Navigator.of(context).pop());
   }
 
   void loadVideoResults() async {
@@ -297,7 +314,7 @@ class _VideoListState extends State<VideoList> {
                 ElevatedButton(
                     style: TextButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary),
-                    child: Text("Open scraping report",
+                    child: Text("Create bug report",
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
@@ -305,29 +322,16 @@ class _VideoListState extends State<VideoList> {
                                 color:
                                     Theme.of(context).colorScheme.onPrimary)),
                     onPressed: () {
-                      if (widget.singleProviderDebugObject != null) {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ScrapingReportScreen(
-                                  singleProviderMap: tryParse(() =>
-                                      widget.scrapingReportMap
-                                          as Map<String, List<dynamic>>),
-                                  singleDebugObject:
-                                      widget.singleProviderDebugObject),
-                            ));
-                      } else {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ScrapingReportScreen(
-                                multiProviderMap: tryParse(() =>
-                                    widget.scrapingReportMap as Map<
-                                        PluginInterface,
-                                        Map<String, List<dynamic>>>),
-                              ),
-                            ));
-                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          settings: RouteSettings(name: "/bug-report"),
+                          builder: (context) => BugReportScreen(
+                            submissionType: SubmissionType.userApproved,
+                            bugReportsList: widget.bugReports!,
+                          ),
+                        ),
+                      );
                     })
               ],
               if (widget.noPluginsEnabled) ...[
@@ -389,6 +393,8 @@ class _VideoListState extends State<VideoList> {
                               onLongPress: () {
                                 showModalBottomSheet(
                                     context: context,
+                                    routeSettings: RouteSettings(
+                                        name: "video_list_uvp_modal"),
                                     builder: (BuildContext context) {
                                       // Use stateful builder to allow calling setState on the modal itself
                                       return StatefulBuilder(builder:
@@ -405,16 +411,17 @@ class _VideoListState extends State<VideoList> {
                                                 onTap: () => Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            AuthorPageScreen(
-                                                                authorPage: videoList![
-                                                                        index]
-                                                                    .plugin!
-                                                                    .getAuthorPage(
-                                                                        videoList![index].authorID!)))).then(
+                                                        builder: (context) => AuthorPageScreen(
+                                                            authorPage: videoList![index]
+                                                                .plugin!
+                                                                .getAuthorPage(
+                                                                    videoList![index]
+                                                                        .authorID!),
+                                                            authorID:
+                                                                videoList![index]
+                                                                    .authorID!))).then(
                                                     (value) =>
-                                                        Navigator.of(context)
-                                                            .pop()),
+                                                        Navigator.of(context).pop()),
                                               ),
                                               FutureBuilder<bool?>(
                                                 future: isInFavorites(
@@ -502,22 +509,8 @@ class _VideoListState extends State<VideoList> {
                                                     Icons.bug_report),
                                                 title: const Text(
                                                     "Create bug report"),
-                                                onTap: () => Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        BugReportScreen(
-                                                      debugObject: [
-                                                        videoList![index]
-                                                            .toMap()
-                                                      ],
-                                                      plugin: videoList?[index]
-                                                          .plugin,
-                                                    ),
-                                                  ),
-                                                ).then((value) =>
-                                                    Navigator.of(context)
-                                                        .pop()),
+                                                onTap: () =>
+                                                    createModalBugReport(index),
                                               ),
                                             ]);
                                       });
@@ -792,11 +785,11 @@ class _VideoListState extends State<VideoList> {
                     openColor: Theme.of(context).colorScheme.surface,
                     transitionDuration: const Duration(milliseconds: 400),
                     openBuilder: (context, _) => AuthorPageScreen(
-                          authorPage: _authorPageCache[videoList![index].iD] ??=
-                              videoList![index]
-                                  .plugin!
-                                  .getAuthorPage(videoList![index].authorID!),
-                        ),
+                        authorPage: _authorPageCache[videoList![index].iD] ??=
+                            videoList![index]
+                                .plugin!
+                                .getAuthorPage(videoList![index].authorID!),
+                        authorID: videoList![index].authorID!),
                     closedBuilder: (context, openContainer) => TextButton(
                         onPressed: videoList![index].authorID == null
                             ? () => showToast(

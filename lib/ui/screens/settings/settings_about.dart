@@ -4,9 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '/services/bug_report_manager.dart';
 import '/services/plugin_manager.dart';
 import '/services/update_manager.dart';
-import '/ui/screens/bug_report.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/utils/update_dialog.dart';
 import '/utils/bundled_plugin.dart';
@@ -170,10 +171,14 @@ class _AboutScreenState extends State<AboutScreen> {
                                 "Long press anything in the app to report a bug"),
                             onTap: () {
                               Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => BugReportScreen(
-                                          debugObject: [], plugin: null)));
+                                context,
+                                MaterialPageRoute(
+                                  settings: RouteSettings(name: "/bug-report"),
+                                  builder: (context) => BugReportScreen(
+                                      submissionType: SubmissionType.manual,
+                                      bugReportsList: []),
+                                ),
+                              );
                             }),
                         ListTile(
                             leading: const Icon(Icons.person),
