@@ -23,7 +23,9 @@ class WelcomeScreen extends StatelessWidget {
                               : "assets/launcher-icon/stock.png"))),
                   Padding(
                       padding: const EdgeInsets.only(top: 50),
-                      child: Text("Welcome to Hedon Haven",
+                      child: Text(
+                          "Welcome to Hedon Haven"
+                              "${kDebugMode ? " Debug" : ""}",
                           style: Theme.of(context).textTheme.headlineMedium)),
                   Spacer(),
                   Align(
