@@ -82,6 +82,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
     // Remove all reported bugs
     widget.loadingHandler.resultsBugReports
         .removeWhere((uvp) => reportedBugs.contains(uvp));
+
+    setState(() {});
   }
 
   @override

@@ -95,6 +95,24 @@ class _HomeScreenState extends State<HomeScreen> {
     return results;
   }
 
+  void createResultsBugReport() async {
+    List<BugReport> reportedBugs = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: "/bug-report"),
+        builder: (context) => BugReportScreen(
+            submissionType: SubmissionType.userApproved,
+            bugReportsList: loadingHandler.resultsBugReports),
+      ),
+    );
+
+    // Remove all reported bugs
+    loadingHandler.resultsBugReports
+        .removeWhere((uvp) => reportedBugs.contains(uvp));
+
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,15 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icon(
                     color: Theme.of(context).colorScheme.error,
                     Icons.error_outline),
-                onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            settings: RouteSettings(name: "/bug-report"),
-                            builder: (context) => BugReportScreen(
-                                submissionType: SubmissionType.userApproved,
-                                bugReportsList:
-                                    loadingHandler.resultsBugReports)))
-                    .whenComplete(() => setState(() {})))
+                onPressed: () => createResultsBugReport())
           ],
           Spacer(),
           IconButton(

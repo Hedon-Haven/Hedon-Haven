@@ -188,7 +188,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
       ),
     );
     // Clear scrape failure message to avoid further reports
-    authorPage!.scrapeFailMessage = null;
+    setState(() => authorPage!.scrapeFailMessage = null);
   }
 
   void createFailureBugReport() {

@@ -163,6 +163,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     // Remove all reported bugs
     loadingHandler.videoSuggestionsBugReports
         .removeWhere((uvp) => reportedBugs.contains(uvp));
+
+    setState(() {});
   }
 
   // Pause video and exit fullscreen before navigating to another page
@@ -452,6 +454,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     // Remove all reported bugs
     loadingHandler.commentsBugReports
         .removeWhere((uc) => reportedBugs.contains(uc));
+
+    setState(() {});
   }
 
   Future<List<UniversalVideoPreview>?> loadMoreResults() async {
