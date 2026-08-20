@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
@@ -12,12 +13,14 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/services/analytics_manager.dart';
+import '/services/bug_report_manager.dart';
 import '/services/database_manager.dart';
 import '/services/external_link_manager.dart';
 import '/services/icon_manager.dart';
 import '/services/plugin_manager.dart';
 import '/services/shared_prefs_manager.dart';
 import '/services/update_manager.dart';
+import '/ui/screens/bug_report/bug_report.dart';
 import '/ui/screens/fake_apps/fake_reminders.dart';
 import '/ui/screens/fake_apps/fake_settings.dart';
 import '/ui/screens/home.dart';
@@ -49,6 +52,7 @@ void main() async {
   downloadPluginIcons();
   await processArgs();
   logger.i("Starting flutter process");
+  setupErrorHandling();
   runApp(const ViewerApp());
 }
 
@@ -71,8 +75,61 @@ Future<void> processArgs() async {
   logger.i("Finished processing args");
 }
 
+/// Set up backup error handling to avoid the flutter red screen of death
+void setupErrorHandling() {
+  bool bugReportOpen = false;
+
+  // Push BugReportScreen, guarded against opening more than once at a time
+  void openBugReportScreen(String error, String stack) {
+    final context = ViewerApp.navigatorKey.currentContext;
+    if (context != null && !bugReportOpen) {
+      bugReportOpen = true;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          settings: const RouteSettings(name: "/bug-report-emergency"),
+          builder: (context) => BugReportScreen(
+            unexpectedError: true,
+            bugReportsList: [
+              BugReport(
+                  navigatorPath: navigatorPathObserver.currentPath,
+                  errorMessage: error,
+                  codeTrace: stack)
+            ],
+            submissionType: SubmissionType.userApproved,
+          ),
+        ),
+      ).then((_) => bugReportOpen = false);
+    }
+  }
+
+  // Replace the default red error screen with a minimal placeholder,
+  // since ErrorWidget.builder has no BuildContext to navigate with
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return const Center(child: Text("Broken Widget"));
+  };
+
+  // Catch errors thrown by the framework (build/layout/paint)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    logger.f("FlutterError: ${details.exceptionAsString()}");
+    FlutterError.presentError(details);
+    openBugReportScreen(details.exception.toString(), details.stack.toString());
+  };
+
+  // Catch async errors not caught by FlutterError (e.g. inside Futures)
+  PlatformDispatcher.instance.onError = (error, stack) {
+    logger.f("Uncaught error: $error\n$stack");
+    openBugReportScreen(error.toString(), stack.toString());
+    return true;
+  };
+}
+
 class ViewerApp extends StatefulWidget {
   const ViewerApp({super.key});
+
+  // Static so it's reachable from main() before any state exists
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   @override
   ViewerAppState createState() => ViewerAppState();
@@ -83,7 +140,7 @@ class ViewerApp extends StatefulWidget {
 
 class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
   // This is required to show the update dialog in the correct context
-  final GlobalKey<NavigatorState> materialAppKey = GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> materialAppKey = ViewerApp.navigatorKey;
 
   late final KeyEventCallback escapeHandler;
 
@@ -362,7 +419,7 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
                 themeMode: snapshot.data ?? ThemeMode.system,
                 navigatorKey: materialAppKey,
                 navigatorObservers: [navigatorPathObserver],
-                /*
+
                 /// Overlay a debug button over the entire app
                 builder: (context, child) {
                   return Stack(children: [
@@ -374,14 +431,13 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
                         mini: true,
                         onPressed: () {
                           // Debug action here
-                          logger.f(navigatorPathObserver.currentPath);
+                          throw Exception("Test error from debug button");
                         },
                         child: const Icon(Icons.bug_report),
                       ),
                     ),
                   ]);
                 },
-                */
                 home: DropRegion(
                   // Formats this region can accept.
                   formats: [Formats.uri],

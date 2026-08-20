@@ -16,9 +16,14 @@ import 'bug_reports_list.dart';
 class BugReportScreen extends StatefulWidget {
   final List<BugReport> bugReportsList;
   final SubmissionType submissionType;
+  final bool unexpectedError;
 
   const BugReportScreen(
-      {super.key, required this.bugReportsList, required this.submissionType});
+      {super.key,
+      required this.bugReportsList,
+      required this.submissionType,
+      bool? unexpectedError})
+      : unexpectedError = unexpectedError ?? false;
 
   @override
   State<BugReportScreen> createState() => _BugReportScreenState();
@@ -43,7 +48,14 @@ class _BugReportScreenState extends State<BugReportScreen> {
     bugReportsList = widget.bugReportsList;
     groupedBugReports = groupBugReports(bugReportsList);
     if (bugReportsList.isEmpty) {
-      showEmptyWarning();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showEmptyWarning();
+      });
+    }
+    if (widget.unexpectedError) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showUnexpectedErrorWarning();
+      });
     }
     appInfoController.text = getAppAndDeviceInfo()
         .entries
@@ -69,6 +81,26 @@ class _BugReportScreenState extends State<BugReportScreen> {
             content: const Text(
                 "Long tap anything in the app to create a specific bug report.\n\n"
                 "Ignore this message if you want to create a suggestion.")));
+  }
+
+  void showUnexpectedErrorWarning() {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => ThemedDialog(
+            title: "An unexpected error has occurred",
+            primaryText: "Continue",
+            onPrimary: () => Navigator.of(context).pop(),
+            secondaryText: "Cancel report",
+            onSecondary: () {
+              // Close dialog
+              Navigator.of(context).pop();
+              // Go back a screen
+              Navigator.of(context).pop([]);
+            },
+            content: const Text(
+                "An unexpected error has occurred in the app. Please submit "
+                "this bug report to help fix it. Check the "
+                "\"App bug reports\" section for more details.")));
   }
 
   void handlePop(bool goingToPop) {
@@ -324,7 +356,9 @@ class _BugReportScreenState extends State<BugReportScreen> {
         child: Scaffold(
             appBar: AppBar(
               backgroundColor: Theme.of(context).colorScheme.surface,
-              title: const Text("Bug Report"),
+              title: Text(widget.unexpectedError
+                  ? "Unexpected error Bug Report"
+                  : "Bug Report"),
             ),
             body: SafeArea(
                 child: Padding(
