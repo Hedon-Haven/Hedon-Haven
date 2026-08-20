@@ -1,9 +1,7 @@
 import 'package:dynamic_app_icon_flutter/dynamic_app_icon.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:page_transition/page_transition.dart';
 
-import '/ui/screens/settings/settings_plugins/settings_plugins.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
 import '/utils/global_vars.dart';
