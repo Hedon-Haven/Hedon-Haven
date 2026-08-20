@@ -61,12 +61,17 @@ Future<bool> startUpgrade(String currentVersion) async {
       case "0.6.3":
         // Starting v0.6.4 added external link handler provider type
         await addExternalLinkHandlerProvider();
-        break;
+        continue case0_6_5;
       case "0.6.4":
         // A small bug caused all entries since 0.6.4 to be invalid
         await purgeDatabase();
-        break;
+        continue case0_6_5;
+      case0_6_5:
       case "0.6.5":
+      case "0.6.6":
+        // Force a full settings reset to force analytics salt creation and
+        // analytics onboarding screen
+        await forceReset();
         break;
       default:
         logger.e("Unknown version: $currentVersion. Not changing anything");
