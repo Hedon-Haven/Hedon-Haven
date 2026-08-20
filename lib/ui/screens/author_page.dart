@@ -44,7 +44,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
   bool isMobile = true;
   bool isInternetConnected = true;
   String? failedToLoadReason;
-  String? detailedFailReason;
+  String? loadErrorStacktrace;
 
   UniversalAuthorPage? authorPage = UniversalAuthorPage.skeleton();
 
@@ -99,7 +99,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
       if (failedToLoadReason != "No internet connection") {
         setState(() {
           failedToLoadReason = e.toString();
-          detailedFailReason = stacktrace.toString();
+          loadErrorStacktrace = stacktrace.toString();
         });
       }
     });
