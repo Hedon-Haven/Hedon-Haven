@@ -141,11 +141,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       await beforeNavigate();
     });
     return AuthorPageScreen(
-      authorPage: _authorPageCache.putIfAbsent(
-        authorID,
-        () => videoMetadata.plugin!.getAuthorPage(authorID),
-      ),
-    );
+        authorPage: _authorPageCache.putIfAbsent(
+          authorID,
+          () => videoMetadata.plugin!.getAuthorPage(authorID),
+        ),
+        authorID: authorID);
   }
 
   /// To report all suggestionVideoBugReports
@@ -248,7 +248,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     MaterialPageRoute(
                         builder: (context) => AuthorPageScreen(
                             authorPage: comment.plugin!
-                                .getAuthorPage(comment.authorID!))));
+                                .getAuthorPage(comment.authorID!),
+                            authorID: comment.authorID!)));
               }
               if (context.mounted) Navigator.of(context).pop();
             },
@@ -347,8 +348,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           context,
           MaterialPageRoute(
               builder: (context) => AuthorPageScreen(
-                  authorPage:
-                      comment.plugin!.getAuthorPage(comment.authorID!))));
+                  authorPage: comment.plugin!.getAuthorPage(comment.authorID!),
+                  authorID: comment.authorID!)));
     }
     if (mounted) Navigator.of(context).pop();
   }

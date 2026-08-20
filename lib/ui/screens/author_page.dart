@@ -23,7 +23,12 @@ import '/utils/universal_formats.dart';
 class AuthorPageScreen extends StatefulWidget {
   Future<UniversalAuthorPage?> authorPage;
 
-  AuthorPageScreen({super.key, required this.authorPage});
+  /// Pass authorID to be able to pass it to BugReport screen in case
+  /// the author screen fails to load completely
+  final String authorID;
+
+  AuthorPageScreen(
+      {super.key, required this.authorPage, required this.authorID});
 
   @override
   State<AuthorPageScreen> createState() => _AuthorPageScreenState();

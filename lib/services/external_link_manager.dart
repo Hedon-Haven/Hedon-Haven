@@ -188,7 +188,8 @@ Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
     case ContentType.authorPage:
       Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => AuthorPageScreen(
-              authorPage: handlerPlugin.getAuthorPage(parsedLink.iD!))));
+              authorPage: handlerPlugin.getAuthorPage(parsedLink.iD!),
+              authorID: parsedLink.iD!)));
       break;
     case ContentType.unknown:
       throw Exception("Unknown content type");
