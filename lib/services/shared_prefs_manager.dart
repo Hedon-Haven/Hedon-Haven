@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '/services/database_manager.dart';
-import '/services/shared_prefs_manager_upgrades.dart';
+import '/services/upgrade_manager.dart';
 import '/utils/global_vars.dart';
 
 Future<void> setDefaultSettings([bool forceReset = false]) async {
