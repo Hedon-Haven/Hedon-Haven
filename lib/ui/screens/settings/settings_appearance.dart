@@ -34,6 +34,7 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
                         onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
+                                settings: RouteSettings(name: "/launcher_appearance"),
                                 builder: (context) =>
                                     const LauncherAppearance()))),
                     FutureBuilder<String?>(

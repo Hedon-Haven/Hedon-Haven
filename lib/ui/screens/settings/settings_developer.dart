@@ -197,6 +197,7 @@ class DeveloperScreen extends StatelessWidget {
                                 Navigator.push(
                                     context,
                                     MaterialPageRoute(
+                                        settings: RouteSettings(name: "/log_screen"),
                                         builder: (context) => LogScreen(
                                             logText: File(
                                                     "${appSupportDir.path}/logs/current.log")

@@ -133,6 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.push(
               context,
               PageRouteBuilder(
+                settings: RouteSettings(name: "/search_screen"),
                 pageBuilder: (context, animation, _) =>
                     SearchScreen(previousSearch: UniversalSearchRequest()),
                 transitionsBuilder: (context, animation, _, child) {

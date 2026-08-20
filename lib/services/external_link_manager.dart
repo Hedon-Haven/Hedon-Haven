@@ -159,6 +159,7 @@ Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
   switch (parsedLink.type) {
     case ContentType.homePage:
       Navigator.of(context).push(MaterialPageRoute(
+        settings: RouteSettings(name: "/external_link_home"),
         builder: (context) => HomeScreen(
             provider: handlerPlugin, pageCount: parsedLink.pageCount),
       ));
@@ -167,6 +168,7 @@ Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
       LoadingHandler searchHandler =
           LoadingHandler(navPath: navigatorPathObserver.currentPath);
       Navigator.of(context).push(MaterialPageRoute(
+        settings: RouteSettings(name: "/external_link_search_results"),
         builder: (context) => ResultsScreen(
           videoResults: searchHandler.getSearchResults(
               parsedLink.searchRequest!, null, [handlerPlugin]),
@@ -178,6 +180,7 @@ Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
       break;
     case ContentType.videoPage:
       Navigator.of(context).push(MaterialPageRoute(
+          settings: RouteSettings(name: "/external_link_video_player"),
           builder: (context) => VideoPlayerScreen(
                 // FIXME: Pass a proper uvp or make passing it optional
                 videoMetadata: handlerPlugin.getVideoMetadata(
@@ -187,6 +190,7 @@ Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
       break;
     case ContentType.authorPage:
       Navigator.of(context).push(MaterialPageRoute(
+          settings: RouteSettings(name: "/external_link_author_page"),
           builder: (context) => AuthorPageScreen(
               authorPage: handlerPlugin.getAuthorPage(parsedLink.iD!),
               authorID: parsedLink.iD!)));

@@ -35,6 +35,8 @@ class WelcomeScreen extends StatelessWidget {
                           onPressed: () => Navigator.push(
                               context,
                               PageTransition(
+                                  settings: RouteSettings(
+                                      name: "/onboarding_disclaimers"),
                                   type: PageTransitionType.rightToLeftJoined,
                                   childCurrent: this,
                                   child: DisclaimersScreen())),

@@ -161,6 +161,7 @@ class _AboutScreenState extends State<AboutScreen> {
                             onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                    settings: RouteSettings(name: "/licenses_page"),
                                     builder: (context) => LicensePage(
                                           applicationName: "Hedon Haven",
                                         )))),

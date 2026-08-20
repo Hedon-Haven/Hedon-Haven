@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:secure_app_switcher/secure_app_switcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
@@ -92,6 +93,8 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
+                                  settings:
+                                      RouteSettings(name: "/settings_proxy"),
                                   builder: (context) => const ProxyScreen()));
                         }),
                     ...buildAnalyticsOptions()
@@ -125,8 +128,12 @@ List<Widget> buildAnalyticsOptions({bool reduceBorders = false}) {
                           title: "Anonymous Pings",
                           primaryText: "Ok",
                           onPrimary: () => Navigator.pop(context),
-                          content: SelectableText(description,
-                              style: Theme.of(context).textTheme.bodyLarge),
+                          content: GestureDetector(
+                              onTap: () => launchUrl(Uri.parse(
+                                  "https://docs.hedon-haven.top/analytics.md")),
+                              child: Text(description,
+                                  style:
+                                      Theme.of(context).textTheme.bodyLarge)),
                         )),
               ),
               switchState: snapshot.data ?? false,
@@ -158,8 +165,12 @@ List<Widget> buildAnalyticsOptions({bool reduceBorders = false}) {
                           title: "Anonymous Pings",
                           primaryText: "Ok",
                           onPrimary: () => Navigator.pop(context),
-                          content: SelectableText(description,
-                              style: Theme.of(context).textTheme.bodyLarge),
+                          content: GestureDetector(
+                              onTap: () => launchUrl(Uri.parse(
+                                  "https://docs.hedon-haven.top/analytics.md")),
+                              child: Text(description,
+                                  style:
+                                      Theme.of(context).textTheme.bodyLarge)),
                         )),
               ),
               switchState: snapshot.data ?? false,

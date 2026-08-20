@@ -348,6 +348,7 @@ class _VideoListState extends State<VideoList> {
                     onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
+                          settings: RouteSettings(name: "/plugins_list"),
                           builder: (context) => PluginsScreen(),
                         )))
               ]
@@ -379,6 +380,7 @@ class _VideoListState extends State<VideoList> {
                       closedColor: Colors.transparent,
                       openColor: Theme.of(context).colorScheme.surface,
                       transitionDuration: const Duration(milliseconds: 400),
+                      routeSettings: RouteSettings(name: "/video_player"),
                       openBuilder: (context, _) => VideoPlayerScreen(
                             videoMetadata:
                                 _videoMetadataCache[videoList![index].iD] ??=
@@ -411,6 +413,9 @@ class _VideoListState extends State<VideoList> {
                                                 onTap: () => Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
+                                                        settings: RouteSettings(
+                                                            name:
+                                                                "/author_page"),
                                                         builder: (context) => AuthorPageScreen(
                                                             authorPage: videoList![index]
                                                                 .plugin!
@@ -420,8 +425,7 @@ class _VideoListState extends State<VideoList> {
                                                             authorID:
                                                                 videoList![index]
                                                                     .authorID!))).then(
-                                                    (value) =>
-                                                        Navigator.of(context).pop()),
+                                                    (value) => Navigator.of(context).pop()),
                                               ),
                                               FutureBuilder<bool?>(
                                                 future: isInFavorites(
@@ -784,6 +788,7 @@ class _VideoListState extends State<VideoList> {
                     closedColor: Colors.transparent,
                     openColor: Theme.of(context).colorScheme.surface,
                     transitionDuration: const Duration(milliseconds: 400),
+                    routeSettings: RouteSettings(name: "/author_page"),
                     openBuilder: (context, _) => AuthorPageScreen(
                         authorPage: _authorPageCache[videoList![index].iD] ??=
                             videoList![index]

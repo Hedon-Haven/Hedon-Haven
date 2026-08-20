@@ -349,6 +349,8 @@ class _BugReportScreenState extends State<BugReportScreen> {
                                 onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
+                                        settings: RouteSettings(
+                                            name: "/bug_reports_list"),
                                         builder: (context) =>
                                             BugReportsListScreen(
                                               bugReportsList:
@@ -364,6 +366,8 @@ class _BugReportScreenState extends State<BugReportScreen> {
                                 onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
+                                        settings: RouteSettings(
+                                            name: "/bug_reports_list"),
                                         builder: (context) =>
                                             BugReportsListScreen(
                                               bugReportsList: groupedBugReports
@@ -381,6 +385,8 @@ class _BugReportScreenState extends State<BugReportScreen> {
                                 onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
+                                        settings: RouteSettings(
+                                            name: "/bug_reports_list"),
                                         builder: (context) =>
                                             BugReportsListScreen(
                                               bugReportsList: groupedBugReports

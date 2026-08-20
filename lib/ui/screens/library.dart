@@ -47,6 +47,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                               onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
+                                      settings: RouteSettings(name: "/settings_history"),
                                       builder: (context) =>
                                           const HistoryScreen())))),
                       Padding(
@@ -65,6 +66,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                    settings: RouteSettings(name: "/favorites_list"),
                                     builder: (context) =>
                                         const FavoritesScreen())),
                           )),

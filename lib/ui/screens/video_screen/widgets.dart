@@ -190,6 +190,8 @@ Widget buildActorsList(BuildContext context, VideoPlayerScreenState vps) {
                                     Theme.of(context).colorScheme.surface,
                                 transitionDuration:
                                     const Duration(milliseconds: 400),
+                                routeSettings:
+                                    RouteSettings(name: "/author_page"),
                                 openBuilder: (_, __) =>
                                     vps.openAuthorPage(actor.authorID),
                                 closedBuilder: (context, openContainer) =>
@@ -243,6 +245,7 @@ Widget buildAuthorWidget(BuildContext context, VideoPlayerScreenState vps) {
       closedColor: Colors.transparent,
       openColor: Theme.of(context).colorScheme.surface,
       transitionDuration: const Duration(milliseconds: 400),
+      routeSettings: RouteSettings(name: "/author_page"),
       openBuilder: (_, __) => vps.openAuthorPage(vps.videoMetadata.authorID),
       closedBuilder: (context, openContainer) => Align(
           alignment: Alignment.centerLeft,

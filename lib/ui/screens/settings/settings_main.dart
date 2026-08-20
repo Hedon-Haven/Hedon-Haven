@@ -56,6 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
+                              settings: RouteSettings(name: "/settings_plugins_list"),
                               builder: (context) => const PluginsScreen()));
                     },
                   ),
@@ -68,6 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
+                              settings: RouteSettings(name: "/settings_appearance"),
                               builder: (context) => const AppearanceScreen()));
                     },
                   ),
@@ -80,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
+                              settings: RouteSettings(name: "/settings_media"),
                               builder: (context) => const MediaScreen()));
                     },
                   ),
@@ -91,6 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
+                              settings: RouteSettings(name: "/settings_comments"),
                               builder: (context) => const CommentsScreen()));
                     },
                   ),
@@ -102,6 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
+                              settings: RouteSettings(name: "/settings_history"),
                               builder: (context) => const HistoryScreen()));
                     },
                   ),
@@ -114,6 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
+                              settings: RouteSettings(name: "/settings_privacy"),
                               builder: (context) => const PrivacyScreen()));
                     },
                   ),
@@ -126,6 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Navigator.push(
                               context,
                               MaterialPageRoute(
+                                  settings: RouteSettings(name: "/settings_about"),
                                   builder: (context) => AboutScreen()))
                           .then((value) => setState(() {}));
                     },
@@ -148,6 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Navigator.push(
                                       context,
                                       MaterialPageRoute(
+                                          settings: RouteSettings(name: "/settings_developer"),
                                           builder: (context) =>
                                               const DeveloperScreen()));
                                 },

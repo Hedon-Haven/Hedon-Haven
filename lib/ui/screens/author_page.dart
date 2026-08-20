@@ -480,6 +480,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
         closedColor: Colors.transparent,
         openColor: Theme.of(context).colorScheme.surface,
         transitionDuration: const Duration(milliseconds: 400),
+        routeSettings: RouteSettings(name: "/author_page_description"),
         openBuilder: (context, _) => Scaffold(
             appBar: AppBar(
                 title: const Text("About author"),

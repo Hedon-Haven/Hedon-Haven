@@ -226,8 +226,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void openCommentSettings() async {
     // Navigate to settings page of comments
     logger.i("Opening comment settings");
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (context) => const CommentsScreen()));
+    await Navigator.push(
+        context,
+        MaterialPageRoute(
+            settings: RouteSettings(name: "/settings_comments"),
+            builder: (context) => const CommentsScreen()));
     logger.i("Refreshing comments");
     loadingHandler.commentsPageCounter = 0;
     loadedCommentsOnce = false;
@@ -248,6 +251,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 await Navigator.push(
                     context,
                     MaterialPageRoute(
+                        settings: RouteSettings(name: "/author_page"),
                         builder: (context) => AuthorPageScreen(
                             authorPage: comment.plugin!
                                 .getAuthorPage(comment.authorID!),
@@ -349,6 +353,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       await Navigator.push(
           context,
           MaterialPageRoute(
+              settings: RouteSettings(name: "/author_page"),
               builder: (context) => AuthorPageScreen(
                   authorPage: comment.plugin!.getAuthorPage(comment.authorID!),
                   authorID: comment.authorID!)));

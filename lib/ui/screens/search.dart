@@ -75,6 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
     widget.previousSearch = query;
     Navigator.of(context)
         .push(PageRouteBuilder(
+            settings: RouteSettings(name: "/search_results"),
             pageBuilder: (_, __, ___) => ResultsScreen(
                   videoResults:
                       searchHandler.getSearchResults(widget.previousSearch),
@@ -153,6 +154,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           onPressed: () {
                             Navigator.of(context)
                                 .push(MaterialPageRoute(
+                                    settings:
+                                        RouteSettings(name: "/search_filter"),
                                     builder: (context) => FilterScreen(
                                         searchRequest: widget.previousSearch
                                             .copyWith(
@@ -212,6 +215,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           await Navigator.push(
                               context,
                               MaterialPageRoute(
+                                settings: RouteSettings(name: "/plugins_list"),
                                 builder: (context) => PluginsScreen(),
                               ));
                           // Re-check if there are search suggestion providers

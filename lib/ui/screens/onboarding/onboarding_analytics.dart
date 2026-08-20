@@ -108,6 +108,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 onPressed: () => Navigator.push(
                                     context,
                                     PageTransition(
+                                        settings: RouteSettings(
+                                            name: "/onboarding_plugins_list"),
                                         type: PageTransitionType
                                             .rightToLeftJoined,
                                         childCurrent: widget,
