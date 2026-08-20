@@ -362,6 +362,26 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
                 themeMode: snapshot.data ?? ThemeMode.system,
                 navigatorKey: materialAppKey,
                 navigatorObservers: [navigatorPathObserver],
+                /*
+                /// Overlay a debug button over the entire app
+                builder: (context, child) {
+                  return Stack(children: [
+                    child!,
+                    Positioned(
+                      bottom: 20,
+                      right: 20,
+                      child: FloatingActionButton(
+                        mini: true,
+                        onPressed: () {
+                          // Debug action here
+                          logger.f(navigatorPathObserver.currentPath);
+                        },
+                        child: const Icon(Icons.bug_report),
+                      ),
+                    ),
+                  ]);
+                },
+                */
                 home: DropRegion(
                   // Formats this region can accept.
                   formats: [Formats.uri],
