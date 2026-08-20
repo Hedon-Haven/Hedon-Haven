@@ -3,6 +3,8 @@ import 'package:toastification/toastification.dart';
 
 import '/utils/global_vars.dart';
 
+
+// TODO: Look into replacing with ScaffoldMessenger.showSnackBar
 void showToast(String message, BuildContext context, [int showDuration = 2]) {
   logger.i("Showing toast with message: $message");
 
