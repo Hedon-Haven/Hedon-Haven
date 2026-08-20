@@ -7,10 +7,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '/services/analytics_manager.dart' as analytics;
 import '/services/bug_report_manager.dart';
 import '/services/plugin_manager.dart';
-import 'bug_reports_list.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
+import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
+import 'bug_reports_list.dart';
 
 class BugReportScreen extends StatefulWidget {
   final List<BugReport> bugReportsList;
@@ -28,6 +29,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
   TextEditingController userInputController = TextEditingController();
   bool allowPop = false;
   late List<BugReport> bugReportsList;
+  List<BugReport> submittedBugReports = [];
 
   late ({
     List<BugReport>? appReports,
@@ -267,8 +269,6 @@ class _BugReportScreenState extends State<BugReportScreen> {
   }
 
   void submitReports() async {
-    List<BugReport> submittedBugReports = [];
-
     if ((groupedBugReports.appReports?.isNotEmpty ?? false) ||
         (groupedBugReports.bundledPluginGroups?.isNotEmpty ?? false)) {
       if (await showSubmitOptionsDialog()) {
@@ -277,6 +277,12 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 .expand((x) => x)
                 .toList() ??
             []);
+        // Remove submitted reports from UI
+        setState(() => groupedBugReports = (
+              appReports: [],
+              bundledPluginGroups: {},
+              thirdPartyPluginGroups: groupedBugReports.thirdPartyPluginGroups
+            ));
       }
     }
 
@@ -285,11 +291,18 @@ class _BugReportScreenState extends State<BugReportScreen> {
           in groupedBugReports.thirdPartyPluginGroups!.values) {
         if (await showThirdPartySubmitOptionsDialog(reportGroup)) {
           submittedBugReports.addAll(reportGroup);
+          // Remove submitted reports from UI
+          setState(() => groupedBugReports = (
+                appReports: groupedBugReports.appReports,
+                bundledPluginGroups: groupedBugReports.bundledPluginGroups,
+                thirdPartyPluginGroups: {}
+              ));
         }
       }
     }
 
     if (submittedBugReports.isNotEmpty) {
+      logger.i("Returning ${submittedBugReports.length} submitted bug reports");
       Navigator.of(context).pop(submittedBugReports);
     }
   }
