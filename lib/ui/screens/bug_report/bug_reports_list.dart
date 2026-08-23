@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '/services/bug_report_manager.dart';
 import '/services/plugin_manager.dart';

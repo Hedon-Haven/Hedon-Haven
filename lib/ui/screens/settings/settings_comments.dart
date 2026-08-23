@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '/ui/widgets/alert_dialog.dart';
 import '/ui/widgets/options_switch.dart';

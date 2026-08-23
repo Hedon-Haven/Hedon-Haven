@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:page_transition/page_transition.dart';
 
 import 'onboarding_analytics.dart';

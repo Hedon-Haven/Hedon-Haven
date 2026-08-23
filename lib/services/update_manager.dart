@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:apk_installer/apk_installer.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:system_info2/system_info2.dart';

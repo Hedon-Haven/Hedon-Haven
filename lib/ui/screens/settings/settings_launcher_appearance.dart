@@ -1,6 +1,6 @@
 import 'package:dynamic_app_icon_flutter/dynamic_app_icon.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';

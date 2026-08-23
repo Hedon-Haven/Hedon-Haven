@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:secure_app_switcher/secure_app_switcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 

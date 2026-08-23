@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '/ui/widgets/options_switch.dart';
 import '/utils/global_vars.dart';

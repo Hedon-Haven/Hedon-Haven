@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/options_dialog.dart';
