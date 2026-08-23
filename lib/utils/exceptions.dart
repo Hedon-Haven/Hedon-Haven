@@ -7,7 +7,7 @@ class ScrapingException implements Exception {
   String toString() => message;
 }
 
-abstract class ProviderException implements Exception {
+abstract class CustomException implements Exception {
   /// short label to display as title to user
   String get title;
 
@@ -18,10 +18,10 @@ abstract class ProviderException implements Exception {
 
   String toJson() => message;
 
-  ProviderException(this.message);
+  CustomException(this.message);
 }
 
-class NoInternetConnectionException extends ProviderException {
+class NoInternetConnectionException extends CustomException {
   NoInternetConnectionException(
       [super.message =
           "The app cannot access the internet. Check your connection!"]);
@@ -30,7 +30,7 @@ class NoInternetConnectionException extends ProviderException {
   String get title => "No internet connection";
 }
 
-class AgeGateException extends ProviderException {
+class AgeGateException extends CustomException {
   AgeGateException(
       [super.message = "This plugin requires age verification in your country. "
           "Try setting a proxy in settings or using a VPN service."]);
@@ -39,7 +39,7 @@ class AgeGateException extends ProviderException {
   String get title => "Age Gate detected";
 }
 
-class BannedCountryException extends ProviderException {
+class BannedCountryException extends CustomException {
   BannedCountryException(
       [super.message = "This plugin is not accessible from your country. "
           "Try setting a proxy in settings or using a VPN service."]);
@@ -48,7 +48,7 @@ class BannedCountryException extends ProviderException {
   String get title => "Banned country detected";
 }
 
-class UnreachableException extends ProviderException {
+class UnreachableException extends CustomException {
   UnreachableException(
       [super.message = "Couldn't connect to provider. Try again later."]);
 
@@ -56,7 +56,7 @@ class UnreachableException extends ProviderException {
   String get title => "Couldn't reach provider";
 }
 
-class NotFoundException extends ProviderException {
+class NotFoundException extends CustomException {
   NotFoundException(
       [super.message = "Couldn't find whatever was requested. Soft error 404"]);
 
@@ -64,7 +64,7 @@ class NotFoundException extends ProviderException {
   String get title => "Not found";
 }
 
-class PrivateAuthorProfileException extends ProviderException {
+class PrivateAuthorProfileException extends CustomException {
   PrivateAuthorProfileException(
       [super.message = "Private author profile. Access forbidden."]);
 
