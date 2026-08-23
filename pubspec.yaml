@@ -31,8 +31,7 @@ dependencies:
   toastification: ^3.2.0
   system_info2: ^4.1.0
   package_installer_plus: ^1.0.0
-  dynamic_app_icon_flutter: #^0.0.3
-    git: https://github.com/Hedon-dev/dynamic_app_icon
+  dynamic_app_icon_flutter_plus: ^2.2.1
   yaml: ^3.1.3
   logger: ^2.7.0
   archive: ^4.2.0

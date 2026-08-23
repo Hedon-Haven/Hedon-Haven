@@ -24,10 +24,6 @@
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
             <!-- Register as text handler. Android has no way to register as a URL handler for
             any https/http link -->
@@ -40,12 +36,12 @@
 
         <!-- Activity aliases to get different launcher icons to conceal app -->
         <activity-alias
-            android:name=".MainActivity"
+            android:name="com.hedon_haven.viewer.MainActivity.default"
+            android:targetActivity=".MainActivity"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/stock"
-            android:label="${appName}"
-            android:targetActivity=".MainActivity">
+            android:label="${appName}">
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
@@ -56,7 +52,7 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".fake_settings"
+            android:name="com.hedon_haven.viewer.MainActivity.fake_settings"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/fake_settings"
@@ -72,7 +68,7 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".reminders"
+            android:name="com.hedon_haven.viewer.MainActivity.reminders"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/reminders"

@@ -1,4 +1,4 @@
-import 'package:dynamic_app_icon_flutter/dynamic_app_icon.dart';
+import 'package:dynamic_app_icon_flutter_plus/dynamic_app_icon_flutter_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -51,7 +51,6 @@ class _LauncherAppearanceScreenState extends State<LauncherAppearance> {
                     : "Close app",
                 onPrimary: () async {
                   if (kDebugMode || kProfileMode) {
-                    // FIXME: Report bug upstream or fix myself
                     showToast(
                         "Doesn't work in Debug or Profile versions", context);
                     Navigator.of(context).pop();
@@ -69,18 +68,18 @@ class _LauncherAppearanceScreenState extends State<LauncherAppearance> {
                   switch (value) {
                     case "Hedon Haven":
                       logger.i("Changing to stock icon");
-                      DynamicAppIcon.setupAppIcon(
-                          iconName: "default", iconList: list);
+                      await DynamicAppIconFlutterPlus.setAlternateIconName(
+                          null);
                       break;
                     case "GSM Settings":
                       logger.i("Changing to GSM settings icon");
-                      DynamicAppIcon.setupAppIcon(
-                          iconName: "fake_settings", iconList: list);
+                      await DynamicAppIconFlutterPlus.setAlternateIconName(
+                          "fake_settings");
                       break;
                     case "Reminders":
                       logger.i("Changing to reminders icon");
-                      DynamicAppIcon.setupAppIcon(
-                          iconName: "reminders", iconList: list);
+                      await DynamicAppIconFlutterPlus.setAlternateIconName(
+                          "reminders");
                       break;
                   }
                 },
