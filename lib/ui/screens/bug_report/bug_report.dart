@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:hedon_haven/utils/exceptions.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/services/analytics_manager.dart' as analytics;
@@ -29,12 +31,15 @@ class BugReportScreen extends StatefulWidget {
   State<BugReportScreen> createState() => _BugReportScreenState();
 }
 
-class _BugReportScreenState extends State<BugReportScreen> {
+class _BugReportScreenState extends State<BugReportScreen>
+    with WidgetsBindingObserver {
   TextEditingController appInfoController = TextEditingController();
   TextEditingController userInputController = TextEditingController();
   bool allowPop = false;
   late List<BugReport> bugReportsList;
   List<BugReport> submittedBugReports = [];
+
+  Completer<void>? _appResumedCompleter;
 
   late ({
     List<BugReport>? appReports,
@@ -45,7 +50,13 @@ class _BugReportScreenState extends State<BugReportScreen> {
   @override
   initState() {
     super.initState();
-    bugReportsList = widget.bugReportsList;
+
+    WidgetsBinding.instance.addObserver(this);
+
+    // Remove all ProviderException BugReports
+    bugReportsList = widget.bugReportsList
+        .where((report) => report.exception is! ProviderException)
+        .toList();
     groupedBugReports = groupBugReports(bugReportsList);
     if (bugReportsList.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,6 +73,19 @@ class _BugReportScreenState extends State<BugReportScreen> {
         .map((e) => "${e.key}: ${e.value}")
         .join("\n")
         .trim();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _appResumedCompleter?.complete();
+    }
   }
 
   void showEmptyWarning() {
@@ -218,14 +242,20 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 subtitle: Text("contact@hedon-haven.top"),
                 leading: Icon(Icons.email),
                 onTap: () async {
-                  await launchUrl(Uri(
+                  _appResumedCompleter = Completer<void>();
+                  bool submittedReport = await launchUrl(Uri(
                       scheme: "mailto",
                       path: "contact@hedon-haven.top",
                       query: _encodeQueryParameters(<String, String>{
                         "subject": "Bug report",
                         "body": combinedReport()
                       })));
-                  if (context.mounted) Navigator.pop(context, true);
+                  if (submittedReport) {
+                    // wait for user to return
+                    await _appResumedCompleter!.future;
+                    _appResumedCompleter = null;
+                  }
+                  if (context.mounted) Navigator.pop(context, submittedReport);
                 },
               ),
               ListTile(
@@ -234,8 +264,15 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 leading: Icon(Icons.bug_report),
                 onTap: () async {
                   await copyCombinedReport();
-                  await launchUrl(Uri.parse("https://issues.hedon-haven.top"));
-                  if (context.mounted) Navigator.pop(context, true);
+                  _appResumedCompleter = Completer<void>();
+                  bool submittedReport = await launchUrl(
+                      Uri.parse("https://issues.hedon-haven.top"));
+                  if (submittedReport) {
+                    // wait for user to return
+                    await _appResumedCompleter!.future;
+                    _appResumedCompleter = null;
+                  }
+                  if (context.mounted) Navigator.pop(context, submittedReport);
                 },
               )
             ])));
@@ -277,15 +314,21 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 subtitle: Text(plugin.contactEmail),
                 leading: Icon(Icons.email),
                 onTap: () async {
-                  await launchUrl(Uri(
+                  _appResumedCompleter = Completer<void>();
+                  bool submittedReport = await launchUrl(Uri(
                       scheme: "mailto",
                       path: plugin.contactEmail,
                       query: _encodeQueryParameters(<String, String>{
                         "subject": "${plugin.prettyName} Hedon Haven "
                             "plugin bug report",
-                        "body": JsonEncoder.withIndent("  ").convert(bugReports)
+                        "body": combinedReport(includeThirdParty: true)
                       })));
-                  if (context.mounted) Navigator.pop(context, true);
+                  if (submittedReport) {
+                    // wait for user to return
+                    await _appResumedCompleter!.future;
+                    _appResumedCompleter = null;
+                  }
+                  if (context.mounted) Navigator.pop(context, submittedReport);
                 },
               ),
               ListTile(
@@ -294,8 +337,15 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 leading: Icon(Icons.bug_report),
                 onTap: () async {
                   await copyCombinedReport();
-                  await launchUrl(Uri.parse(plugin.issueTrackerUrl));
-                  if (context.mounted) Navigator.pop(context, true);
+                  _appResumedCompleter = Completer<void>();
+                  bool submittedReport =
+                      await launchUrl(Uri.parse(plugin.issueTrackerUrl));
+                  if (submittedReport) {
+                    // wait for user to return
+                    await _appResumedCompleter!.future;
+                    _appResumedCompleter = null;
+                  }
+                  if (context.mounted) Navigator.pop(context, submittedReport);
                 },
               )
             ])));
@@ -336,7 +386,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
 
     if (submittedBugReports.isNotEmpty && mounted) {
       logger.i("Returning ${submittedBugReports.length} submitted bug reports");
-      showToast("Thank you for submitting the bug report!", context);
+      showToast("Thank you for submitting the bug reports!", context);
       Navigator.of(context).pop(submittedBugReports);
     }
   }
