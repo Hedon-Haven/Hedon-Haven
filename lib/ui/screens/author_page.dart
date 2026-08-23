@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import '/utils/exceptions.dart';
 import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
 import '/ui/screens/bug_report/bug_report.dart';
@@ -18,6 +17,7 @@ import '/ui/widgets/alert_dialog.dart';
 import '/ui/widgets/external_link_warning.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/convert.dart';
+import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
 
@@ -179,7 +179,6 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: ScrapingException(authorPage!.scrapeFailMessage!),
-              isAppException: false,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
@@ -206,7 +205,6 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
               navigatorPath: navigatorPathObserver.currentPath,
               exception: Exception(
                   "Failed to load ${widget.authorID}: $failedToLoadReason"),
-              isAppException: false,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown",
               isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
@@ -229,8 +227,8 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: Exception("Author page action button manual bug report"),
-              isAppException: false,
+              exception:
+                  Exception("Author page action button manual bug report"),
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
               debugObject: authorPage!.toMap(),

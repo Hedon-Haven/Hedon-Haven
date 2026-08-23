@@ -55,11 +55,11 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
         builder: (context, snapshot) {
           // Simplify display for appExceptions
           if (bugReportGroup.value.length == 1 &&
-              bugReportGroup.value.first.isAppException) {
+              bugReportGroup.value.first is ProviderException) {
             String titleText =
                 "${snapshot.data?.prettyName ?? bugReportGroup.key}"
                 ": "
-                "${(bugReportGroup.value.first.exception as AppException).title}";
+                "${(bugReportGroup.value.first.exception as ProviderException).title}";
 
             return ListTile(
               title: Text(titleText),

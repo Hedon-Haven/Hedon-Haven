@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:system_info2/system_info2.dart';
 
+import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
 
 Map<String, String> getAppAndDeviceInfo() {
@@ -72,22 +73,16 @@ class BugReport {
   /// The exception object with the error message string
   final Exception exception;
 
-  /// Whether the error is a custom exception from utils/exceptions.dart
-  final bool isAppException;
-
   /// Full stack trace of the error
   final String? codeTrace;
 
   BugReport(
-      {required this.navigatorPath,
-      required this.exception,
-      required this.isAppException,
-      this.codeTrace});
+      {required this.navigatorPath, required this.exception, this.codeTrace});
 
   Map<String, dynamic> toMap() => {
         "navigatorPath": navigatorPath,
         "exception": exception.toString(),
-        "isCustomException": isAppException,
+        "isCustomException": exception is ProviderException,
         "codeTrace": codeTrace,
       };
 
@@ -114,7 +109,6 @@ class PluginBugReport extends BugReport {
   PluginBugReport(
       {required super.navigatorPath,
       required super.exception,
-      required super.isAppException,
       super.codeTrace,
       required this.pluginCodeName,
       required this.isBundledPlugin,

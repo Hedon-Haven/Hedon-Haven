@@ -7,7 +7,7 @@ class ScrapingException implements Exception {
   String toString() => message;
 }
 
-abstract class AppException implements Exception {
+abstract class ProviderException implements Exception {
   /// short label to display as title to user
   String get title;
 
@@ -18,10 +18,10 @@ abstract class AppException implements Exception {
 
   String toJson() => message;
 
-  AppException(this.message);
+  ProviderException(this.message);
 }
 
-class AgeGateException extends AppException {
+class AgeGateException extends ProviderException {
   AgeGateException(
       [super.message = "This plugin requires age verification in your country. "
           "Try setting a proxy in settings or using a VPN service."]);
@@ -30,7 +30,7 @@ class AgeGateException extends AppException {
   String get title => "Age Gate detected";
 }
 
-class BannedCountryException extends AppException {
+class BannedCountryException extends ProviderException {
   BannedCountryException(
       [super.message = "This plugin is not accessible from your country. "
           "Try setting a proxy in settings or using a VPN service."]);
@@ -39,7 +39,7 @@ class BannedCountryException extends AppException {
   String get title => "Banned country detected";
 }
 
-class UnreachableException extends AppException {
+class UnreachableException extends ProviderException {
   UnreachableException(
       [super.message = "Couldn't connect to provider. Try again later."]);
 
@@ -47,7 +47,7 @@ class UnreachableException extends AppException {
   String get title => "Couldn't reach provider";
 }
 
-class NotFoundException extends AppException {
+class NotFoundException extends ProviderException {
   NotFoundException(
       [super.message = "Couldn't find whatever was requested. Soft error 404"]);
 
@@ -55,7 +55,7 @@ class NotFoundException extends AppException {
   String get title => "Not found";
 }
 
-class PrivateAuthorProfileException extends AppException {
+class PrivateAuthorProfileException extends ProviderException {
   PrivateAuthorProfileException(
       [super.message = "Private author profile. Access forbidden."]);
 
