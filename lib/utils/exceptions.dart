@@ -71,3 +71,11 @@ class PrivateAuthorProfileException extends CustomException {
   @override
   String get title => "Private profile";
 }
+
+class VirtualRealityNotSupportedException extends CustomException {
+  VirtualRealityNotSupportedException(
+      [super.message = "Virtual reality videos not yet supported"]);
+
+  @override
+  String get title => "VR not supported";
+}
