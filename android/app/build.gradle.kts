@@ -23,7 +23,7 @@ if (keystorePropertiesFileRelease.exists()) {
 
 android {
     namespace = "com.hedon_haven.viewer"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37 // flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
