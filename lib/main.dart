@@ -419,7 +419,7 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
                 themeMode: snapshot.data ?? ThemeMode.system,
                 navigatorKey: materialAppKey,
                 navigatorObservers: [navigatorPathObserver],
-
+                /*
                 /// Overlay a debug button over the entire app
                 builder: (context, child) {
                   return Stack(children: [
@@ -438,6 +438,7 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
                     ),
                   ]);
                 },
+                */
                 home: DropRegion(
                   // Formats this region can accept.
                   formats: [Formats.uri],
