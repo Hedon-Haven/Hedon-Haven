@@ -94,7 +94,7 @@ void setupErrorHandling() {
               BugReport(
                   navigatorPath: navigatorPathObserver.currentPath,
                   exception: Exception(error),
-                  isCustomException: false,
+                  isAppException: false,
                   codeTrace: stack)
             ],
             submissionType: SubmissionType.userApproved,

@@ -178,7 +178,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: Exception(authorPage!.scrapeFailMessage!),
-              isCustomException: false,
+              isAppException: false,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
@@ -205,7 +205,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
               navigatorPath: navigatorPathObserver.currentPath,
               exception: Exception(
                   "Failed to load ${widget.authorID}: $failedToLoadReason"),
-              isCustomException: false,
+              isAppException: false,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown",
               isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
@@ -229,7 +229,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: Exception("Author page action button manual bug report"),
-              isCustomException: false,
+              isAppException: false,
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
               debugObject: authorPage!.toMap(),

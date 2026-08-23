@@ -178,7 +178,7 @@ class _VideoListState extends State<VideoList> {
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: Exception("UVP modal menu user initiated"),
-              isCustomException: false,
+              isAppException: false,
               pluginCodeName: videoList![index].plugin!.codeName,
               isBundledPlugin: videoList![index].plugin!.isBundledPlugin,
               debugObject: videoList![index].toMap(),

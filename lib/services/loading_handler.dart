@@ -119,7 +119,7 @@ class LoadingHandler {
               navigatorPath: navPath,
               exception: exception as Exception,
               codeTrace: stacktrace.toString(),
-              isCustomException: isCustomException(exception as Exception),
+              isAppException: exception is AppException,
               pluginCodeName: plugin.codeName,
               isBundledPlugin: plugin.isBundledPlugin,
               debugObject: {}));
@@ -164,7 +164,7 @@ class LoadingHandler {
                   exception: Exception(
                       pluginResults[plugin.codeName]![currentIndex]
                           .scrapeFailMessage!),
-                  isCustomException: false,
+                  isAppException: false,
                   pluginCodeName: plugin.codeName,
                   isBundledPlugin: plugin.isBundledPlugin,
                   debugObject:
@@ -321,7 +321,7 @@ class LoadingHandler {
             navigatorPath: navPath,
             exception: exception as Exception,
             codeTrace: stacktrace.toString(),
-            isCustomException: isCustomException(exception as Exception),
+            isAppException: exception is AppException,
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
             debugObject: {}));
@@ -337,7 +337,7 @@ class LoadingHandler {
             commentsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
                 exception: Exception(comment.scrapeFailMessage!),
-                isCustomException: false,
+                isAppException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: comment.toMap()));
@@ -438,7 +438,7 @@ class LoadingHandler {
             navigatorPath: navPath,
             exception: exception as Exception,
             codeTrace: stacktrace.toString(),
-            isCustomException: isCustomException(exception as Exception),
+            isAppException: exception is AppException,
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
             debugObject: {}));
@@ -449,7 +449,7 @@ class LoadingHandler {
             videoSuggestionsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
                 exception: Exception(video.scrapeFailMessage!),
-                isCustomException: false,
+                isAppException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));
@@ -514,7 +514,7 @@ class LoadingHandler {
             navigatorPath: navPath,
             exception: exception as Exception,
             codeTrace: stacktrace.toString(),
-            isCustomException: isCustomException(exception as Exception),
+            isAppException: exception is AppException,
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
             debugObject: {}));
@@ -525,7 +525,7 @@ class LoadingHandler {
             authorVideosBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
                 exception: Exception(video.scrapeFailMessage!),
-                isCustomException: false,
+                isAppException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));

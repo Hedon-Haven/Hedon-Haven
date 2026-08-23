@@ -73,7 +73,7 @@ class BugReport {
   final Exception exception;
 
   /// Whether the error is a custom exception from utils/exceptions.dart
-  final bool isCustomException;
+  final bool isAppException;
 
   /// Full stack trace of the error
   final String? codeTrace;
@@ -81,13 +81,13 @@ class BugReport {
   BugReport(
       {required this.navigatorPath,
       required this.exception,
-      required this.isCustomException,
+      required this.isAppException,
       this.codeTrace});
 
   Map<String, dynamic> toMap() => {
         "navigatorPath": navigatorPath,
         "exception": exception,
-        "isCustomException": isCustomException,
+        "isCustomException": isAppException,
         "codeTrace": codeTrace,
       };
 
@@ -114,7 +114,7 @@ class PluginBugReport extends BugReport {
   PluginBugReport(
       {required super.navigatorPath,
       required super.exception,
-      required super.isCustomException,
+      required super.isAppException,
       super.codeTrace,
       required this.pluginCodeName,
       required this.isBundledPlugin,

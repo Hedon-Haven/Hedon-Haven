@@ -1,62 +1,53 @@
-class AgeGateException implements Exception {
+abstract class AppException implements Exception {
+  /// short label to display as title to user
+  String get title;
+
+  /// the long exception message that can be overridden at creation
+  @override
+  String toString() => message;
   final String message;
 
+  AppException(this.message);
+}
+
+class AgeGateException extends AppException {
   AgeGateException(
-      [this.message =
-          "Age gate encountered. Try setting a proxy in settings or using a VPN service."]);
+      [super.message = "This plugin requires age verification in your country. "
+          "Try setting a proxy in settings or using a VPN service."]);
 
   @override
-  String toString() => message;
+  String get title => "Age Gate detected";
 }
 
-class BannedCountryException implements Exception {
-  final String message;
-
+class BannedCountryException extends AppException {
   BannedCountryException(
-      [this.message =
-          "Banned country encountered. Try setting a proxy in settings or using a VPN service."]);
+      [super.message = "This plugin is not accessible from your country. "
+          "Try setting a proxy in settings or using a VPN service."]);
 
   @override
-  String toString() => message;
+  String get title => "Banned country detected";
 }
 
-class UnreachableException implements Exception {
-  final String message;
-
+class UnreachableException extends AppException {
   UnreachableException(
-      [this.message = "Couldn't connect to provider. Try again later."]);
+      [super.message = "Couldn't connect to provider. Try again later."]);
 
   @override
-  String toString() => message;
+  String get title => "Couldn't reach provider";
 }
 
-class NotFoundException implements Exception {
-  final String message;
-
+class NotFoundException extends AppException {
   NotFoundException(
-      [this.message = "Couldn't find whatever was requested. Soft error 404"]);
+      [super.message = "Couldn't find whatever was requested. Soft error 404"]);
 
   @override
-  String toString() => message;
+  String get title => "Not found";
 }
 
-class PrivateAuthorProfileException implements Exception {
-  final String message;
-
+class PrivateAuthorProfileException extends AppException {
   PrivateAuthorProfileException(
-      [this.message = "Private author profile. Access forbidden."]);
+      [super.message = "Private author profile. Access forbidden."]);
 
   @override
-  String toString() => message;
-}
-
-bool isCustomException(Exception? e) {
-  if (e == null) {
-    return false;
-  }
-  return e is AgeGateException ||
-      e is BannedCountryException ||
-      e is UnreachableException ||
-      e is NotFoundException ||
-      e is PrivateAuthorProfileException;
+  String get title => "Private profile";
 }
