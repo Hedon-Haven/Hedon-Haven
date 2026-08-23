@@ -453,7 +453,8 @@ class _BugReportScreenState extends State<BugReportScreen> {
         decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).colorScheme.surfaceVariant,
-            contentPadding: const EdgeInsets.all(5),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
             enabledBorder: OutlineInputBorder(
                 borderSide:
                     BorderSide(color: Theme.of(context).colorScheme.onSurface)),
