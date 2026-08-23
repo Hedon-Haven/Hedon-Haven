@@ -76,7 +76,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
               // Close dialog
               Navigator.of(context).pop();
               // Go back a screen
-              Navigator.of(context).pop([]);
+              Navigator.of(context).pop(<BugReport>[]);
             },
             content: const Text(
                 "Long press anything in the app to create a more specific "
@@ -96,7 +96,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
               // Close dialog
               Navigator.of(context).pop();
               // Go back a screen
-              Navigator.of(context).pop([]);
+              Navigator.of(context).pop(<BugReport>[]);
             },
             content: const Text(
                 "An unexpected error has occurred in the app. Please submit "
@@ -119,7 +119,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 // close popup
                 Navigator.of(context).pop();
                 // Go back a screen
-                Navigator.of(context).pop([]);
+                Navigator.of(context).pop(<BugReport>[]);
               },
             );
           });
