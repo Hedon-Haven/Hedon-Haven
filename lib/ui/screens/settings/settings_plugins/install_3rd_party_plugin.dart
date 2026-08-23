@@ -134,8 +134,8 @@ class _Install3rdPartyPluginScreenState
     try {
       var selectedFile = await FilePicker.pickFiles(
           type: FileType.custom, allowedExtensions: ["zip"]);
-      pluginConfigMap = await PluginManager.extractNewPlugin(
-          selectedFile!.files.single.path!);
+      pluginConfigMap =
+          await PluginManager.extractNewPlugin(selectedFile.first.path!);
       configFormatted = "Name: ${pluginConfigMap!["metadata"]["prettyName"]} "
           "(${pluginConfigMap!["metadata"]["codeName"]})"
           "\nProvider for: ${pluginConfigMap!["providerData"]["providerUrl"]}"
@@ -144,7 +144,7 @@ class _Install3rdPartyPluginScreenState
           "\nContact email: ${pluginConfigMap!["metadata"]["contactEmail"]}"
           "\nDescription: ${pluginConfigMap!["metadata"]["description"]}"
           "\nUpdate URL: ${pluginConfigMap!["metadata"]["updateUrl"] ?? "Updates unsupported"}";
-      setState(() => fileName = selectedFile.files.first.name);
+      setState(() => fileName = selectedFile.first.name);
     } catch (e, stacktrace) {
       if (e.toString().contains("AlreadyInstalled")) {
         showErrorDialog(
