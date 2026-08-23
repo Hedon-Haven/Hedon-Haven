@@ -7,6 +7,8 @@ abstract class AppException implements Exception {
   String toString() => message;
   final String message;
 
+  String toJson() => message;
+
   AppException(this.message);
 }
 
