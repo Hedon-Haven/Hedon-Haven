@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:auto_orientation/auto_orientation.dart';
+import 'package:auto_orientation_v2/auto_orientation_v2.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:window_manager/window_manager.dart';

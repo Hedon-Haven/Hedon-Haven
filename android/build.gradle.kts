@@ -23,12 +23,14 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
-// Fix flutter_js JVM/kotlin task target compatibility
+// Suppress JVM/kotlin task target compatibility build error
 gradle.projectsEvaluated {
-    project(":flutter_js") {
-        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-            compilerOptions {
-                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    listOf(":flutter_js", ":auto_orientation_v2").forEach { path ->
+        project(path) {
+            tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+                }
             }
         }
     }

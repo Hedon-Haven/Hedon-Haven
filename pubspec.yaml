@@ -15,8 +15,10 @@ dependencies:
   fvp: ^0.38.1
   video_player: ^2.14.0
   audio_video_progress_bar: ^2.0.3
-  auto_orientation: #^2.3.1
-    git: https://github.com/Kanwarpalsingh1986/auto_orientation
+  auto_orientation_v2: #^2.4.5
+    git:
+      url: https://github.com/Hedon-dev/auto_orientation_v2
+      ref: patch-1
   window_manager: ^0.5.2
   flutter_hls_parser: ^2.0.1
   url_launcher: ^6.3.2
