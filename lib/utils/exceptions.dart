@@ -1,28 +1,53 @@
 class AgeGateException implements Exception {
+  final String message;
+
+  AgeGateException(
+      [this.message =
+          "Age gate encountered. Try setting a proxy in settings or using a VPN service."]);
+
   @override
-  String toString() =>
-      "Age gate encountered. Try setting a proxy in settings or using a VPN service.";
+  String toString() => message;
 }
 
 class BannedCountryException implements Exception {
+  final String message;
+
+  BannedCountryException(
+      [this.message =
+          "Banned country encountered. Try setting a proxy in settings or using a VPN service."]);
+
   @override
-  String toString() =>
-      "Banned country encountered. Try setting a proxy in settings or using a VPN service.";
+  String toString() => message;
 }
 
 class UnreachableException implements Exception {
+  final String message;
+
+  UnreachableException(
+      [this.message = "Couldn't connect to provider. Try again later."]);
+
   @override
-  String toString() => "Couldn't connect to provider. Try again later.";
+  String toString() => message;
 }
 
 class NotFoundException implements Exception {
+  final String message;
+
+  NotFoundException(
+      [this.message = "Couldn't find whatever was requested. Soft error 404"]);
+
   @override
-  String toString() => "Couldn't find whatever was requested. Soft error 404";
+  String toString() => message;
 }
 
 class PrivateAuthorProfileException implements Exception {
+  final String message;
+
+  PrivateAuthorProfileException(
+      [this.message = "Private author profile. Access forbidden."]);
+
   @override
-  String toString() => "Private author profile. Access forbidden.";
+  String toString() => message;
 }
 
 bool isCustomException(Exception? e) {
