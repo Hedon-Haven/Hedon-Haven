@@ -93,7 +93,7 @@ void setupErrorHandling() {
             bugReportsList: [
               BugReport(
                   navigatorPath: navigatorPathObserver.currentPath,
-                  errorMessage: error,
+                  exception: Exception(error),
                   isCustomException: false,
                   codeTrace: stack)
             ],

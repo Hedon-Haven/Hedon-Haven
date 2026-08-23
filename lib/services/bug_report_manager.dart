@@ -69,8 +69,8 @@ class BugReport {
   /// Full navigator path including the screen where the bug occurred
   final String navigatorPath;
 
-  /// Short error message (without stack trace)
-  final String errorMessage;
+  /// The exception object with the error message string
+  final Exception exception;
 
   /// Whether the error is a custom exception from utils/exceptions.dart
   final bool isCustomException;
@@ -80,13 +80,13 @@ class BugReport {
 
   BugReport(
       {required this.navigatorPath,
-      required this.errorMessage,
+      required this.exception,
       required this.isCustomException,
       this.codeTrace});
 
   Map<String, dynamic> toMap() => {
         "navigatorPath": navigatorPath,
-        "errorMessage": errorMessage,
+        "exception": exception,
         "isCustomException": isCustomException,
         "codeTrace": codeTrace,
       };
@@ -113,7 +113,7 @@ class PluginBugReport extends BugReport {
 
   PluginBugReport(
       {required super.navigatorPath,
-      required super.errorMessage,
+      required super.exception,
       required super.isCustomException,
       super.codeTrace,
       required this.pluginCodeName,

@@ -188,8 +188,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
                         bugReportsList: [
                           PluginBugReport(
                               navigatorPath: navigatorPathObserver.currentPath,
-                              errorMessage: data!.$1.toString(),
-                              // FIXME: A plugin can fail to load due to a custom exception!
+                              exception: data!.$1,
                               isCustomException: false,
                               codeTrace: data.$2.toString(),
                               pluginCodeName: plugin.codeName,

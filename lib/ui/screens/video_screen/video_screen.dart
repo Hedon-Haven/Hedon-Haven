@@ -306,7 +306,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              errorMessage: "Video action button manual bug report",
+              exception: Exception("Video action button manual bug report"),
               isCustomException: false,
               pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
               isBundledPlugin: videoMetadata.plugin?.isBundledPlugin ?? false,
@@ -374,7 +374,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             bugReportsList: [
               PluginBugReport(
                 navigatorPath: navigatorPathObserver.currentPath,
-                errorMessage: "Comment modal menu manual bug report",
+                exception: Exception("Comment modal menu manual bug report"),
                 isCustomException: false,
                 pluginCodeName: comment.plugin?.codeName ?? "Unknown",
                 isBundledPlugin: comment.plugin?.isBundledPlugin ?? false,
@@ -500,8 +500,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              errorMessage:
-                  "Failed to load ${widget.videoID}: $failedToLoadReason",
+              exception:
+              Exception("Failed to load ${widget.videoID}: $failedToLoadReason"),
               isCustomException: false,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
