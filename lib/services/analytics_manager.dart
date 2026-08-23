@@ -46,8 +46,9 @@ Future<bool> submitBugReport(Map<String, dynamic> combinedBugReport) async {
 /// a single user appearing as multiple reports in analytics
 Future<void> sendUsagePing() async {
   // Only send ping if opted-in by user
-  if (!(await sharedStorage.getBool("analytics_enable_usage_ping") ?? false)) {
-    logger.i("Usage ping not opted-in, not sending!");
+  if (!(await sharedStorage.getBool("analytics_enable_usage_ping") ?? false) ||
+      !(await sharedStorage.getBool("general_onboarding_completed") ?? false)) {
+    logger.i("Usage ping not opted-in (yet), not sending!");
     return;
   }
   logger.i("Sending usage ping to PostHog");
