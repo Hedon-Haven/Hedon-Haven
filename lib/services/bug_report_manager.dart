@@ -86,7 +86,7 @@ class BugReport {
 
   Map<String, dynamic> toMap() => {
         "navigatorPath": navigatorPath,
-        "exception": exception,
+        "exception": exception.toString(),
         "isCustomException": isAppException,
         "codeTrace": codeTrace,
       };
