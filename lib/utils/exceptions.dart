@@ -21,6 +21,15 @@ abstract class ProviderException implements Exception {
   ProviderException(this.message);
 }
 
+class NoInternetConnectionException extends ProviderException {
+  NoInternetConnectionException(
+      [super.message =
+          "The app cannot access the internet. Check your connection!"]);
+
+  @override
+  String get title => "No internet connection";
+}
+
 class AgeGateException extends ProviderException {
   AgeGateException(
       [super.message = "This plugin requires age verification in your country. "
