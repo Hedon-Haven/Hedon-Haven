@@ -35,6 +35,7 @@ class _FakeSettingsScreenState extends State<FakeSettingsScreen> {
                 OptionsSwitch(
                     title: "Force preferred network type",
                     switchState: snapshot.data![0] == "1",
+                    disableLongPressAction: true,
                     onToggled: (value) {
                       snapshot.data![0] = value ? "1" : "0";
                       sharedStorage.setStringList(
@@ -44,6 +45,7 @@ class _FakeSettingsScreenState extends State<FakeSettingsScreen> {
                 OptionsSwitch(
                     title: "Enable advanced mode",
                     switchState: snapshot.data![1] == "1",
+                    disableLongPressAction: true,
                     onToggled: (value) {
                       snapshot.data![1] = value ? "1" : "0";
                       sharedStorage.setStringList(
@@ -53,7 +55,7 @@ class _FakeSettingsScreenState extends State<FakeSettingsScreen> {
                 GestureDetector(
                     onLongPressStart: (_) {
                       logger.i("Long press started");
-                      longPressTimer = Timer(const Duration(seconds: 5), () {
+                      longPressTimer = Timer(const Duration(seconds: 3), () {
                         logger.i("Long press successful");
                         logger.i("Unconcealing app");
                         widget.parentStopConcealing();
@@ -77,6 +79,7 @@ class _FakeSettingsScreenState extends State<FakeSettingsScreen> {
                 OptionsSwitch(
                     title: "Allow manual network selection in advanced mode",
                     switchState: snapshot.data![3] == "1",
+                    disableLongPressAction: true,
                     onToggled: (value) {
                       snapshot.data![3] = value ? "1" : "0";
                       sharedStorage.setStringList(
@@ -86,6 +89,7 @@ class _FakeSettingsScreenState extends State<FakeSettingsScreen> {
                 OptionsSwitch(
                     title: "Enable always-on search",
                     switchState: snapshot.data![4] == "1",
+                    disableLongPressAction: true,
                     onToggled: (value) {
                       snapshot.data![4] = value ? "1" : "0";
                       sharedStorage.setStringList(
