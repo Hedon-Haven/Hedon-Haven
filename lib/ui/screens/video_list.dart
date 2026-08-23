@@ -112,6 +112,7 @@ class VideoList extends StatefulWidget {
 class _VideoListState extends State<VideoList> {
   VideoPlayerController previewVideoController =
       VideoPlayerController.networkUrl(Uri.parse(""));
+  Future<void>? previewInitFuture;
   int? _tappedChildIndex;
   int _previewLoopCount = 0;
   Duration _lastPreviewPosition = Duration.zero;
@@ -155,12 +156,22 @@ class _VideoListState extends State<VideoList> {
     logger.i("Finished initializing screen");
   }
 
+  // dispose controller once its init finishes, to avoid
+  // "Cannot add event after closing" errors from fvp
+  void _disposePreviewController() {
+    final oldController = previewVideoController;
+    final oldInitFuture = previewInitFuture;
+    oldInitFuture?.whenComplete(() {
+          oldController.pause();
+          oldController.dispose();
+        }) ??
+        oldController.dispose();
+  }
+
   @override
   void dispose() {
     logger.i("Disposing of VideoList");
-    previewVideoController
-        .pause()
-        .then((_) => previewVideoController.dispose());
+    _disposePreviewController();
     widget.scrollController.removeListener(scrollListener);
     widget.cancelLoadingHandler?.call();
     super.dispose();
@@ -227,7 +238,7 @@ class _VideoListState extends State<VideoList> {
       logger.i("Preview URI empty, not playing");
       return;
     }
-    previewVideoController.dispose();
+    _disposePreviewController();
     previewVideoController = VideoPlayerController.networkUrl(
         videoList![index].previewVideo!,
         httpHeaders: videoList![index].previewVideoHttpHeaders ?? {});
@@ -523,9 +534,7 @@ class _VideoListState extends State<VideoList> {
                               },
                               onTapDown: (_) => showPreview(index),
                               onTap: () async {
-                                // stop playback of preview
-                                previewVideoController.pause().then(
-                                    (_) => previewVideoController.dispose());
+                                _disposePreviewController();
                                 _tappedChildIndex = null;
                                 if (videoList![index].virtualReality) {
                                   showToast("Virtual reality not yet supported",

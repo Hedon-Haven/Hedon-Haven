@@ -40,6 +40,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   List<int> sortedResolutions = [];
   VideoPlayerController controller =
       VideoPlayerController.networkUrl(Uri.parse(""));
+  Future<void>? controllerInitFuture;
   Uint8List timelineProgressThumbnail = Uint8List(0);
   Uint8List emptyImage = Uint8List(0);
   double progressThumbnailPosition = 0.0;
@@ -111,7 +112,10 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
-    controller.dispose();
+    // wait for pending initialization before disposing, to avoid
+    // "Cannot add event after closing" errors from fvp's native callbacks
+    controllerInitFuture?.whenComplete(controller.dispose) ??
+        controller.dispose();
     hideControlsTimer?.cancel();
     _leftRippleTimer?.cancel();
     _rightRippleTimer?.cancel();
@@ -123,10 +127,17 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     final oldPosition = controller.value.position;
     logger.d("Old position: $oldPosition");
 
+    // dispose controller once its init finishes, to avoid
+    // "Cannot add event after closing" errors from fvp
+    final oldController = controller;
+    final oldInitFuture = controllerInitFuture;
+    oldInitFuture?.whenComplete(oldController.dispose) ??
+        oldController.dispose();
+
     logger.i("Setting new url: $url");
     controller = VideoPlayerController.networkUrl(url,
         httpHeaders: widget.videoMetadata.playbackHttpHeaders ?? {});
-    controller.initialize().then((value) async {
+    controllerInitFuture = controller.initialize().then((value) async {
       setState(() {});
       await controller.seekTo(oldPosition);
       if (firstPlay) {
