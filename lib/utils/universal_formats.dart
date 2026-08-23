@@ -337,9 +337,10 @@ class UniversalVideoMetadata {
   String? scrapeFailMessage;
 
   /// Mock constructor for skeleton
-  UniversalVideoMetadata.skeleton()
+  /// Require ID as otherwise bug reports are useless
+  UniversalVideoMetadata.skeleton(String iD)
       : this(
-            iD: 'none',
+            iD: iD,
             m3u8Uris: {},
             playbackHttpHeaders: {},
             title: List<String>.filled(10, 'title').join(),
@@ -508,9 +509,10 @@ class UniversalAuthorPage {
   String? scrapeFailMessage;
 
   /// Mock constructor for skeleton
-  UniversalAuthorPage.skeleton()
+  /// Require ID as otherwise bug reports are useless
+  UniversalAuthorPage.skeleton(String iD)
       : this(
-            iD: "",
+            iD: iD,
             name: BoneMock.name,
             plugin: null,
             avatar: "mockAvatar",
