@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:auto_orientation_v2/auto_orientation_v2.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,6 +13,7 @@ import '/services/database_manager.dart';
 import '/services/loading_handler.dart';
 import '/ui/screens/author_page.dart';
 import '/ui/screens/bug_report/bug_report.dart';
+import '/ui/screens/bug_report/bug_reports_list.dart';
 import '/ui/screens/settings/settings_comments.dart';
 import '/ui/screens/video_screen/player_widget.dart';
 import '/ui/screens/video_screen/widgets.dart';
@@ -50,7 +50,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   List<Uint8List>? progressThumbnails;
   Timer? hideControlsTimer;
   bool isFullScreen = false;
-  String? failedToLoadReason;
+  Exception? loadingException;
   String? loadErrorStacktrace;
   bool firstPlay = true;
   bool isLoadingMetadata = true;
@@ -71,7 +71,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     10,
     (index) => UniversalComment.skeleton(),
   );
-  UniversalVideoMetadata videoMetadata = UniversalVideoMetadata.skeleton();
+  late UniversalVideoMetadata videoMetadata =
+      UniversalVideoMetadata.skeleton(widget.videoID);
 
   Future<List<UniversalVideoPreview>?> videoSuggestions =
       Future.value(List.filled(12, UniversalVideoPreview.skeleton()));
@@ -79,34 +80,30 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
-
     commentsScrollController.addListener((commentsScrollListener));
+    _loadMetadata();
+  }
 
-    Connectivity().checkConnectivity().then((value) {
-      if (value.contains(ConnectivityResult.none)) {
-        logger.e("No internet connection");
-        setState(() {
-          failedToLoadReason = "No internet connection";
-        });
-      }
-    });
+  @override
+  void dispose() {
+    commentsScrollController.dispose();
+    videoMetadata.plugin?.cancelGetProgressThumbnails();
+    super.dispose();
+  }
 
-    widget.videoMetadata.whenComplete(() async {
+  Future<void> _loadMetadata() async {
+    try {
       videoMetadata = await widget.videoMetadata;
-
       // Start loading video suggestions, but don't wait for them
       videoSuggestions = loadingHandler.getVideoSuggestions(
           videoMetadata.plugin!, videoMetadata.iD, videoMetadata.rawHtml, null);
-
       // Pre-load images so they are immediately available when the skeletonizer stops
       await precacheImage(
           NetworkImage(videoMetadata.authorAvatar ?? "Avatar url is null"),
           context);
-
       setState(() {
         isLoadingMetadata = false;
       });
-
       // Update screen after progress thumbnails are loaded
       sharedStorage.getBool("media_show_progress_thumbnails").then((value) {
         if (value!) {
@@ -117,22 +114,13 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           });
         }
       });
-    }).catchError((e, stacktrace) {
+    } catch (e, stacktrace) {
       logger.e("Error getting video metadata: $e\n$stacktrace");
-      if (failedToLoadReason != "No internet connection") {
-        setState(() {
-          failedToLoadReason = e.toString();
-          loadErrorStacktrace = stacktrace.toString();
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    commentsScrollController.dispose();
-    videoMetadata.plugin?.cancelGetProgressThumbnails();
-    super.dispose();
+      setState(() {
+        loadingException = e as Exception;
+        loadErrorStacktrace = stacktrace.toString();
+      });
+    }
   }
 
   // Return a page for the openBuilder
@@ -153,9 +141,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     List<BugReport> reportedBugs = await Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-            submissionType: SubmissionType.userApproved,
+        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+        builder: (context) => BugReportsListScreen(
+            scrapingReportMode: true,
             bugReportsList: loadingHandler.videoSuggestionsBugReports),
       ),
     );
@@ -449,9 +437,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     List<BugReport> reportedBugs = await Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-            submissionType: SubmissionType.userApproved,
+        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+        builder: (context) => BugReportsListScreen(
+            scrapingReportMode: true,
             bugReportsList: loadingHandler.commentsBugReports),
       ),
     );
@@ -492,14 +480,13 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-          submissionType: SubmissionType.userApproved,
+        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+        builder: (context) => BugReportsListScreen(
+          scrapingReportMode: true,
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: Exception(
-                  "Failed to load ${widget.videoID}: $failedToLoadReason"),
+              exception: loadingException!,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
               isBundledPlugin: videoMetadata.plugin?.isBundledPlugin ?? false,
@@ -528,7 +515,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 onPopInvokedWithResult: (_, __) => handlePop(),
                 // Use a stack to add a back button overlay (see below)
                 child: Stack(children: [
-                  failedToLoadReason != null
+                  loadingException != null
                       ? buildFailedToLoadWidget(context, this)
                       : Skeletonizer(
                           enabled: isLoadingMetadata,
@@ -540,7 +527,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   // Using an appbar is not an option, since it would push the
                   // entire content down (the video player needs to start at
                   // the very literal top left)
-                  if (isLoadingMetadata || failedToLoadReason != null)
+                  if (isLoadingMetadata || loadingException != null)
                     Positioned(
                         top: 0,
                         left: 0,

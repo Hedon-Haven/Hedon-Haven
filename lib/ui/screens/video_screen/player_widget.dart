@@ -7,7 +7,8 @@ import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '/services/bug_report_manager.dart';
-import '/ui/screens/bug_report/bug_report.dart';
+import '/ui/screens/bug_report/bug_reports_list.dart';
+import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
 
@@ -44,7 +45,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Uint8List timelineProgressThumbnail = Uint8List(0);
   Uint8List emptyImage = Uint8List(0);
   double progressThumbnailPosition = 0.0;
-  String? videoPlayerError;
+  Exception? videoPlayerException;
   double dragOffsetY = 0.0;
 
   Offset _doubleTapPosition = Offset.zero;
@@ -80,7 +81,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     if (widget.videoMetadata.virtualReality) {
       setState(
-          () => videoPlayerError = "Virtual reality videos not yet supported");
+          () => videoPlayerException = VirtualRealityNotSupportedException());
     }
 
     if (widget.videoMetadata.m3u8Uris.length > 1) {
@@ -104,8 +105,8 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
     // Check if m3u8 links exist and display toast message
     if (widget.videoMetadata.m3u8Uris[selectedResolution] == null) {
-      setState(
-          () => videoPlayerError = "Couldn't play video: M3U8 url not found");
+      setState(() => videoPlayerException =
+          Exception("Couldn't play video: M3U8 url not found"));
     }
     initVideoController(widget.videoMetadata.m3u8Uris[selectedResolution]!);
   }
@@ -182,9 +183,9 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           !controller.value.isBuffering &&
           controller.value.position == Duration.zero) {
         logger.e("Video player initialization timed out");
-        setState(() =>
-            videoPlayerError = "Video player failed to initialize due to: "
-                "${controller.value.errorDescription ?? "Timeout error"}");
+        setState(() => videoPlayerException =
+            Exception("Video player failed to initialize due to: "
+                "${controller.value.errorDescription ?? "Timeout error"}"));
       }
     });
 
@@ -194,9 +195,9 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       if (playerState.hasError && !playerState.isCompleted) {
         errorTimeout?.cancel();
         logger.e("Video playback error: ${playerState.errorDescription}");
-        setState(() => videoPlayerError =
-            "Video player encountered error during playback: "
-                "${playerState.errorDescription ?? "Unknown playback error"}");
+        setState(() => videoPlayerException =
+            Exception("Video player encountered error during playback: "
+                "${playerState.errorDescription ?? "Unknown playback error"}"));
         return;
       }
 
@@ -341,18 +342,18 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
-  void createPlayerBugReport(String message) {
+  void createPlayerBugReport() {
     // Pop immediately to avoid another bug report
     Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-          submissionType: SubmissionType.userApproved,
+        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+        builder: (context) => BugReportsListScreen(
+          scrapingReportMode: true,
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: Exception(message),
+              exception: videoPlayerException!,
               pluginCodeName: widget.videoMetadata.plugin!.codeName,
               isBundledPlugin: widget.videoMetadata.plugin!.isBundledPlugin,
               debugObject: widget.videoMetadata.toMap(),
@@ -415,7 +416,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                                         Orientation.landscape
                                     ? MediaQuery.of(context).size.height
                                     : constraints.maxWidth * 9 / 16,
-                                child: videoPlayerError != null
+                                child: videoPlayerException != null
                                     ? buildErrorScreen()
                                     : Stack(
                                         alignment: Alignment.center,
@@ -538,7 +539,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               // overlay back button unless actively playing video
               if (!controller.value.isInitialized ||
                   showControls ||
-                  videoPlayerError != null)
+                  videoPlayerException != null)
                 Positioned(
                     top: 0, left: 0, child: BackButton(color: Colors.white)),
             ])));
@@ -547,25 +548,18 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Widget buildErrorScreen() {
     return Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(
-          videoPlayerError == "Virtual reality videos not yet supported"
-              ? "Virtual reality videos not yet supported"
-              : "Video player error",
-          style: const TextStyle(fontSize: 20),
-          textAlign: TextAlign.center),
-      if (videoPlayerError != "Virtual reality videos not yet supported") ...[
-        SizedBox(height: 10),
-        ElevatedButton(
-            style: TextButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary),
-            child: Text("Create bug report",
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
-            onPressed: () => createPlayerBugReport(
-                videoPlayerError ?? "unknown video error"))
-      ]
+      Text("Video player error",
+          style: const TextStyle(fontSize: 20), textAlign: TextAlign.center),
+      SizedBox(height: 10),
+      ElevatedButton(
+          style: TextButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary),
+          child: Text("Create bug report",
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
+          onPressed: () => createPlayerBugReport())
     ]));
   }
 

@@ -4,7 +4,7 @@ import '/services/banner_manager.dart';
 import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
 import '/services/plugin_manager.dart';
-import '/ui/screens/bug_report/bug_report.dart';
+import '/ui/screens/bug_report/bug_reports_list.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
               LoadingHandler(navPath: navigatorPathObserver.currentPath);
           videoResults = loadingHandler.getHomePages(null).whenComplete(() {
             logger.d("ResultsIssues Map: ${loadingHandler.resultsBugReports}");
+            setState(() {});
           });
         } else {
           videoResults = Future.value([]);
@@ -97,14 +98,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void createResultsBugReport() async {
     List<BugReport> reportedBugs = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-            submissionType: SubmissionType.userApproved,
-            bugReportsList: loadingHandler.resultsBugReports),
-      ),
-    );
+          context,
+          MaterialPageRoute(
+            settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+            builder: (context) => BugReportsListScreen(
+                scrapingReportMode: true,
+                bugReportsList: loadingHandler.resultsBugReports),
+          ),
+        ) ??
+        [];
 
     // Remove all reported bugs
     loadingHandler.resultsBugReports

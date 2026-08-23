@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:animations/animations.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -14,6 +14,7 @@ import '/services/bug_report_manager.dart';
 import '/services/database_manager.dart';
 import '/ui/screens/author_page.dart';
 import '/ui/screens/bug_report/bug_report.dart';
+import '/ui/screens/bug_report/bug_reports_list.dart';
 import '/ui/screens/video_screen/video_screen.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/external_link_warning.dart';
@@ -325,7 +326,7 @@ class _VideoListState extends State<VideoList> {
                 ElevatedButton(
                     style: TextButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary),
-                    child: Text("Create bug report",
+                    child: Text("Open scraping report",
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
@@ -336,9 +337,10 @@ class _VideoListState extends State<VideoList> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          settings: RouteSettings(name: "/bug-report"),
-                          builder: (context) => BugReportScreen(
-                            submissionType: SubmissionType.userApproved,
+                          settings: RouteSettings(
+                              name: "/bug-reports-list-scraping-mode"),
+                          builder: (context) => BugReportsListScreen(
+                            scrapingReportMode: true,
                             bugReportsList: widget.bugReports!,
                           ),
                         ),

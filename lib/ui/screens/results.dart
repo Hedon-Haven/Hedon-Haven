@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
 import '/services/plugin_manager.dart';
-import '/ui/screens/bug_report/bug_report.dart';
+import '/ui/screens/bug_report/bug_reports_list.dart';
 import '/ui/screens/search.dart';
 import '/ui/screens/video_list.dart';
 import '/utils/global_vars.dart';
@@ -72,9 +72,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
     List<BugReport> reportedBugs = await Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-            submissionType: SubmissionType.userApproved,
+        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+        builder: (context) => BugReportsListScreen(
+            scrapingReportMode: true,
             bugReportsList: widget.loadingHandler.resultsBugReports),
       ),
     );

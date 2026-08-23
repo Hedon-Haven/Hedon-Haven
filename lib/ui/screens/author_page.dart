@@ -2,15 +2,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:animations/animations.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
 import '/ui/screens/bug_report/bug_report.dart';
+import '/ui/screens/bug_report/bug_reports_list.dart';
 import '/ui/screens/video_list.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
@@ -43,28 +43,22 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
 
   bool isLoadingResults = true;
   bool isMobile = true;
-  bool isInternetConnected = true;
-  String? failedToLoadReason;
+  Exception? loadingException;
   String? loadErrorStacktrace;
 
-  UniversalAuthorPage? authorPage = UniversalAuthorPage.skeleton();
+  late UniversalAuthorPage? authorPage =
+      UniversalAuthorPage.skeleton(widget.authorID);
 
   final ScrollController scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _loadAuthorPage();
+  }
 
-    Connectivity().checkConnectivity().then((value) {
-      if (value.contains(ConnectivityResult.none)) {
-        logger.e("No internet connection");
-        setState(() {
-          failedToLoadReason = "No internet connection";
-        });
-      }
-    });
-
-    widget.authorPage.whenComplete(() async {
+  Future<void> _loadAuthorPage() async {
+    try {
       setState(() => isLoadingResults = true);
       authorPage = await widget.authorPage;
       // Start loading author videos but don't wait for them
@@ -73,18 +67,18 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             loadingHandler.getAuthorVideos(authorPage!.plugin!, authorPage!.iD);
       } catch (e, stacktrace) {
         logger.e("Error loading author videos: $e\n$stacktrace");
-        loadingHandler.authorVideosBugReports ==
-            {
-              "Critical": ["Error calling getAuthorVideos: $e\n$stacktrace"]
-            };
+        loadingHandler.authorVideosBugReports = [
+          PluginBugReport(
+              navigatorPath: navigatorPathObserver.currentPath,
+              exception: e as Exception,
+              codeTrace: stacktrace.toString(),
+              pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown plugin",
+              isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
+              debugObject: authorPage?.toMap() ?? {})
+        ];
         authorVideos = Future.value(null);
+        setState(() {});
       }
-
-      // If Connectivity contains ConnectivityResult.none -> no internet connection -> revert results
-      isInternetConnected = !(await (Connectivity().checkConnectivity()))
-          .contains(ConnectivityResult.none);
-      logger.d("Internet connected: $isInternetConnected");
-
       // Pre-load images so they are immediately available when the skeletonizer stops
       if (authorPage?.banner != null) {
         await precacheImage(NetworkImage(authorPage!.banner!), context);
@@ -92,18 +86,14 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
       if (authorPage?.avatar != null) {
         await precacheImage(NetworkImage(authorPage!.avatar!), context);
       }
-
-      // Make sure context is still mounted
       if (mounted) setState(() => isLoadingResults = false);
-    }).catchError((e, stacktrace) {
+    } catch (e, stacktrace) {
       logger.e("Error getting author page: $e\n$stacktrace");
-      if (failedToLoadReason != "No internet connection") {
-        setState(() {
-          failedToLoadReason = e.toString();
-          loadErrorStacktrace = stacktrace.toString();
-        });
-      }
-    });
+      setState(() {
+        loadingException = e as Exception;
+        loadErrorStacktrace = stacktrace.toString();
+      });
+    }
   }
 
   @override
@@ -172,9 +162,9 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-          submissionType: SubmissionType.userApproved,
+        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+        builder: (context) => BugReportsListScreen(
+          scrapingReportMode: true,
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
@@ -197,14 +187,13 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-report"),
-        builder: (context) => BugReportScreen(
-          submissionType: SubmissionType.userApproved,
+        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+        builder: (context) => BugReportsListScreen(
+          scrapingReportMode: true,
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: Exception(
-                  "Failed to load ${widget.authorID}: $failedToLoadReason"),
+              exception: loadingException!,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown",
               isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
@@ -259,7 +248,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
               ]
             ]),
         body: SafeArea(
-            child: failedToLoadReason != null
+            child: loadingException != null
                 ? Center(
                     child: Padding(
                         padding: EdgeInsets.only(
@@ -267,29 +256,22 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                             right: MediaQuery.of(context).size.width * 0.1,
                             top: MediaQuery.of(context).size.height * 0.1),
                         child: Column(children: [
-                          Text(
-                              failedToLoadReason == "No internet connection"
-                                  ? "No internet connection"
-                                  : "Failed to load author page",
+                          Text("Failed to load author page",
                               style: const TextStyle(fontSize: 20),
                               textAlign: TextAlign.center),
-                          if (failedToLoadReason != null &&
-                              failedToLoadReason !=
-                                  "No internet connection") ...[
-                            ElevatedButton(
-                                style: TextButton.styleFrom(
-                                    backgroundColor:
-                                        Theme.of(context).colorScheme.primary),
-                                child: Text("Create bug report",
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onPrimary)),
-                                onPressed: () => createFailureBugReport())
-                          ]
+                          ElevatedButton(
+                              style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary),
+                              child: Text("Open scraping report",
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary)),
+                              onPressed: () => createFailureBugReport())
                         ])))
                 : Skeletonizer(
                     enabled: isLoadingResults,

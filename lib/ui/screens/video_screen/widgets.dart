@@ -1,6 +1,6 @@
 import 'package:animations/animations.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '/services/database_manager.dart';
@@ -21,22 +21,17 @@ Widget buildFailedToLoadWidget(
               right: MediaQuery.of(context).size.width * 0.1,
               top: MediaQuery.of(context).size.height * 0.1),
           child: Column(children: [
-            Text(
-                vps.failedToLoadReason == "No internet connection"
-                    ? "No internet connection"
-                    : "Failed to scrape video page",
+            Text("Failed to load video page",
                 style: const TextStyle(fontSize: 20),
                 textAlign: TextAlign.center),
-            if (vps.failedToLoadReason != "No internet connection") ...[
-              SizedBox(height: 10),
-              ElevatedButton(
-                  style: TextButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary),
-                  child: Text("Create bug report",
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimary)),
-                  onPressed: () => vps.createVideoScreenBugReport())
-            ]
+            SizedBox(height: 10),
+            ElevatedButton(
+                style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary),
+                child: Text("Open scraping report",
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary)),
+                onPressed: () => vps.createVideoScreenBugReport())
           ])));
 }
 
