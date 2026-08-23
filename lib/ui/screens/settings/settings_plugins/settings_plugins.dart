@@ -82,7 +82,8 @@ class _PluginsScreenState extends State<PluginsScreen> {
                 onSecondary: () => Navigator.push(
                     context,
                     PageTransition(
-                        settings: RouteSettings(name: "/onboarding_launcher_appearance"),
+                        settings: RouteSettings(
+                            name: "/onboarding_launcher_appearance"),
                         type: PageTransitionType.rightToLeftJoined,
                         childCurrent: widget,
                         child: LauncherAppearance(partOfOnboarding: true))),
@@ -475,7 +476,8 @@ class _PluginsScreenState extends State<PluginsScreen> {
                     onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                settings: RouteSettings(name: "/install_3rd_party_plugin"),
+                                settings: RouteSettings(
+                                    name: "/install_3rd_party_plugin"),
                                 builder: (context) =>
                                     Install3rdPartyPluginScreen())).then((_) {
                           _loadPluginLists();
