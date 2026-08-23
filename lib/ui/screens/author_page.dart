@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+import '/utils/exceptions.dart';
 import '/services/bug_report_manager.dart';
 import '/services/loading_handler.dart';
 import '/ui/screens/bug_report/bug_report.dart';
@@ -177,7 +178,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: Exception(authorPage!.scrapeFailMessage!),
+              exception: ScrapingException(authorPage!.scrapeFailMessage!),
               isAppException: false,
               codeTrace: loadErrorStacktrace,
               pluginCodeName: authorPage!.plugin!.codeName,

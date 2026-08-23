@@ -161,7 +161,7 @@ class LoadingHandler {
                 null) {
               resultsBugReports.add(PluginBugReport(
                   navigatorPath: navPath,
-                  exception: Exception(
+                  exception: ScrapingException(
                       pluginResults[plugin.codeName]![currentIndex]
                           .scrapeFailMessage!),
                   isAppException: false,
@@ -336,7 +336,7 @@ class LoadingHandler {
           if (comment.scrapeFailMessage != null) {
             commentsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: Exception(comment.scrapeFailMessage!),
+                exception: ScrapingException(comment.scrapeFailMessage!),
                 isAppException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
@@ -448,7 +448,7 @@ class LoadingHandler {
           if (video.scrapeFailMessage != null) {
             videoSuggestionsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: Exception(video.scrapeFailMessage!),
+                exception: ScrapingException(video.scrapeFailMessage!),
                 isAppException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
@@ -524,7 +524,7 @@ class LoadingHandler {
           if (video.scrapeFailMessage != null) {
             authorVideosBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: Exception(video.scrapeFailMessage!),
+                exception: ScrapingException(video.scrapeFailMessage!),
                 isAppException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
@@ -546,7 +546,7 @@ class LoadingHandler {
           combinedResults = null;
         }
         authorVideosPageCounter = -1;
-      }
+       }
     }
 
     logger.d("Prev author videos amount: ${previousResults?.length}");

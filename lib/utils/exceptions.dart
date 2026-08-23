@@ -1,3 +1,12 @@
+class ScrapingException implements Exception {
+  final String message;
+
+  ScrapingException([this.message = "unknown scraping exception"]);
+
+  @override
+  String toString() => message;
+}
+
 abstract class AppException implements Exception {
   /// short label to display as title to user
   String get title;
