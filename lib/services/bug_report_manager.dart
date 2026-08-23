@@ -74,16 +74,16 @@ class BugReport {
   final Exception exception;
 
   /// Full stack trace of the error
-  final String? codeTrace;
+  final String? stackTrace;
 
   BugReport(
-      {required this.navigatorPath, required this.exception, this.codeTrace});
+      {required this.navigatorPath, required this.exception, this.stackTrace});
 
   Map<String, dynamic> toMap() => {
         "navigatorPath": navigatorPath,
         "exception": exception.toString(),
         "isCustomException": exception is CustomException,
-        "codeTrace": codeTrace,
+        "codeTrace": stackTrace,
       };
 
   Map<String, dynamic> toJson() => toMap();
@@ -109,7 +109,7 @@ class PluginBugReport extends BugReport {
   PluginBugReport(
       {required super.navigatorPath,
       required super.exception,
-      super.codeTrace,
+      super.stackTrace,
       required this.pluginCodeName,
       required this.isBundledPlugin,
       required this.debugObject,

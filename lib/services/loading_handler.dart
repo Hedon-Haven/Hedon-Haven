@@ -118,7 +118,7 @@ class LoadingHandler {
           resultsBugReports.add(PluginBugReport(
               navigatorPath: navPath,
               exception: exception as Exception,
-              codeTrace: stacktrace.toString(),
+              stackTrace: stacktrace.toString(),
               pluginCodeName: plugin.codeName,
               isBundledPlugin: plugin.isBundledPlugin,
               debugObject: {}));
@@ -318,7 +318,7 @@ class LoadingHandler {
         commentsBugReports.add(PluginBugReport(
             navigatorPath: navPath,
             exception: exception as Exception,
-            codeTrace: stacktrace.toString(),
+            stackTrace: stacktrace.toString(),
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
             debugObject: {}));
@@ -433,7 +433,7 @@ class LoadingHandler {
         videoSuggestionsBugReports.add(PluginBugReport(
             navigatorPath: navPath,
             exception: exception as Exception,
-            codeTrace: stacktrace.toString(),
+            stackTrace: stacktrace.toString(),
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
             debugObject: {}));
@@ -507,7 +507,7 @@ class LoadingHandler {
         authorVideosBugReports.add(PluginBugReport(
             navigatorPath: navPath,
             exception: exception as Exception,
-            codeTrace: stacktrace.toString(),
+            stackTrace: stacktrace.toString(),
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
             debugObject: {}));

@@ -487,7 +487,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: loadingException!,
-              codeTrace: loadErrorStacktrace,
+              stackTrace: loadErrorStacktrace,
               pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
               isBundledPlugin: videoMetadata.plugin?.isBundledPlugin ?? false,
               debugObject: videoMetadata.toMap(),

@@ -71,7 +71,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
           PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: e as Exception,
-              codeTrace: stacktrace.toString(),
+              stackTrace: stacktrace.toString(),
               pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown plugin",
               isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
               debugObject: authorPage?.toMap() ?? {})
@@ -169,7 +169,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: ScrapingException(authorPage!.scrapeFailMessage!),
-              codeTrace: loadErrorStacktrace,
+              stackTrace: loadErrorStacktrace,
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
               debugObject: authorPage!.toMap(),
@@ -194,7 +194,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
               exception: loadingException!,
-              codeTrace: loadErrorStacktrace,
+              stackTrace: loadErrorStacktrace,
               pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown",
               isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
               debugObject: authorPage?.toMap() ?? {},
