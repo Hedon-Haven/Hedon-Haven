@@ -166,7 +166,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
   void _showPluginInitErrorDialog(PluginInterface plugin) async {
     var data = await PluginManager.getPluginError(plugin);
     final bool customException =
-        data != null ? data.$1 is ProviderException : false;
+        data != null ? data.$1 is CustomException : false;
     final String errorMessage =
         data != null ? "${data.$1}\n\n${data.$2}" : "Unknown error!?";
     showDialog(

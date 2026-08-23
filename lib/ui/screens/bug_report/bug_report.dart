@@ -53,9 +53,9 @@ class _BugReportScreenState extends State<BugReportScreen>
 
     WidgetsBinding.instance.addObserver(this);
 
-    // Remove all ProviderException BugReports
+    // Remove all CustomException BugReports
     bugReportsList = widget.bugReportsList
-        .where((report) => report.exception is! ProviderException)
+        .where((report) => report.exception is! CustomException)
         .toList();
     groupedBugReports = groupBugReports(bugReportsList);
     if (bugReportsList.isEmpty) {
