@@ -146,8 +146,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   onPressed: () {
                     Navigator.of(context)
                         .push(MaterialPageRoute(
-                        settings: RouteSettings(name: "/search_filter"),
-                        builder: (context) => FilterScreen(
+                            settings: RouteSettings(name: "/search_filter"),
+                            builder: (context) => FilterScreen(
                                 searchRequest: widget.searchRequest)))
                         .then((value) {
                       if (value != null) {

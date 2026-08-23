@@ -92,7 +92,8 @@ class DisclaimersScreen extends StatelessWidget {
                                 onPressed: () => Navigator.push(
                                     context,
                                     PageTransition(
-                                        settings: RouteSettings(name: "/onboarding_welcome"),
+                                        settings: RouteSettings(
+                                            name: "/onboarding_welcome"),
                                         type: PageTransitionType
                                             .leftToRightJoined,
                                         childCurrent: this,
@@ -115,7 +116,8 @@ class DisclaimersScreen extends StatelessWidget {
                                 onPressed: () => Navigator.push(
                                     context,
                                     PageTransition(
-                                        settings: RouteSettings(name: "/onboarding_analytics"),
+                                        settings: RouteSettings(
+                                            name: "/onboarding_analytics"),
                                         type: PageTransitionType
                                             .rightToLeftJoined,
                                         childCurrent: this,

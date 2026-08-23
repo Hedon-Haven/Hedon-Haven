@@ -25,7 +25,7 @@ class WelcomeScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 50),
                       child: Text(
                           "Welcome to Hedon Haven"
-                              "${kDebugMode ? " Debug" : ""}",
+                          "${kDebugMode ? " Debug" : ""}",
                           style: Theme.of(context).textTheme.headlineMedium)),
                   Spacer(),
                   Align(
