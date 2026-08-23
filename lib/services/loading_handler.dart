@@ -163,6 +163,7 @@ class LoadingHandler {
                   navigatorPath: navPath,
                   errorMessage: pluginResults[plugin.codeName]![currentIndex]
                       .scrapeFailMessage!,
+                  isCustomException: false,
                   pluginCodeName: plugin.codeName,
                   isBundledPlugin: plugin.isBundledPlugin,
                   debugObject:
@@ -335,6 +336,7 @@ class LoadingHandler {
             commentsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
                 errorMessage: comment.scrapeFailMessage!,
+                isCustomException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: comment.toMap()));
@@ -446,6 +448,7 @@ class LoadingHandler {
             videoSuggestionsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
                 errorMessage: video.scrapeFailMessage!,
+                isCustomException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));
@@ -521,6 +524,7 @@ class LoadingHandler {
             authorVideosBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
                 errorMessage: video.scrapeFailMessage!,
+                isCustomException: false,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));
