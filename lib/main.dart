@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:fvp/fvp.dart' as fvp;
+import 'package:material_ui/material_ui.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:secure_app_switcher/secure_app_switcher.dart';
@@ -391,7 +391,8 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return DynamicColorBuilder(builder: (ColorScheme? lightColorScheme, ColorScheme? darkColorScheme) {
+    return DynamicColorBuilder(
+        builder: (ColorScheme? lightColorScheme, ColorScheme? darkColorScheme) {
       return FutureBuilder<ThemeMode?>(
           future: themeMode,
           builder: (context, snapshot) {
