@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '/services/bug_report_manager.dart';
 import '/services/plugin_manager.dart';
+import '/utils/exceptions.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 
 class BugReportsListScreen extends StatefulWidget {
@@ -44,23 +45,31 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
                 padding: const EdgeInsets.all(8),
                 children: List.generate(
                     sortedBugReports.isEmpty ? 1 : sortedBugReports.length,
-                    (index) {
-                  if (sortedBugReports.isEmpty) {
-                    return Padding(
-                        padding: const EdgeInsets.only(top: 50),
-                        child: Center(
-                            child: Text("No more scraping errors to report")));
-                  } else {
-                    return buildGroupTile(
-                        sortedBugReports.entries.elementAt(index));
-                  }
-                }))));
+                    (index) => buildGroupTile(
+                        sortedBugReports.entries.elementAt(index))))));
   }
 
   Widget buildGroupTile(MapEntry<String, List<BugReport>> bugReportGroup) {
     return FutureBuilder<PluginInterface?>(
         future: PluginManager.getPluginByName(bugReportGroup.key),
         builder: (context, snapshot) {
+          // Simplify display for appExceptions
+          if (bugReportGroup.value.length == 1 &&
+              bugReportGroup.value.first.isAppException) {
+            String titleText =
+                "${snapshot.data?.prettyName ?? bugReportGroup.key}"
+                ": "
+                "${(bugReportGroup.value.first.exception as AppException).title}";
+
+            return ListTile(
+              title: Text(titleText),
+              subtitle: Text(bugReportGroup.value.first.exception.toString()),
+              // Remove white lines
+              shape: RoundedRectangleBorder(),
+              contentPadding: const EdgeInsets.only(left: 16, right: 8),
+            );
+          }
+
           return ExpansionTile(
             title: Text(bugReportGroup.key == "appReports"
                 ? "App bug reports"
@@ -71,16 +80,15 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
             shape: RoundedRectangleBorder(),
             tilePadding: const EdgeInsets.only(left: 16, right: 8),
             childrenPadding: const EdgeInsets.only(left: 16.0),
-            children: List.generate(bugReportGroup.value.length, (index) {
-              return buildReportTile(bugReportGroup.value[index]);
-            }),
+            children: List.generate(bugReportGroup.value.length,
+                (index) => buildReportTile(bugReportGroup.value[index])),
           );
         });
   }
 
   Widget buildReportTile(BugReport report) {
     return ExpansionTile(
-        title: Text(report.errorMessage),
+        title: Text(report.exception.toString()),
         controlAffinity: ListTileControlAffinity.leading,
         // Remove white lines
         collapsedShape: RoundedRectangleBorder(),
@@ -100,7 +108,8 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
               decoration: InputDecoration(
                   filled: true,
                   fillColor: Theme.of(context).colorScheme.surfaceVariant,
-                  contentPadding: const EdgeInsets.all(5),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 13),
                   enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
                           color: Theme.of(context).colorScheme.onSurface)),
