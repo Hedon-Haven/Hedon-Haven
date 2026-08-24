@@ -77,7 +77,7 @@ void main() async {
   Directory("${Directory.current.path}/dumps/getComments").createSync();
   Directory("${Directory.current.path}/dumps/getAuthorPage").createSync();
   Directory("${Directory.current.path}/dumps/getAuthorVideos").createSync();
-  Directory("${Directory.current.path}/dumps/pluginCache");
+  Directory("${Directory.current.path}/dumps/pluginCache").createSync();
   logger.i("Dump dirs created at ${dumpDir.path}");
 
   // Create encoder with indent for nicer dumps
@@ -583,9 +583,9 @@ void main() async {
           File("${dumpDir.path}/getAuthorPage/${authorPageIds[0]}.json")
               .writeAsStringSync(encoder.convert(authorPageOne!.toMap()));
           File("${dumpDir.path}/getAuthorPage/${authorPageIds[1]}.json")
-              .writeAsStringSync(encoder.convert(authorPageOne!.toMap()));
+              .writeAsStringSync(encoder.convert(authorPageTwo!.toMap()));
           File("${dumpDir.path}/getAuthorPage/${authorPageIds[2]}.json")
-              .writeAsStringSync(encoder.convert(authorPageOne!.toMap()));
+              .writeAsStringSync(encoder.convert(authorPageThree!.toMap()));
         });
       });
 
