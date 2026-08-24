@@ -671,7 +671,8 @@ Widget buildComment(
         showModalBottomSheet(
             context: context,
             builder: (BuildContext context) {
-              return Column(
+              return SafeArea(
+                  child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   ListTile(
@@ -692,7 +693,7 @@ Widget buildComment(
                       title: const Text("Create bug report"),
                       onTap: () => vps.createManualBugReportForComment(comment))
                 ],
-              );
+              ));
             });
       },
       child: ListTile(

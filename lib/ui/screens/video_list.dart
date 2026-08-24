@@ -405,134 +405,7 @@ class _VideoListState extends State<VideoList> {
                       closedBuilder: (context, openContainer) => MouseRegion(
                           onEnter: (_) => showPreview(index),
                           child: GestureDetector(
-                              onLongPress: () {
-                                showModalBottomSheet(
-                                    context: context,
-                                    routeSettings: RouteSettings(
-                                        name: "video_list_uvp_modal"),
-                                    builder: (BuildContext context) {
-                                      // Use stateful builder to allow calling setState on the modal itself
-                                      return StatefulBuilder(builder:
-                                          (BuildContext context,
-                                              StateSetter setModalState) {
-                                        return Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: <Widget>[
-                                              ListTile(
-                                                leading:
-                                                    const Icon(Icons.person),
-                                                title: const Text(
-                                                    "Go to author page"),
-                                                onTap: () => Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                        settings: RouteSettings(
-                                                            name:
-                                                                "/author_page"),
-                                                        builder: (context) => AuthorPageScreen(
-                                                            authorPage: videoList![index]
-                                                                .plugin!
-                                                                .getAuthorPage(
-                                                                    videoList![index]
-                                                                        .authorID!),
-                                                            authorID:
-                                                                videoList![index]
-                                                                    .authorID!))).then(
-                                                    (value) => Navigator.of(context).pop()),
-                                              ),
-                                              FutureBuilder<bool?>(
-                                                future: isInFavorites(
-                                                    videoList![index].iD),
-                                                builder: (context, snapshot) {
-                                                  return ListTile(
-                                                    leading: Icon(snapshot
-                                                                .data ??
-                                                            false
-                                                        ? Icons.favorite
-                                                        : Icons
-                                                            .favorite_border),
-                                                    title: Text(snapshot.data ??
-                                                            false
-                                                        ? "Remove from favorites"
-                                                        : "Add to favorites"),
-                                                    onTap: () async {
-                                                      if (snapshot.data ==
-                                                          null) {
-                                                        return;
-                                                      }
-                                                      if (snapshot.data!) {
-                                                        await removeFromFavorites(
-                                                            videoList![index]);
-                                                      } else {
-                                                        await addToFavorites(
-                                                            videoList![index]);
-                                                      }
-                                                      // Update favorites icon in video list
-                                                      setState(() {});
-                                                      // Rebuild the modal's UI
-                                                      setModalState(() {});
-                                                    },
-                                                  );
-                                                },
-                                              ),
-                                              ListTile(
-                                                leading:
-                                                    const Icon(Icons.share),
-                                                title: const Text("Share"),
-                                                onTap: () async {
-                                                  // Windows and linux don't have share implementations
-                                                  // -> Copy to clipboard and show warning instead
-                                                  if (Platform.isWindows ||
-                                                      Platform.isLinux) {
-                                                    Clipboard.setData(ClipboardData(
-                                                        text: videoList![index]
-                                                            .plugin!
-                                                            .getVideoUriFromID(
-                                                                videoList![
-                                                                        index]
-                                                                    .iD)
-                                                            .toString()));
-                                                    showToast(
-                                                        "Share not available on "
-                                                        "${Platform.isWindows ? "Windows" : "Linux"}. "
-                                                        "Copied link to clipboard instead",
-                                                        context);
-                                                  }
-                                                  Share.shareUri(
-                                                      (await videoList![index]
-                                                          .plugin!
-                                                          .getVideoUriFromID(
-                                                              videoList![index]
-                                                                  .iD))!);
-                                                },
-                                              ),
-                                              ListTile(
-                                                leading: const Icon(
-                                                    Icons.open_in_new),
-                                                title: const Text(
-                                                    "Open in browser"),
-                                                onTap: () async {
-                                                  openExternalLinkWithWarningDialog(
-                                                      context,
-                                                      (await videoList![index]
-                                                          .plugin!
-                                                          .getVideoUriFromID(
-                                                              videoList![index]
-                                                                  .iD))!);
-                                                },
-                                              ),
-                                              ListTile(
-                                                leading: const Icon(
-                                                    Icons.bug_report),
-                                                title: const Text(
-                                                    "Create bug report"),
-                                                onTap: () =>
-                                                    createModalBugReport(index),
-                                              ),
-                                            ]);
-                                      });
-                                    });
-                              },
+                              onLongPress: () => showModalMenu(index),
                               onTapDown: (_) => showPreview(index),
                               onTap: () async {
                                 _disposePreviewController();
@@ -846,5 +719,101 @@ class _VideoListState extends State<VideoList> {
                         ])))
               ]
             ])));
+  }
+
+  void showModalMenu(int index) {
+    showModalBottomSheet(
+        context: context,
+        routeSettings: RouteSettings(name: "video_list_uvp_modal"),
+        builder: (BuildContext context) {
+          // Use stateful builder to allow calling setState on the modal itself
+          return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setModalState) {
+            return SafeArea(
+                child:
+                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text("Go to author page"),
+                onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            settings: RouteSettings(name: "/author_page"),
+                            builder: (context) => AuthorPageScreen(
+                                authorPage: videoList![index]
+                                    .plugin!
+                                    .getAuthorPage(videoList![index].authorID!),
+                                authorID: videoList![index].authorID!)))
+                    .then((value) => Navigator.of(context).pop()),
+              ),
+              FutureBuilder<bool?>(
+                future: isInFavorites(videoList![index].iD),
+                builder: (context, snapshot) {
+                  return ListTile(
+                    leading: Icon(snapshot.data ?? false
+                        ? Icons.favorite
+                        : Icons.favorite_border),
+                    title: Text(snapshot.data ?? false
+                        ? "Remove from favorites"
+                        : "Add to favorites"),
+                    onTap: () async {
+                      if (snapshot.data == null) {
+                        return;
+                      }
+                      if (snapshot.data!) {
+                        await removeFromFavorites(videoList![index]);
+                      } else {
+                        await addToFavorites(videoList![index]);
+                      }
+                      // Update favorites icon in video list
+                      setState(() {});
+                      // Rebuild the modal's UI
+                      setModalState(() {});
+                    },
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text("Share"),
+                onTap: () async {
+                  // Windows and linux don't have share implementations
+                  // -> Copy to clipboard and show warning instead
+                  if (Platform.isWindows || Platform.isLinux) {
+                    Clipboard.setData(ClipboardData(
+                        text: videoList![index]
+                            .plugin!
+                            .getVideoUriFromID(videoList![index].iD)
+                            .toString()));
+                    showToast(
+                        "Share not available on "
+                        "${Platform.isWindows ? "Windows" : "Linux"}. "
+                        "Copied link to clipboard instead",
+                        context);
+                  }
+                  Share.shareUri((await videoList![index]
+                      .plugin!
+                      .getVideoUriFromID(videoList![index].iD))!);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.open_in_new),
+                title: const Text("Open in browser"),
+                onTap: () async {
+                  openExternalLinkWithWarningDialog(
+                      context,
+                      (await videoList![index]
+                          .plugin!
+                          .getVideoUriFromID(videoList![index].iD))!);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.bug_report),
+                title: const Text("Create bug report"),
+                onTap: () => createModalBugReport(index),
+              ),
+            ]));
+          });
+        });
   }
 }
