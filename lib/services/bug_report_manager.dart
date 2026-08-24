@@ -16,8 +16,11 @@ Map<String, String> getAppAndDeviceInfo() {
     "operatingSystem": Platform.operatingSystem,
     "architecture": SysInfo.kernelArchitecture.toString().toLowerCase(),
     "operatingSystemVersion": Platform.operatingSystemVersion,
-    "resolution": "raw: ${view.physicalSize}, "
-        "logical: ${view.physicalSize / view.devicePixelRatio}"
+    "resolution_raw": "${view.physicalSize.width.toInt()}"
+        "x${view.physicalSize.height.toInt()}",
+    "resolution_logical":
+        "${(view.physicalSize / view.devicePixelRatio).width.toInt()}"
+            "x${(view.physicalSize / view.devicePixelRatio).height.toInt()}",
   };
 }
 
