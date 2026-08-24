@@ -10,7 +10,7 @@ jobs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
       - name: Checkout repository
-      - uses: actions/checkout@v5
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -50,7 +50,7 @@ jobs:
         plugin: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     steps:
       - name: Checkout repository
-      - uses: actions/checkout@v5
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
