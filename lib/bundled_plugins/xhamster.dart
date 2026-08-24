@@ -1048,13 +1048,12 @@ class XHamsterPlugin extends BundledPlugin implements PluginInterface {
         advancedDescription!["Interests and fetishes"] =
             jscriptMap["aboutMeComponent"]["personalInfoList"][2]["value"];
       }
-      if (jscriptMap["pagesCategoryComponent"]?["channelLandingInfoProps"]
+      if (jscriptMap["layoutPage"]?["channelLandingInfoProps"]
               ?["showJoinButton"] !=
           null) {
         externalLinks ??= {};
-        externalLinks!["Official site"] = Uri.parse(
-            jscriptMap["pagesCategoryComponent"]["channelLandingInfoProps"]
-                ["showJoinButton"]["url"]);
+        externalLinks!["Official site"] = Uri.parse(jscriptMap["layoutPage"]
+            ["channelLandingInfoProps"]["showJoinButton"]["url"]);
       }
     } catch (e, stacktrace) {
       logger.w(
@@ -1064,15 +1063,11 @@ class XHamsterPlugin extends BundledPlugin implements PluginInterface {
     String? name;
     if (jscriptMap["infoComponent"]?["pageTitle"] != null) {
       name = jscriptMap["infoComponent"]["pageTitle"];
-    } else if (jscriptMap["pagesCategoryComponent"]?["channelLandingInfoProps"]
-            ?["pageTitle"] !=
-        null) {
+    } else if (jscriptMap["layoutPage"]?["pageTitle"] != null) {
       // For some reason xhamster adds a " Porn Videos: website.com" to all
       // channel titles (even in the official UI)
-      name = jscriptMap["pagesCategoryComponent"]["channelLandingInfoProps"]
-              ["pageTitle"]
-          .split(" Porn Videos: ")
-          .first;
+      name =
+          jscriptMap["layoutPage"]["pageTitle"].split(" Porn Videos: ").first;
     } else {
       name = jscriptMap["displayUserModel"]?["modelName"];
     }
@@ -1080,11 +1075,11 @@ class XHamsterPlugin extends BundledPlugin implements PluginInterface {
     String? thumbnail;
     if (jscriptMap["infoComponent"]?["pornstarTop"]?["thumbUrl"] != null) {
       thumbnail = jscriptMap["infoComponent"]["pornstarTop"]["thumbUrl"];
-    } else if (jscriptMap["pagesCategoryComponent"]?["channelLandingInfoProps"]
+    } else if (jscriptMap["layoutPage"]?["channelLandingInfoProps"]
             ?["sponsorChannel"]?["siteLogoURL"] !=
         null) {
-      thumbnail = jscriptMap["pagesCategoryComponent"]
-          ?["channelLandingInfoProps"]?["sponsorChannel"]?["siteLogoURL"];
+      thumbnail = jscriptMap["layoutPage"]?["channelLandingInfoProps"]
+          ?["sponsorChannel"]?["siteLogoURL"];
     } else {
       thumbnail = jscriptMap["displayUserModel"]?["thumbURL"];
     }
@@ -1101,14 +1096,11 @@ class XHamsterPlugin extends BundledPlugin implements PluginInterface {
       viewsTotal = infoMap?["viewsCount"];
       videosTotal = infoMap?["videoCount"];
       rank = infoMap?["rating"];
-    } else if (jscriptMap["pagesCategoryComponent"]
-            ?["channelLandingInfoProps"] !=
-        null) {
-      infoMap = jscriptMap["pagesCategoryComponent"]?["channelLandingInfoProps"]
+    } else if (jscriptMap["layoutPage"]?["channelLandingInfoProps"] != null) {
+      infoMap = jscriptMap["layoutPage"]?["channelLandingInfoProps"]
           ?["sponsorChannel"];
-      subscribers = jscriptMap["pagesCategoryComponent"]
-              ?["channelLandingInfoProps"]?["subscribeButtonsProps"]
-          ?["subscribeButtonProps"]?["subscribers"];
+      subscribers = jscriptMap["layoutPage"]?["channelLandingInfoProps"]
+          ?["subscribeButtonsProps"]?["subscribeButtonProps"]?["subscribers"];
       viewsTotal = infoMap?["viewsCount"];
       videosTotal = infoMap?["videoCount"];
       rank = infoMap?["rating"];
