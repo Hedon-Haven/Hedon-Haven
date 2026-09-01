@@ -27,7 +27,7 @@ void showUpdateDialog(UpdateManager updateManager, BuildContext parentContext) {
                               : EdgeInsets.zero,
                           child: Text(
                               failReason != null
-                                  ? "Update failed due to $failReason\n\nPlease try again later."
+                                  ? "Update failed due to $failReason\n\nPlease download directly from https://hedon-haven.top/download.html"
                                   : isDownloadingUpdate
                                       ? updateManager.downloadProgress == 0.0
                                           ? "Fetching update metadata..."
