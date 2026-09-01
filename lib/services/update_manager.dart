@@ -14,7 +14,6 @@ import '/utils/global_vars.dart';
 /// Pass the raw old and new version strings.
 /// Returns true if the new version is semantically higher
 bool newVersionIsHigher(String oldVersion, String newVersion) {
-  return true;
   logger.i("Checking if $newVersion is higher than $oldVersion");
   List<int> oldVersionList = [];
   List<int> newVersionList = [];
