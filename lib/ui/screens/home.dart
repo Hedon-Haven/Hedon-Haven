@@ -248,7 +248,8 @@ class _HomeScreenState extends State<HomeScreen> {
               pinned: false,
               floating: false,
               child: Container(
-                  margin: const EdgeInsets.all(10),
+                  margin:
+                      const EdgeInsets.only(left: 10, right: 10, bottom: 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: snapshot.data!.severity == "important"
