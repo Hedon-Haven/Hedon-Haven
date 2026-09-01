@@ -149,7 +149,7 @@ List<Widget> buildAnalyticsOptions({bool reduceBorders = false}) {
               "contain app details (version, build, "
               "install source), OS details "
               "(type, version, architecture) and error message,"
-              " code trace, screen path, plugin name and "
+              " stack trace, screen path, plugin name and "
               "debug info. \nBug reports will not be "
               "automatically submitted for third party plugins. "
               "\nRead more: https://docs.hedon-haven.top/analytics.md";
