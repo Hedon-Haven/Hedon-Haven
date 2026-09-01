@@ -360,6 +360,9 @@ jobs:
           NEW_TAG="${{ steps.tag.outputs.tag }}"
           FULL_URL="https://github.com/Hedon-Haven/Hedon-Haven/compare/${PREV_TAG}...${NEW_TAG}"
           COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          echo "UNSTABLE BUILD! Do not download!"
+          echo ""
+          echo ""
           echo "All commits since $PREV_TAG"
           echo $COMMITS
           echo ""
@@ -367,11 +370,14 @@ jobs:
           printf '%s\n' "${COMMITS}" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "**Full Changelog**: ${FULL_URL}" >> $GITHUB_OUTPUT
+          echo ""
+          echo ""
+          echo "UNSTABLE BUILD! Do not download!"
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Publishing new release
         uses: softprops/action-gh-release@v3
         with:
-          name: APK BUILD - ${{ steps.tag.outputs.tag }}
+          name: UNSTABLE APK BUILD - ${{ steps.tag.outputs.tag }}
           body: ${{ steps.commit-body.outputs.body }}
           tag_name: ${{ steps.tag.outputs.tag }}
           make_latest: false
