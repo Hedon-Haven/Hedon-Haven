@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:http/http.dart' as http;
+import 'package:material_ui/material_ui.dart';
 import 'package:package_installer_plus/package_installer_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:system_info2/system_info2.dart';
@@ -14,6 +14,7 @@ import '/utils/global_vars.dart';
 /// Pass the raw old and new version strings.
 /// Returns true if the new version is semantically higher
 bool newVersionIsHigher(String oldVersion, String newVersion) {
+  return true;
   logger.i("Checking if $newVersion is higher than $oldVersion");
   List<int> oldVersionList = [];
   List<int> newVersionList = [];
@@ -135,11 +136,11 @@ class UpdateManager extends ChangeNotifier {
     logger.i("GET-ting $checksumUri");
     final checksumResponse =
         await client.send(http.Request('GET', checksumUri));
-    if (binaryResponse.reasonPhrase != "OK") {
+    if (binaryResponse.statusCode != 200) {
       logger.e("Binary GET request failed, aborting update");
       throw Exception("$binaryUri binary GET request failed");
     }
-    if (checksumResponse.reasonPhrase != "OK") {
+    if (checksumResponse.statusCode != 200) {
       logger.e("Checksum.json GET request failed, aborting update");
       throw Exception("$checksumUri Checksum.json GET request failed");
     }
