@@ -444,9 +444,10 @@ Widget buildCommentSection(BuildContext context, VideoPlayerScreenState vps) {
     }
   }
   return Stack(children: [
-    Positioned.fill(child: buildTopLevelCommentSection(context, vps)),
-    // Don't render reply section if not shown,
-    // otherwise it renders under the suggested videos in desktop mode
+    // Don't render comment section if not currently displayed
+    // otherwise it renders in weird places
+    if (vps.showCommentSection || !vps.isMobile)
+      Positioned.fill(child: buildTopLevelCommentSection(context, vps)),
     if (vps.showReplySection)
       Positioned.fill(
         child: AnimatedSlide(
