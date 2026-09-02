@@ -15,10 +15,7 @@ dependencies:
   fvp: ^0.38.1
   video_player: ^2.14.0
   audio_video_progress_bar: ^2.0.3
-  auto_orientation_v2: #^2.4.5
-    git:
-      url: https://github.com/Hedon-dev/auto_orientation_v2
-      ref: patch-1
+  auto_orientation_v2: ^2.4.6
   window_manager: ^0.5.2
   flutter_hls_parser: ^2.0.1
   url_launcher: ^6.3.2
@@ -56,9 +53,11 @@ dependencies:
   rhttp: ^0.18.0
   material_ui: ^1.1.0
 
-# override to avoid error: Value of type 'NWPath' has no member 'isUltraConstrained'
 dependency_overrides:
+  # pin to avoid: Value of type 'NWPath' has no member 'isUltraConstrained'
   connectivity_plus: 7.0.0
+  # Pin to avoid compile issues until built-in kotlin migration is completed
+  video_player_android: 2.12.0
 
 
 dev_dependencies:
