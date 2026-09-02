@@ -1,17 +1,13 @@
+import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/services.dart';
-import 'package:html/dom.dart';
-import 'package:image/image.dart';
 
-import '/services/external_link_manager.dart';
-import '/utils/bundled_plugin.dart';
+import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
-import '/utils/universal_formats.dart';
 
-/// This plugin is only used for testing and is hidden in the release version
-class TesterPlugin extends BundledPlugin implements PluginInterface {
+class TesterPlugin extends PluginInterface {
   @override
   bool isBundledPlugin = true;
   @override
@@ -49,429 +45,409 @@ class TesterPlugin extends BundledPlugin implements PluginInterface {
   @override
   int initialAuthorVideosPage = 0;
 
-  bool _pluginIsInitialized = false;
-
-  // The following fields are inherited from PluginInterface, but not needed due to this class not actually being an interface
+  // The following fields are inherited from PluginInterface, as this plugin is bundled
   @override
   Uri? updateUrl;
   @override
   String version = "";
 
-  // For development only: Set this setting to false to disable simulated delays
-  final bool _simulateDelays = false;
-
-  // There is no need to override the testingMap, as this tester plugin wont fail to scrape anything
-
   @override
-  Future<void> init(String cachePath,
-      [void Function(String body)? debugCallback]) async {
-    if (_pluginIsInitialized) {
-      return;
-    }
-    _pluginIsInitialized = true;
-  }
+  void Function(SendPort) get isolateEntryPoint => initBundledPluginIsolate;
+}
 
-  @override
-  Future<bool> runFunctionalityTest() {
-    return Future.value(true);
-  }
+// For development only: set to true to enable simulated delays for all functions
+const bool _simulateDelays = false;
 
-  // To test share:
-  // https://example.com/home?page=3
-  // https://example.com/search?query=keyword&sortingType=Relevance&page=1
-  // https://example.com/video?videoId=123
-  // https://example.com/author?authorId=123
-  @override
-  Future<ExternalLinkParsed> parseExternalLink(Uri uri) async {
-    switch (uri.path) {
-      case "/home":
-        return ExternalLinkParsed(
-          type: ContentType.homePage,
-          pageCount: int.parse(
-              uri.queryParameters["page"] ?? initialHomePage.toString()),
-        );
+late SendPort _fetchPort;
+late SendPort _logPort;
 
-      case "/search":
-        final args = uri.queryParameters;
-        return ExternalLinkParsed(
-          type: ContentType.searchResultsPage,
-          searchRequest: UniversalSearchRequest(
-            searchString: Uri.decodeQueryComponent(args["query"] ?? ""),
-            sortingType: args["sortingType"],
-            dateRange: args["dateRange"],
-            minQuality: args["minQuality"] as int?,
-            maxQuality: args["maxQuality"] as int?,
-            minDuration: args["minDuration"] as int?,
-            maxDuration: args["maxDuration"] as int?,
-            minFramesPerSecond: args["minFramesPerSecond"] as int?,
-            maxFramesPerSecond: args["maxFramesPerSecond"] as int?,
-            virtualReality: args["virtualReality"] as bool?,
-            // categories and keywords not yet fully supported
-          ),
-          pageCount: int.parse(args["page"] ?? "0"),
-        );
+// Set by a "cancelGetProgressThumbnails" call, checked inside the loop
+bool _cancelProgressThumbnails = false;
 
-      case "/video":
-        return ExternalLinkParsed(
-          type: ContentType.videoPage,
-          iD: uri.queryParameters["videoId"]!,
-        );
+void initBundledPluginIsolate(SendPort mainSendPort) {
+  runBundledPluginIsolate(mainSendPort, _functionsMap,
+      onSetup: (logPort, fetchPort) {
+    _logPort = logPort;
+    _fetchPort = fetchPort;
+  });
+}
 
-      case "/author":
-        return ExternalLinkParsed(
-          type: ContentType.authorPage,
-          iD: uri.queryParameters["authorId"]!,
-        );
+final Map<String, Future<dynamic> Function(List args)> _functionsMap = {
+  "init": (args) async => true,
+  "runFunctionalityTest": (args) async => true,
+  "parseExternalLink": (args) async => parseExternalLink(args[0] as String),
+  "getHomePage": (args) => getHomePage(args[0] as int),
+  "downloadThumbnail": (args) => downloadThumbnail(
+      args[0] as String, (args[1] as Map?)?.cast<String, String>()),
+  "getSearchSuggestions": (args) => getSearchSuggestions(args[0] as String),
+  "getSearchResults": (args) =>
+      getSearchResults(args[0] as Map, args[1] as int),
+  "getVideoUriFromID": (args) => getVideoUriFromID(args[0] as String),
+  "getVideoMetadata": (args) => getVideoMetadata(args[0] as String),
+  "getProgressThumbnails": (args) =>
+      getProgressThumbnails(args[0] as String, args[1] as String),
+  "cancelGetProgressThumbnails": (args) async => cancelGetProgressThumbnails(),
+  "getCommentUriFromID": (args) =>
+      getCommentUriFromID(args[0] as String, args[1] as String),
+  "getComments": (args) =>
+      getComments(args[0] as String, args[1] as String, args[2] as int),
+  "getVideoSuggestions": (args) =>
+      getVideoSuggestions(args[0] as String, args[1] as String, args[2] as int),
+  "getAuthorUriFromID": (args) => getAuthorUriFromID(args[0] as String),
+  "getAuthorPage": (args) => getAuthorPage(args[0] as String),
+  "getAuthorVideos": (args) =>
+      getAuthorVideos(args[0] as String, args[1] as int),
+};
 
-      default:
-        return ExternalLinkParsed(type: ContentType.unknown);
-    }
-  }
+// To test share/drop any of the following links into the app:
+// https://example.com/home?page=3
+// https://example.com/search?query=keyword&sortingType=Relevance&page=1
+// https://example.com/video?videoId=123
+// https://example.com/author?authorId=123
+Map<String, dynamic> parseExternalLink(String uriString) {
+  final uri = Uri.parse(uriString);
+  switch (uri.path) {
+    case "/home":
+      return {
+        "type": "homePage",
+        "pageCount": int.parse(uri.queryParameters["page"] ?? "0"),
+      };
 
-  @override
-  Future<List<UniversalVideoPreview>> getHomePage(int page,
-      [void Function(String body)? debugCallback]) async {
-    // Simulate a delay without blocking the entire app
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    return List.generate(
-      10,
-      (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
-        title: "Test homepage video $index, page $page",
-        plugin: this,
-        thumbnail: "https://placehold.co/1280x720.png",
-        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
-        previewVideo: Uri.parse(
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
-        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
-        duration: Duration(seconds: 120 + index * 10),
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
-        virtualReality: false,
-        authorName: "Tester-author $index",
-        authorID: "Tester-author $index",
-        verifiedAuthor: index % 2 == 0,
-        // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
-      ),
-    );
-  }
-
-  // downloadThumbnail is implemented at the BundledPlugin level
-
-  @override
-  Future<List<String>> getSearchSuggestions(String searchString,
-      [void Function(String body)? debugCallback]) async {
-    // Simulate a small delay without blocking the entire app
-    if (_simulateDelays) await Future.delayed(Duration(milliseconds: 200));
-    return List.generate(5, (index) => "$searchString-$index");
-  }
-
-  @override
-  Future<List<UniversalVideoPreview>> getSearchResults(
-      UniversalSearchRequest request, int page,
-      [void Function(String body)? debugCallback]) async {
-    // Simulate a delay without blocking the entire app
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    if (page == 5) {
-      return [];
-    }
-    return List.generate(
-      10,
-      (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
-        title:
-            "Test result video $index, page $page, request ${request.searchString}",
-        plugin: this,
-        thumbnail: "https://placehold.co/1280x720.png",
-        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
-        previewVideo: Uri.parse(
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
-        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
-        duration: Duration(seconds: 120 + index * 10),
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
-        virtualReality: false,
-        authorName: "Tester-author $index",
-        authorID: "Tester-author $index",
-        verifiedAuthor: index % 2 == 0,
-        // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
-      ),
-    );
-  }
-
-  @override
-  Future<Uri?> getVideoUriFromID(String videoID) async {
-    return Uri.parse("https://example.com/$videoID");
-  }
-
-  @override
-  Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoId, UniversalVideoPreview uvp,
-      [void Function(String body)? debugCallback]) async {
-    // Simulate a delay without blocking the entire app
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    return UniversalVideoMetadata(
-      iD: videoId,
-      m3u8Uris: {
-        1080: Uri.parse(
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
-        720: Uri.parse(
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
-        480: Uri.parse(
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
-      },
-      title: "Tester video metadata title",
-      plugin: this,
-      universalVideoPreview: uvp,
-      // Change this to test partial metadata scrape fail
-      //scrapeFailMessage: "Test fail scrape message",
-      authorID: "tester-author-$videoId",
-      authorName: "Tester-author",
-      authorSubscriberCount: 335433,
-      authorAvatar: "https://placehold.co/1280x720.png",
-      actors: [
-        (
-          name: "Tester-actor-1",
-          authorID: "Tester-author-actor-1",
-          avatar: "https://placehold.co/200x200.png"
-        ),
-        (
-          name: "Tester-actor-2",
-          authorID: "Tester-author-actor-2",
-          avatar: "https://placehold.co/200x200.png"
-        )
-      ],
-      description: "Tester video description" * 10,
-      viewsTotal: 2532823,
-      tags: ["Tester-tag-1", "Tester-tag-2"],
-      categories: ["Tester-category-1", "Tester-category-2"],
-      uploadDate: DateTime.now(),
-      ratingsPositiveTotal: 90,
-      ratingsNegativeTotal: 10,
-      ratingsTotal: 47384,
-      virtualReality: false,
-      chapters: {
-        Duration(seconds: 0): "Chapter 1",
-        Duration(seconds: 120): "Chapter 2",
-        Duration(seconds: 240): "Chapter 3",
-      },
-      rawHtml: Document(),
-    );
-  }
-
-  // getProgressThumbnails is implemented at the BundledPlugin level
-
-  @override
-  Future<void> isolateGetProgressThumbnails(SendPort sendPort) async {
-    // Receive data from the main isolate
-    final receivePort = ReceivePort();
-    sendPort.send(receivePort.sendPort);
-    final message = await receivePort.first as List;
-    final rootToken = message[0] as RootIsolateToken;
-    final resultsPort = message[1] as SendPort;
-    final logPort = message[2] as SendPort;
-    final fetchPort = message[3] as SendPort;
-    //final videoID = message[4] as String;
-    // final rawHtml = message[5] as Document;
-
-    // Not quite sure what this is needed for, but fails otherwise
-    BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
-
-    List<Uint8List> completedProcessedImages = [];
-
-    // Simulate heavy processing
-    final end = DateTime.now().add(const Duration(seconds: 3));
-    while (DateTime.now().isBefore(end)) {
-      // Burn CPU cycles
-      sqrt(DateTime.now().microsecondsSinceEpoch.toDouble());
-    }
-    logPort.send(["debug", "Heavy processing completed"]);
-
-    // Request the main thread to fetch the image
-    final responsePort = ReceivePort();
-    fetchPort.send(
-        [Uri.parse("https://placehold.co/720x480.png"), responsePort.sendPort]);
-    Uint8List imageRaw = await responsePort.first as Uint8List;
-    Uint8List encodedImage = encodeJpg(decodePng(imageRaw)!);
-    responsePort.close();
-    for (int i = 0; i < 1000; i++) {
-      completedProcessedImages.add(encodedImage);
-    }
-
-    resultsPort.send(completedProcessedImages);
-  }
-
-  // cancelGetProgressThumbnails is implemented at the BundledPlugin level
-
-  @override
-  Future<Uri?> getCommentUriFromID(String commentID, String videoID) {
-    return Future.value(Uri.parse("https://example.com/$videoID/$commentID"));
-  }
-
-  @override
-  Future<List<UniversalComment>> getComments(
-      String videoID, Document rawHtml, int page,
-      [void Function(String body)? debugCallback]) async {
-    if (page == 5) {
-      return [];
-    }
-    // Simulate a delay without blocking the entire app
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    return List.generate(
-      5,
-      (index) => UniversalComment(
-        iD: "comment-$index",
-        videoID: videoID,
-        author: "author-$index",
-        commentBody:
-            List<String>.filled(5, "test comment $index, page $page ").join(),
-        hidden: index % 4 == 0,
-        plugin: this,
-        authorID: "author-$index",
-        countryID: "US",
-        orientation: null,
-        profilePicture: "https://placehold.co/240x240.png",
-        ratingsPositiveTotal: index % 4 == 0 ? 30 : null,
-        ratingsNegativeTotal: index % 4 == 0 ? 2 : null,
-        ratingsTotal: index % 4 == 0 ? 32 : 76,
-        commentDate: DateTime.now().subtract(Duration(days: index)),
-        replyComments: index % 2 == 0
-            ? List.generate(
-                3,
-                (index) => UniversalComment(
-                  iD: "comment-reply-$index",
-                  videoID: videoID,
-                  author: "author-reply-$index",
-                  commentBody:
-                      List<String>.filled(5, "test reply comment $index ")
-                          .join(),
-                  hidden: index % 4 == 0,
-                  plugin: this,
-                  authorID: "author-reply-$index",
-                  countryID: "US",
-                  orientation: null,
-                  profilePicture: "https://placehold.co/240x240",
-                  ratingsPositiveTotal: index % 2 == 0 ? 4 : null,
-                  ratingsNegativeTotal: index % 2 == 0 ? 1 : null,
-                  ratingsTotal: index % 2 == 0 ? 5 : 6,
-                  commentDate: DateTime.now().subtract(Duration(days: index)),
-                  replyComments: [],
-                  // Make every 4th comment a fail
-                  scrapeFailMessage:
-                      index % 4 != 0 ? "Test fail scrape message" : null,
-                ),
-              )
-            : [],
-        // Make every 4th comment a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
-      ),
-    );
-  }
-
-  @override
-  Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, Document rawHtml, int page,
-      [void Function(String body)? debugCallback]) async {
-    // Simulate a delay without blocking the entire app
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    if (page == 5) {
-      return [];
-    }
-    return List.generate(
-      10,
-      (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
-        title: "Test suggestion video $index",
-        plugin: this,
-        thumbnail: "https://placehold.co/1280x720.png",
-        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
-        previewVideo: Uri.parse(
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
-        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
-        duration: Duration(seconds: 120 + index * 10),
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
-        virtualReality: false,
-        authorName: "Tester-suggestion-author $index",
-        authorID: "Tester-suggestion-author $index",
-        verifiedAuthor: index % 2 == 0,
-        // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
-      ),
-    );
-  }
-
-  @override
-  Future<Uri?> getAuthorUriFromID(String authorID) {
-    return Future.value(Uri.parse("https://example.com/$authorID"));
-  }
-
-  @override
-  Future<UniversalAuthorPage> getAuthorPage(String authorID,
-      [void Function(String body)? debugCallback]) async {
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    return Future.value(UniversalAuthorPage(
-        iD: authorID,
-        name: "Test author name",
-        plugin: this,
-        avatar: "https://placehold.co/240x240.png",
-        banner: "https://placehold.co/1270x400.png",
-        aliases: ["Test alias 1", "Test alias 2"],
-        description: "Very long description" * 1000,
-        advancedDescription: {
-          for (int i = 1; i <= 1000; i++)
-            "Test description key $i": "Test description value $i",
+    case "/search":
+      final args = uri.queryParameters;
+      return {
+        "type": "searchResultsPage",
+        "searchRequest": {
+          "searchString": Uri.decodeQueryComponent(args["query"] ?? ""),
+          "sortingType": args["sortingType"],
+          "dateRange": args["dateRange"],
+          "minQuality": args["minQuality"],
+          "maxQuality": args["maxQuality"],
+          "minDuration": args["minDuration"],
+          "maxDuration": args["maxDuration"],
+          "minFramesPerSecond": args["minFramesPerSecond"],
+          "maxFramesPerSecond": args["maxFramesPerSecond"],
+          "virtualReality": args["virtualReality"],
+          // categories and keywords not yet fully supported
         },
-        externalLinks: {
-          "external link 1": Uri.parse("https://example.com/link1"),
-          "external link 2": Uri.parse("https://example.com/link2"),
-          "external link 3": Uri.parse("https://example.com/link3")
-        },
-        viewsTotal: 23773212,
-        videosTotal: 114,
-        subscribers: 573529,
-        rank: 3746,
-        rawHtml: Document()));
+        "pageCount": int.parse(args["page"] ?? "0"),
+      };
+
+    case "/video":
+      return {
+        "type": "videoPage",
+        "iD": uri.queryParameters["videoId"],
+      };
+
+    case "/author":
+      return {
+        "type": "authorPage",
+        "iD": uri.queryParameters["authorId"],
+      };
+
+    default:
+      return {"type": "unknown"};
+  }
+}
+
+Future<List<Map<String, dynamic>>> getHomePage(int page) async {
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  return List.generate(
+    10,
+    (index) => {
+      "iD": "${(index * pi * 10000).toInt()}",
+      "title": "Test homepage video $index, page $page",
+      "thumbnail": "https://placehold.co/1280x720.png",
+      "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
+      "previewVideo":
+          "https://docs.evostream.com/sample_content/assets/bunny.mp4",
+      "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
+      "duration": 120 + index * 10, // seconds
+      "viewsTotal": (index * pi * 1000000).toInt(),
+      "ratingsPositivePercent":
+          int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
+      "maxQuality": 720,
+      "virtualReality": false,
+      "authorName": "Tester-author $index",
+      "authorID": "Tester-author $index",
+      "verifiedAuthor": index % 2 == 0,
+      // Make every 4th video a fail
+      "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
+    },
+  );
+}
+
+Future<String> downloadThumbnail(
+    String uriString, Map<String, String>? thumbnailHttpHeaders) async {
+  final bytes = await requestFetch(_fetchPort, uriString, thumbnailHttpHeaders);
+  return base64Encode(bytes ?? Uint8List(0));
+}
+
+Future<List<String>> getSearchSuggestions(String searchString) async {
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(milliseconds: 200));
+  return List.generate(5, (index) => "$searchString-$index");
+}
+
+Future<List<Map<String, dynamic>>> getSearchResults(
+    Map request, int page) async {
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  if (page == 5) return [];
+  return List.generate(
+    10,
+    (index) => {
+      "iD": "${(index * pi * 10000).toInt()}",
+      "title": "Test result video $index, page $page, "
+          "request ${request["searchString"]}",
+      "thumbnail": "https://placehold.co/1280x720.png",
+      "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
+      "previewVideo":
+          "https://docs.evostream.com/sample_content/assets/bunny.mp4",
+      "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
+      "duration": 120 + index * 10,
+      "viewsTotal": (index * pi * 1000000).toInt(),
+      "ratingsPositivePercent":
+          int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
+      "maxQuality": 720,
+      "virtualReality": false,
+      "authorName": "Tester-author $index",
+      "authorID": "Tester-author $index",
+      "verifiedAuthor": index % 2 == 0,
+      // Make every 4th video a fail
+      "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
+    },
+  );
+}
+
+Future<String> getVideoUriFromID(String videoID) async {
+  return "https://example.com/$videoID";
+}
+
+Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  const sampleUrl =
+      "https://docs.evostream.com/sample_content/assets/bunny.mp4";
+  return {
+    "iD": videoId,
+    "m3u8Uris": {
+      "1080": sampleUrl,
+      "720": sampleUrl,
+      "480": sampleUrl,
+    },
+    "title": "Tester video metadata title",
+    // Change this to test partial metadata scrape fail
+    //scrapeFailMessage: "Test fail scrape message",
+    "authorID": "tester-author-$videoId",
+    "authorName": "Tester-author",
+    "authorSubscriberCount": 335433,
+    "authorAvatar": "https://placehold.co/1280x720.png",
+    "actors": [
+      {
+        "name": "Tester-actor-1",
+        "authorID": "Tester-author-actor-1",
+        "avatar": "https://placehold.co/200x200.png",
+      },
+      {
+        "name": "Tester-actor-2",
+        "authorID": "Tester-author-actor-2",
+        "avatar": "https://placehold.co/200x200.png",
+      },
+    ],
+    "description": "Tester video description" * 10,
+    "viewsTotal": 2532823,
+    "tags": ["Tester-tag-1", "Tester-tag-2"],
+    "categories": ["Tester-category-1", "Tester-category-2"],
+    "uploadDate": DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    "ratingsPositiveTotal": 90,
+    "ratingsNegativeTotal": 10,
+    "ratingsTotal": 47384,
+    "virtualReality": false,
+    "chapters": {
+      "0": "Chapter 1",
+      "120": "Chapter 2",
+      "240": "Chapter 3",
+    },
+  };
+}
+
+Future<List<String>?> getProgressThumbnails(
+    String videoID, String rawHtml) async {
+  _cancelProgressThumbnails = false;
+  List<String> completedProcessedImages = [];
+
+  // Simulate processing, while checking for cancellation flag
+  for (int i = 0; i < 30; i++) {
+    if (_cancelProgressThumbnails) return null;
+    await Future.delayed(const Duration(milliseconds: 100));
   }
 
-  @override
-  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
-      [void Function(String body)? debugCallback]) async {
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    if (page == 5) {
-      return [];
-    }
-    return List.generate(
-      10,
-      (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
-        title: "Test author video $index, page $page",
-        plugin: this,
-        thumbnail: "https://placehold.co/1280x720.png",
-        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
-        previewVideo: Uri.parse(
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
-        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
-        duration: Duration(seconds: 120 + index * 10),
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
-        virtualReality: false,
-        authorName: "Tester-author-same $index",
-        authorID: "Tester-author-same $index",
-        verifiedAuthor: index % 2 == 0,
-        // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
-      ),
-    );
+  _logPort.send({"level": "debug", "message": "Image processing completed"});
+
+  final imageRaw =
+      await requestFetch(_fetchPort, "https://placehold.co/720x480.png", null);
+  if (imageRaw == null) return null;
+  final encodedImage = base64Encode(imageRaw);
+  for (int i = 0; i < 1000; i++) {
+    if (_cancelProgressThumbnails) return null;
+    completedProcessedImages.add(encodedImage);
   }
+  return completedProcessedImages;
+}
+
+bool cancelGetProgressThumbnails() {
+  _cancelProgressThumbnails = true;
+  return true;
+}
+
+Future<String> getCommentUriFromID(String commentID, String videoID) async {
+  return "https://example.com/$videoID/$commentID";
+}
+
+Map<String, dynamic> _buildComment(int index, String videoID, int page,
+    {bool withReplies = true}) {
+  return {
+    "iD": "comment-$index",
+    "videoID": videoID,
+    "author": "author-$index",
+    "commentBody":
+        List<String>.filled(5, "test comment $index, page $page ").join(),
+    "hidden": index % 4 == 0,
+    "authorID": "author-$index",
+    "countryID": "US",
+    "orientation": null,
+    "profilePicture": "https://placehold.co/240x240.png",
+    "ratingsPositiveTotal": index % 4 == 0 ? 30 : null,
+    "ratingsNegativeTotal": index % 4 == 0 ? 2 : null,
+    "ratingsTotal": index % 4 == 0 ? 32 : 76,
+    "commentDate": DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    "replyComments": withReplies && index % 2 == 0
+        ? List.generate(
+            3,
+            (replyIndex) => {
+              "iD": "comment-reply-$replyIndex",
+              "videoID": videoID,
+              "author": "author-reply-$replyIndex",
+              "commentBody":
+                  List<String>.filled(5, "test reply comment $replyIndex ")
+                      .join(),
+              "hidden": replyIndex % 4 == 0,
+              "authorID": "author-reply-$replyIndex",
+              "countryID": "US",
+              "orientation": null,
+              "profilePicture": "https://placehold.co/240x240",
+              "ratingsPositiveTotal": replyIndex % 2 == 0 ? 4 : null,
+              "ratingsNegativeTotal": replyIndex % 2 == 0 ? 1 : null,
+              "ratingsTotal": replyIndex % 2 == 0 ? 5 : 6,
+              "commentDate": DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              "replyComments": [],
+              // Make every 4th reply comment a fail
+              "scrapeFailMessage":
+                  replyIndex % 4 != 0 ? "Test fail scrape message" : null,
+            },
+          )
+        : [],
+    // Make every 4th comment a fail
+    "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
+  };
+}
+
+Future<List<Map<String, dynamic>>> getComments(
+    String videoID, String rawHtml, int page) async {
+  if (page == 5) return [];
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  return List.generate(5, (index) => _buildComment(index, videoID, page));
+}
+
+Future<List<Map<String, dynamic>>> getVideoSuggestions(
+    String videoID, String rawHtml, int page) async {
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  if (page == 5) return [];
+  return List.generate(
+    10,
+    (index) => {
+      "iD": "${(index * pi * 10000).toInt()}",
+      "title": "Test suggestion video $index",
+      "thumbnail": "https://placehold.co/1280x720.png",
+      "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
+      "previewVideo":
+          "https://docs.evostream.com/sample_content/assets/bunny.mp4",
+      "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
+      "duration": 120 + index * 10,
+      "viewsTotal": (index * pi * 1000000).toInt(),
+      "ratingsPositivePercent":
+          int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
+      "maxQuality": 720,
+      "virtualReality": false,
+      "authorName": "Tester-suggestion-author $index",
+      "authorID": "Tester-suggestion-author $index",
+      "verifiedAuthor": index % 2 == 0,
+      // Make every 4th video a fail
+      "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
+    },
+  );
+}
+
+Future<String> getAuthorUriFromID(String authorID) async {
+  return "https://example.com/$authorID";
+}
+
+Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  return {
+    "iD": authorID,
+    "name": "Test author name",
+    "avatar": "https://placehold.co/240x240.png",
+    "banner": "https://placehold.co/1270x400.png",
+    "aliases": ["Test alias 1", "Test alias 2"],
+    "description": "Very long description" * 1000,
+    "advancedDescription": {
+      for (int i = 1; i <= 1000; i++)
+        "Test description key $i": "Test description value $i",
+    },
+    "externalLinks": {
+      "external link 1": "https://example.com/link1",
+      "external link 2": "https://example.com/link2",
+      "external link 3": "https://example.com/link3",
+    },
+    "viewsTotal": 23773212,
+    "videosTotal": 114,
+    "subscribers": 573529,
+    "rank": 3746,
+  };
+}
+
+Future<List<Map<String, dynamic>>> getAuthorVideos(
+    String authorID, int page) async {
+  // Simulate a delay without blocking the entire isolate
+  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  if (page == 5) return [];
+  return List.generate(
+    10,
+    (index) => {
+      "iD": "${(index * pi * 10000).toInt()}",
+      "title": "Test author video $index, page $page",
+      "thumbnail": "https://placehold.co/1280x720.png",
+      "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
+      "previewVideo":
+          "https://docs.evostream.com/sample_content/assets/bunny.mp4",
+      "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
+      "duration": 120 + index * 10,
+      "viewsTotal": (index * pi * 1000000).toInt(),
+      "ratingsPositivePercent":
+          int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
+      "maxQuality": 720,
+      "virtualReality": false,
+      "authorName": "Tester-author-same $index",
+      "authorID": "Tester-author-same $index",
+      "verifiedAuthor": index % 2 == 0,
+      // Make every 4th video a fail
+      "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
+    },
+  );
 }

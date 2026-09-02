@@ -81,8 +81,9 @@ class PluginInterface {
   late SendPort _isolateSendPort;
   Completer<void> _isolateReady = Completer();
 
-  PluginInterface(this._pluginPath) {
-    if (!_checkAndLoadFromConfig("$_pluginPath/plugin.yaml")) {
+  PluginInterface([this._pluginPath = ""]) {
+    if (!isBundledPlugin &&
+        !_checkAndLoadFromConfig("$_pluginPath/plugin.yaml")) {
       throw Exception(
           "Failed to load from config file: $_pluginPath/plugin.yaml");
     }
@@ -195,6 +196,10 @@ class PluginInterface {
     return jsonDecode(response["result"] as String);
   }
 
+  /// Isolate entry point to use. By default uses the JS runtime isolate
+  /// Overridden in bundledPlugins to use simpler dart isolates
+  void Function(SendPort) get isolateEntryPoint => initJSRuntimeIsolate;
+
   /// Initialize the plugin isolate and init the plugin
   /// CAREFUL, this function doesn't handle errors!
   Future<void> init(String cachePath,
@@ -210,7 +215,7 @@ class PluginInterface {
 
     final mainPort = ReceivePort();
     final rootToken = RootIsolateToken.instance!;
-    _isolate = await Isolate.spawn(initPluginIsolate, mainPort.sendPort);
+    _isolate = await Isolate.spawn(isolateEntryPoint, mainPort.sendPort);
     _isolateSendPort = await mainPort.first as SendPort;
     mainPort.close();
 
@@ -224,8 +229,8 @@ class PluginInterface {
         (message) async => _httpRequest(message["responsePort"], message));
 
     _isolateSendPort.send({
-      "pluginPath": _pluginPath,
-      "cachePath": cachePath,
+      if (!isBundledPlugin) "pluginPath": _pluginPath,
+      if (!isBundledPlugin) "cachePath": cachePath,
       "rootToken": rootToken,
       "logPort": logPort.sendPort,
       "fetchPort": fetchPort.sendPort,
