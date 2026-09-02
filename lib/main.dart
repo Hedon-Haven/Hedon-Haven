@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:material_ui/material_ui.dart';
@@ -113,6 +114,8 @@ void setupErrorHandling() {
   FlutterError.onError = (FlutterErrorDetails details) {
     logger.f("FlutterError: ${details.exceptionAsString()}");
     FlutterError.presentError(details);
+    // Skip non-fatal render/layout warnings (e.g. overflow) — don't crash-report these
+    if (details.library == "rendering library" && !kDebugMode) return;
     openBugReportScreen(details.exception.toString(), details.stack.toString());
   };
 
