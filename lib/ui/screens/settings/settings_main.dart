@@ -41,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: SafeArea(
           child: Padding(
               padding: const EdgeInsets.all(8),
-              child: Column(
+              child: ListView(
                 children: <Widget>[
                   ListTile(
                     title: const Text("Plugins"),
