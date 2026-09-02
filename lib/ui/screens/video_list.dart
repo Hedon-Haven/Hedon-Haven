@@ -484,7 +484,7 @@ class _VideoListState extends State<VideoList> {
                                   Icons.error,
                                   color: Theme.of(context).colorScheme.error,
                                 );
-                              }, fit: BoxFit.fill)
+                              }, fit: BoxFit.contain)
                             : Image.memory(videoList![index].thumbnailBinary,
                                 errorBuilder: (context, error, stackTrace) {
                                 logger.e(
