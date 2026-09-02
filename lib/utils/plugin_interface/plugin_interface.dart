@@ -14,7 +14,7 @@ import '/utils/universal_formats.dart';
 
 class PluginInterface {
   /// This is overridden to true in bundled plugins
-  final bool isBundledPlugin = false;
+  bool get isBundledPlugin => false;
 
   /// codeName must be a unique identifier for the plugin, to avoid conflicts.
   /// 3 alphanumeric segments separated by dots, underscores allowed mid-word,
