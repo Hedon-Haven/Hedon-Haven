@@ -85,22 +85,24 @@ void setupErrorHandling() {
     final context = ViewerApp.navigatorKey.currentContext;
     if (context != null && !bugReportOpen) {
       bugReportOpen = true;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          settings: const RouteSettings(name: "/bug-report-emergency"),
-          builder: (context) => BugReportScreen(
-            unexpectedError: true,
-            bugReportsList: [
-              BugReport(
-                  navigatorPath: navigatorPathObserver.currentPath,
-                  exception: Exception(error),
-                  stackTrace: stack)
-            ],
-            submissionType: SubmissionType.userApproved,
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            settings: const RouteSettings(name: "/bug-report-emergency"),
+            builder: (context) => BugReportScreen(
+              unexpectedError: true,
+              bugReportsList: [
+                BugReport(
+                    navigatorPath: navigatorPathObserver.currentPath,
+                    exception: Exception(error),
+                    stackTrace: stack)
+              ],
+              submissionType: SubmissionType.userApproved,
+            ),
           ),
-        ),
-      ).then((_) => bugReportOpen = false);
+        ).then((_) => bugReportOpen = false);
+      });
     }
   }
 
