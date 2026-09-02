@@ -9,7 +9,7 @@ import 'package:path/path.dart' as p;
 late JavascriptRuntime _runtime;
 bool _initialized = false;
 
-void initPluginIsolate(SendPort mainSendPort) async {
+void initJSRuntimeIsolate(SendPort mainSendPort) async {
   final receivePort = ReceivePort();
   mainSendPort.send(receivePort.sendPort);
 
