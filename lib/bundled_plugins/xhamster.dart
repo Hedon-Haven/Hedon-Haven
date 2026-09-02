@@ -15,115 +15,135 @@ import '/utils/try_parse.dart';
 
 class XHamsterPlugin extends PluginInterface {
   @override
-  final bool isBundledPlugin = true;
+  bool get isBundledPlugin => true;
+
   @override
-  String codeName = "com.hedon_haven.xhamster";
+  String get codeName => "com.hedon_haven.xhamster";
+
   @override
-  String prettyName = "xHamster.com";
+  String get prettyName => "xHamster.com";
+
   @override
-  String developer = "Hedon Haven";
+  String get developer => "Hedon Haven";
+
   @override
-  String contactEmail = "contact@hedon-haven.top";
+  String get contactEmail => "contact@hedon-haven.top";
+
   @override
-  String issueTrackerUrl = "https://issues.hedon-haven.top";
+  String get issueTrackerUrl => "https://issues.hedon-haven.top";
+
   @override
-  String description = "Full account-less functionality for xHamster.com";
+  String get description => "Full account-less functionality for xHamster.com";
+
   @override
-  Uri iconUrl = Uri.parse("https://xhamster.com/favicon.ico");
+  Uri get iconUrl => Uri.parse("https://xhamster.com/favicon.ico");
+
   @override
-  String serviceUrl = "https://xhamster.com";
+  String get serviceUrl => "https://xhamster.com";
+
   @override
-  List<String> handleUrls = [
-    "https://xhamster.com",
-    "https://xhamster.com/videos/",
-    "https://xhamster.com/creators/",
-    "https://xhamster.com/channels/",
-    "https://xhamster.com/users/"
-  ];
+  List<String> get handleUrls => [
+        "https://xhamster.com",
+        "https://xhamster.com/videos/",
+        "https://xhamster.com/creators/",
+        "https://xhamster.com/channels/",
+        "https://xhamster.com/users/"
+      ];
+
   @override
-  int initialHomePage = 1;
+  int get initialHomePage => 1;
+
   @override
-  int initialSearchResultsPage = 1;
+  int get initialSearchResultsPage => 1;
+
   @override
-  int initialCommentsPage = 1;
+  int get initialCommentsPage => 1;
+
   @override
-  int initialVideoSuggestionsPage = 1;
+  int get initialVideoSuggestionsPage => 1;
+
   @override
-  int initialAuthorVideosPage = 1;
+  int get initialAuthorVideosPage => 1;
 
   // The following fields are inherited from PluginInterface, as this plugin is bundled
   @override
-  Uri? updateUrl;
+  Uri? get updateUrl;
+
   @override
-  String version = "";
+  String get version => "";
 
   // Set BundledPlugin specific vars
-  @override
-  Map<String, dynamic> testingMap = {
-    "ignoreScrapedErrors": {
-      "homepage": [
-        "authorID",
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "searchResults": [
-        "authorID",
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "videoMetadata": ["playbackHttpHeaders", "chapters"],
-      "videoSuggestions": [
-        "authorID",
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "authorVideos": [
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "authorName",
-        "authorID",
-        "lastWatched",
-        "addedOn"
-      ],
-      "comments": [
-        "ratingsPositiveTotal",
-        "ratingsNegativeTotal",
-        "countryID",
-        "orientation",
-        "profilePicture",
-        "ratingsTotal"
-      ],
-      "authorPage": ["banner", "description", "rank", "lastViewed", "addedOn"]
-    },
-    "testingVideos": [
-      // This is an old video that uses the old progress thumbnail format
-      {"videoID": "13942649", "progressThumbnailsAmount": 105},
-      // This is a more recent video from the homepage
-      {"videoID": "xhZiTRT", "progressThumbnailsAmount": 779}
-    ],
-    "testingAuthorPageIds": [
-      // A channel-type author
-      "vixen",
-      // A creator-type author
-      "cumatozz",
-      // A user-type author
-      "dsfilmation"
-    ]
-  };
+  Map<String, dynamic> get testingMap => {
+        "ignoreScrapedErrors": {
+          "homepage": [
+            "authorID",
+            "thumbnailHttpHeaders",
+            "thumbnailBinary",
+            "ratingsPositivePercent",
+            "maxQuality",
+            "lastWatched",
+            "addedOn"
+          ],
+          "searchResults": [
+            "authorID",
+            "thumbnailHttpHeaders",
+            "thumbnailBinary",
+            "ratingsPositivePercent",
+            "maxQuality",
+            "lastWatched",
+            "addedOn"
+          ],
+          "videoMetadata": ["playbackHttpHeaders", "chapters"],
+          "videoSuggestions": [
+            "authorID",
+            "thumbnailHttpHeaders",
+            "thumbnailBinary",
+            "ratingsPositivePercent",
+            "maxQuality",
+            "lastWatched",
+            "addedOn"
+          ],
+          "authorVideos": [
+            "thumbnailHttpHeaders",
+            "thumbnailBinary",
+            "ratingsPositivePercent",
+            "maxQuality",
+            "authorName",
+            "authorID",
+            "lastWatched",
+            "addedOn"
+          ],
+          "comments": [
+            "ratingsPositiveTotal",
+            "ratingsNegativeTotal",
+            "countryID",
+            "orientation",
+            "profilePicture",
+            "ratingsTotal"
+          ],
+          "authorPage": [
+            "banner",
+            "description",
+            "rank",
+            "lastViewed",
+            "addedOn"
+          ]
+        },
+        "testingVideos": [
+          // This is an old video that uses the old progress thumbnail format
+          {"videoID": "13942649", "progressThumbnailsAmount": 105},
+          // This is a more recent video from the homepage
+          {"videoID": "xhZiTRT", "progressThumbnailsAmount": 779}
+        ],
+        "testingAuthorPageIds": [
+          // A channel-type author
+          "vixen",
+          // A creator-type author
+          "cumatozz",
+          // A user-type author
+          "dsfilmation"
+        ]
+      };
 
   @override
   void Function(SendPort) get isolateEntryPoint => initBundledPluginIsolate;

@@ -13,9 +13,6 @@ import '/utils/plugin_interface/isolate_js_runtime.dart';
 import '/utils/universal_formats.dart';
 
 class PluginInterface {
-  // TODO: Convert all variables to getters to silence linter warnings
-  // bool get isBundledPlugin => false;
-
   /// This is overridden to true in bundled plugins
   final bool isBundledPlugin = false;
 

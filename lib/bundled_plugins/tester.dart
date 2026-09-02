@@ -9,47 +9,62 @@ import '/utils/plugin_interface/plugin_interface.dart';
 
 class TesterPlugin extends PluginInterface {
   @override
-  bool isBundledPlugin = true;
+  bool get isBundledPlugin => true;
+
   @override
-  String codeName = "com.hedon_haven.tester_internal";
+  String get codeName => "com.hedon_haven.tester_internal";
+
   @override
-  String prettyName = "Tester plugin";
+  String get prettyName => "Tester plugin";
+
   @override
-  String developer = "Hedon Haven";
+  String get developer => "Hedon Haven";
+
   @override
-  String contactEmail = "contact@hedon-haven.top";
+  String get contactEmail => "contact@hedon-haven.top";
+
   @override
-  String issueTrackerUrl = "https://issues.hedon-haven.top";
+  String get issueTrackerUrl => "https://issues.hedon-haven.top";
+
   @override
-  String description = "Allows quickly testing all plugin-related functionality"
-      " of the app without scraping actual websites";
+  String get description => "Allows quickly testing all plugin-related "
+      "functionality of the app without scraping actual websites";
+
   @override
-  Uri iconUrl = Uri.parse("https://placehold.co/favicon.ico");
+  Uri get iconUrl => Uri.parse("https://placehold.co/favicon.ico");
+
   @override
-  String serviceUrl = "https://example.com";
+  String get serviceUrl => "https://example.com";
+
   @override
-  List<String> handleUrls = [
-    "https://example.com/home",
-    "https://example.com/search",
-    "https://example.com/video",
-    "https://example.com/author"
-  ];
+  List<String> get handleUrls => [
+        "https://example.com/home",
+        "https://example.com/search",
+        "https://example.com/video",
+        "https://example.com/author"
+      ];
+
   @override
-  int initialHomePage = 0;
+  int get initialHomePage => 0;
+
   @override
-  int initialSearchResultsPage = 0;
+  int get initialSearchResultsPage => 0;
+
   @override
-  int initialCommentsPage = 0;
+  int get initialCommentsPage => 0;
+
   @override
-  int initialVideoSuggestionsPage = 0;
+  int get initialVideoSuggestionsPage => 0;
+
   @override
-  int initialAuthorVideosPage = 0;
+  int get initialAuthorVideosPage => 0;
 
   // The following fields are inherited from PluginInterface, as this plugin is bundled
   @override
-  Uri? updateUrl;
+  Uri? get updateUrl;
+
   @override
-  String version = "";
+  String get version => "";
 
   @override
   void Function(SendPort) get isolateEntryPoint => initBundledPluginIsolate;

@@ -17,55 +17,69 @@ import '/utils/try_parse.dart';
 class PornhubPlugin extends PluginInterface {
   @override
   final bool isBundledPlugin = true;
+
   @override
-  String codeName = "com.hedon_haven.pornhub";
+  String get codeName => "com.hedon_haven.pornhub";
+
   @override
-  String prettyName = "Pornhub.com";
+  String get prettyName => "Pornhub.com";
+
   @override
-  String developer = "Hedon Haven";
+  String get developer => "Hedon Haven";
+
   @override
-  String contactEmail = "contact@hedon-haven.top";
+  String get contactEmail => "contact@hedon-haven.top";
+
   @override
-  String issueTrackerUrl = "https://issues.hedon-haven.top";
+  String get issueTrackerUrl => "https://issues.hedon-haven.top";
+
   @override
-  String description = "Full account-less functionality for pornhub.com";
+  String get description => "Full account-less functionality for pornhub.com";
+
   @override
-  Uri iconUrl = Uri.parse("https://www.pornhub.com/favicon.ico");
+  Uri get iconUrl => Uri.parse("https://www.pornhub.com/favicon.ico");
+
   @override
-  String serviceUrl = "https://www.pornhub.com";
+  String get serviceUrl => "https://www.pornhub.com";
+
   @override
-  List<String> handleUrls = [
-    // Homepage
-    "https://www.pornhub.com/",
-    "https://www.pornhub.com/video",
-    // Search page
-    "https://www.pornhub.com/video/search",
-    // Video page
-    "https://www.pornhub.com/view_video.php",
-    // Author page
-    "https://www.pornhub.com/channels/",
-    "https://www.pornhub.com/model/",
-    "https://www.pornhub.com/pornstar/"
-  ];
+  List<String> get handleUrls => [
+        // Homepage
+        "https://www.pornhub.com/",
+        "https://www.pornhub.com/video",
+        // Search page
+        "https://www.pornhub.com/video/search",
+        // Video page
+        "https://www.pornhub.com/view_video.php",
+        // Author page
+        "https://www.pornhub.com/channels/",
+        "https://www.pornhub.com/model/",
+        "https://www.pornhub.com/pornstar/"
+      ];
+
   @override
-  int initialHomePage = 0;
+  int get initialHomePage => 0;
+
   @override
-  int initialSearchResultsPage = 1;
+  int get initialSearchResultsPage => 1;
+
   @override
-  int initialCommentsPage = 1;
+  int get initialCommentsPage => 1;
+
   @override
-  int initialVideoSuggestionsPage = 1;
+  int get initialVideoSuggestionsPage => 1;
+
   @override
-  int initialAuthorVideosPage = 1;
+  int get initialAuthorVideosPage => 1;
 
   // The following fields are inherited from PluginInterface, as this plugin is bundled
   @override
-  Uri? updateUrl;
+  Uri? get updateUrl;
+
   @override
-  String version = "";
+  String get version => "";
 
   // Set BundledPlugin specific vars
-  @override
   Map<String, dynamic> testingMap = {
     "ignoreScrapedErrors": {
       "homepage": [
