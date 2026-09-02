@@ -54,8 +54,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // Check if there are search suggestion providers
     PluginManager.getProviders(ProviderType.searchSuggestions).then((value) {
-      setState(() => noSearchProvidersEnabled = true);
-      logger.w("No search suggestion providers enabled");
+      if (value.isEmpty) {
+        setState(() => noSearchProvidersEnabled = true);
+        logger.w("No search suggestion providers enabled");
+      }
     });
 
     // Request focus
