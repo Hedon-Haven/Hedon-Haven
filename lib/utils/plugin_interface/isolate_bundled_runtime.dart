@@ -78,7 +78,7 @@ Future<HttpResponse> httpRequest(SendPort fetchPort, String url,
   final response = await responsePort.first as Map;
   responsePort.close();
 
-  final statusCode = response["status"] as int;
+  final statusCode = response["statusCode"] as int;
   final bytes = base64Decode(response["body"] as String);
   final respHeaders = Map<String, String>.from(response["headers"] as Map);
   final decoded = http.Response.bytes(bytes, statusCode, headers: respHeaders);

@@ -169,13 +169,13 @@ class PluginInterface {
         headers: (args["headers"] as Map?)?.cast<String, String>(),
       );
       responseSendPort.send({
-        "status": response.statusCode,
+        "statusCode": response.statusCode,
         "body": base64Encode(response.bodyBytes),
         "headers": response.headers,
       });
     } catch (e) {
       responseSendPort
-          .send({"status": 0, "body": "", "headers": <String, String>{}});
+          .send({"statusCode": 0, "body": "", "headers": <String, String>{}});
     }
   }
 
