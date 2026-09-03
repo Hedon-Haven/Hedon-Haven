@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
@@ -10,9 +9,11 @@ import 'package:html_unescape/html_unescape.dart';
 import 'package:image/image.dart';
 
 import '/utils/exceptions.dart';
+import '/utils/global_vars.dart' show httpUserAgent;
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
+import '../services/external_link_manager.dart';
 
 class PornhubPlugin extends PluginInterface {
   @override
@@ -121,21 +122,7 @@ class PornhubPlugin extends PluginInterface {
         "ratingsNegativeTotal",
       ],
       "authorPage": ["aliases", "videosTotal", "lastViewed", "addedOn"]
-    },
-    "testingVideos": [
-      // This is the most watched video on pornhub (that is available in all regions)
-      {"videoID": "ph5fa4d22a641bd", "progressThumbnailsAmount": 2025},
-      // This is a more recent video
-      {"videoID": "67cc2add0ac5e", "progressThumbnailsAmount": 800}
-    ],
-    "testingAuthorPageIds": [
-      // A channel-type author
-      "vixen",
-      // A model-type author
-      "sweetie-fox",
-      // A pornstar-type author
-      "mia-khalifa"
-    ]
+    }
   };
 
   @override
@@ -168,9 +155,10 @@ final Map<String, Future<dynamic> Function(List args)> _functionsMap = {
       args[0] as String, (args[1] as Map?)?.cast<String, String>()),
   "getSearchSuggestions": (args) => getSearchSuggestions(args[0] as String),
   "getSearchResults": (args) =>
-      getSearchResults(args[0] as Map, args[1] as int),
+      getSearchResults(args[0] as Map<String, dynamic>, args[1] as int),
   "getVideoUriFromID": (args) => getVideoUriFromID(args[0] as String),
-  "getVideoMetadata": (args) => getVideoMetadata(args[0] as String),
+  "getVideoMetadata": (args) =>
+      getVideoMetadata(args[0] as String, args[1] as Map<String, dynamic>),
   "getProgressThumbnails": (args) =>
       getProgressThumbnails(args[0] as String, args[1] as String),
   "cancelGetProgressThumbnails": (args) async => cancelGetProgressThumbnails(),
@@ -224,20 +212,11 @@ const Map<int, String> _maxDurationMap = {
   3600: ""
 };
 
-Future<String> _fetchText(String url, {Map<String, String>? headers}) async {
-  final bytes = await requestFetch(_fetchPort, url, headers);
-  if (bytes == null) {
-    throw Exception("Error downloading: fetch returned null for $url");
-  }
-  return utf8.decode(bytes);
-}
-
 Future<List<Map<String, dynamic>>> _parseVideoList(List<Element> resultsList,
     [bool authorPageMode = false]) async {
   _logPort.send({
-    "level": "debug",
-    "message":
-        "Parsing ${resultsList.length} video elements (some might be ads!)"
+    "debug",
+    "Parsing ${resultsList.length} video elements (some might be ads!)"
   });
   // convert the divs into UniversalSearchResults
   List<Map<String, dynamic>> results = [];
@@ -255,7 +234,7 @@ Future<List<Map<String, dynamic>>> _parseVideoList(List<Element> resultsList,
 
     // convert time string into int list
     // pornhub automatically converts hours into minutes -> no need to check
-    int? durationSeconds;
+    int? durationInSeconds;
     try {
       List<int>? durationList = resultDiv
           .querySelector('span[class*="time"]')
@@ -264,7 +243,7 @@ Future<List<Map<String, dynamic>>> _parseVideoList(List<Element> resultsList,
           .split(":")
           .map((e) => int.parse(e))
           .toList();
-      durationSeconds = durationList![0] * 60 + durationList[1];
+      durationInSeconds = durationList![0] * 60 + durationList[1];
     } catch (_) {}
 
     // determine video views
@@ -295,15 +274,16 @@ Future<List<Map<String, dynamic>>> _parseVideoList(List<Element> resultsList,
       "title": title ?? "null",
       "thumbnail": imageDiv?.querySelector("img")?.attributes["src"],
       "thumbnailHttpHeaders": {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": httpUserAgent,
         "Referer": "https://www.pornhub.com/"
       },
-      "previewVideo": tryParse(() => imageDiv!.attributes["data-webm"]!),
+      "previewVideo":
+          tryParse(() => Uri.parse(imageDiv!.attributes["data-webm"]!)),
       "previewVideoHttpHeaders": {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": httpUserAgent,
         "Referer": "https://www.pornhub.com/"
       },
-      "duration": durationSeconds,
+      "duration": durationInSeconds,
       "viewsTotal": views,
       "ratingsPositivePercent": null,
       "maxQuality": null,
@@ -316,9 +296,6 @@ Future<List<Map<String, dynamic>>> _parseVideoList(List<Element> resultsList,
       "verifiedAuthor": true,
     };
 
-    // getHomepage, getSearchResults and getVideoSuggestions all use the same _parseVideoList
-    // -> their ignore lists are the same
-    // This will also set the scrapeFailMessage if needed
     if (iD == null || title == null) {
       uniResult["scrapeFailMessage"] =
           "Error: Failed to scrape critical variable(s):"
@@ -370,14 +347,14 @@ DateTime? _convertStringToDateTime(String? dateAsString) {
           .subtract(Duration(days: int.parse(dateAsString[0]) * 365));
     } else {
       _logPort.send({
-        "level": "warning",
-        "message": "Could not convert date string to DateTime: $dateAsString"
+        "warning",
+        "Could not convert date string to DateTime: $dateAsString"
       });
     }
   } catch (e, stacktrace) {
     _logPort.send({
-      "level": "warning",
-      "message": "Error converting date string to DateTime: $e\n$stacktrace"
+      "warning",
+      "Error converting date string to DateTime: $e\n$stacktrace"
     });
     return null;
   }
@@ -423,17 +400,14 @@ int? _convertHumanReadableStringToInt(String intAsString) {
 }
 
 // Since pornhub sometimes throws a compute check, wrap all requests
-Future<String> _performGetRequest(Uri requestUri,
+Future<HttpResponse> _performGetRequest(String requestUri,
     {Map<String, String>? headers, int? recurseCount}) async {
   headers ??= {"Cookie": ""};
   recurseCount ??= 0;
   if (recurseCount > 5) {
     throw Exception("Compute check failed 5 times");
   }
-  _logPort.send({
-    "level": "debug",
-    "message": "_performGetRequest recurse count: $recurseCount"
-  });
+  _logPort.send({"debug", "_performGetRequest recurse count: $recurseCount"});
 
   // Add ss cookie with correct formatting depending on whether other cookies already exist
   headers["Cookie"] =
@@ -444,18 +418,16 @@ Future<String> _performGetRequest(Uri requestUri,
     headers["Cookie"] = "${headers["Cookie"]}; KEY=${_sessionCookies["KEY"]};";
   }
 
-  _logPort.send({
-    "level": "debug",
-    "message": "_performGetRequest headers: ${headers["Cookie"]}"
-  });
+  _logPort.send({"debug", "_performGetRequest headers: ${headers["Cookie"]}"});
 
-  String body = await _fetchText(requestUri.toString(), headers: headers);
+  HttpResponse response =
+      await httpRequest(_fetchPort, requestUri, headers: headers);
 
   // Check if compute check was sent
-  if (parse(body).body!.text.trim() == "Loading...") {
-    _logPort.send({"level": "info", "message": "Compute check detected"});
+  if (parse(response.body).body!.text.trim() == "Loading...") {
+    _logPort.send({"info", "Compute check detected"});
     // Get entire JS code from html
-    String rawJS = parse(body).querySelector("script")!.text;
+    String rawJS = parse(response.body).querySelector("script")!.text;
     // modify the code so it returns the cookie
     rawJS = rawJS
         .replaceAll("document.cookie=", "return ")
@@ -466,66 +438,78 @@ Future<String> _performGetRequest(Uri requestUri,
         .evaluate(rawJS)
         .stringResult
         .replaceAll(";path=/;", "");
-    _logPort.send({
-      "level": "info",
-      "message": "New compute check cookie (KEY): ${_sessionCookies["KEY"]}"
-    });
+    _logPort.send(
+        {"info", "New compute check cookie (KEY): ${_sessionCookies["KEY"]}"});
     // replace cookie in headers
     // ignore: prefer_interpolation_to_compose_strings
     headers["Cookie"] =
         headers["Cookie"]!.split("KEY=").first + _sessionCookies["KEY"]!;
     // perform new request
     _logPort.send({
-      "level": "debug",
-      "message":
-          "Performing new request to $requestUri with updated cookies: ${headers["Cookie"]}"
+      "debug",
+      "Performing new request to $requestUri with updated cookies: ${headers["Cookie"]}"
     });
-    body = await _performGetRequest(requestUri,
+    response = await _performGetRequest(requestUri,
         headers: headers, recurseCount: recurseCount + 1);
   }
-  return body;
+  return response;
 }
 
-Future<bool> init() async {
-  _logPort.send({
-    "level": "info",
-    "message": "Initializing com.hedon_haven.pornhub plugin"
-  });
+Future<void> init([void Function(String body)? debugCallback]) async {
+  _logPort.send({"info", "Initializing ${PornhubPlugin().codeName} plugin"});
   // To be able to make search suggestion requests later, both a session cookie and a token are needed
   // Get the sessions cookie (called ss) from the response headers
-  // Note: in isolate context set-cookie headers are not directly available via requestFetch;
-  // the runtime is expected to surface cookies or the first response body is used for token.
-  final body = await _fetchText("https://www.pornhub.com");
-  Document rawHtml = parse(body);
+  String? setCookies;
+  HttpResponse response =
+      await httpRequest(_fetchPort, "https://www.pornhub.com");
+  if (response.statusCode != 200) {
+    throw Exception("Failed to initialize plugin. "
+        "Received status code ${response.statusCode}");
+  }
+  setCookies = response.headers["set-cookie"];
+  _logPort.send({"debug", "Set cookies received: $setCookies"});
+  Document rawHtml = parse(response.body);
+
+  debugCallback?.call("Headers: ${response.headers}\n\nBody: ${response.body}");
 
   // Check for age blocks
   if (rawHtml.body!.classes.contains("apt-landing")) {
     throw AgeGateException();
   }
 
+  if (setCookies != null) {
+    for (String cookie
+        in setCookies.split("; ").expand((e) => e.split(", ")).toList()) {
+      if (cookie.startsWith("ss=")) {
+        _sessionCookies["ss"] = cookie.split("=").last;
+        _logPort.send({"info", "Session cookie: ${_sessionCookies["ss"]}"});
+      }
+    }
+    if (_sessionCookies["ss"]?.isEmpty ?? true) {
+      throw Exception("Failed to extract ss cookie");
+    }
+  } else {
+    throw Exception("No set-cookies received; couldn't extract session cookie");
+  }
+
   // From the same request get the token inside the html
   _sessionCookies["token"] =
       rawHtml.querySelector("#searchInput")!.attributes["data-token"]!;
-  _logPort
-      .send({"level": "info", "message": "Token: ${_sessionCookies["token"]}"});
+  _logPort.send({"info", "Token: ${_sessionCookies["token"]}"});
   if (_sessionCookies["token"] == null) {
     throw Exception("No token received or found; couldn't extract token");
   }
-
-  // ss cookie is required; if the runtime does not inject it the first subsequent
-  // request that triggers a compute check will still succeed via KEY handling.
-  // Attempt a best-effort extraction if present in body (rare).
-  return true;
 }
 
-Map<String, dynamic> parseExternalLink(String uriString) {
-  final uri = Uri.parse(uriString);
-  _logPort.send({"level": "info", "message": "Parsing ${uri.path}"});
+Future<Map<String, dynamic>> parseExternalLink(String uriAsString) async {
+  Uri uri = Uri.parse(uriAsString);
+  _logPort.send({"info", "Parsing ${uri.path}"});
   switch (uri.path) {
     case "/" || "/video":
       return {
-        "type": "homePage",
-        "pageCount": int.parse(uri.queryParameters["page"] ?? "0"),
+        "type": ContentType.homePage.toString(),
+        "pageCount": int.parse(uri.queryParameters["page"] ??
+            PornhubPlugin().initialHomePage.toString()),
       };
 
     case "/video/search":
@@ -550,7 +534,7 @@ Map<String, dynamic> parseExternalLink(String uriString) {
           .key;
 
       return {
-        "type": "searchResultsPage",
+        "type": ContentType.searchResultsPage,
         "searchRequest": {
           "searchString": Uri.decodeQueryComponent(args["search"] ?? ""),
           "sortingType": sortingType,
@@ -561,40 +545,47 @@ Map<String, dynamic> parseExternalLink(String uriString) {
           "maxDuration": maxDuration,
           // rest are empty / not yet supported
         },
-        "pageCount": int.parse(args["page"] ?? "1"),
+        "pageCount": int.parse(args["page"] ??
+            PornhubPlugin().initialSearchResultsPage.toString()),
       };
 
     case "/view_video.php":
       return {
-        "type": "videoPage",
+        "type": ContentType.videoPage.toString(),
         "iD": uri.queryParameters["viewkey"]!,
       };
 
     case _
         when {"channels", "model", "pornstar"}.contains(uri.pathSegments.first):
       return {
-        "type": "authorPage",
+        "type": ContentType.authorPage.toString(),
         "iD": uri.pathSegments.last,
       };
 
     default:
-      return {"type": "unknown"};
+      return {"type": ContentType.unknown.toString()};
   }
 }
 
-Future<List<Map<String, dynamic>>> getHomePage(int page) async {
+Future<List<Map<String, dynamic>>> getHomePage(int page,
+    [void Function(String body)? debugCallback]) async {
   List<Element>? resultsList;
   // pornhub has a homepage and a separate page 1 video homepage
   // -> load main homepage first, then load first video homepage
   if (page == 0) {
     // page=0 returns a different page than requesting the base website
-    _logPort.send(
-        {"level": "debug", "message": "Requesting https://www.pornhub.com"});
-    final body = await _performGetRequest(Uri.parse("https://www.pornhub.com"),
+    _logPort.send({"debug", "Requesting https://www.pornhub.com"});
+    var response = await _performGetRequest("https://www.pornhub.com",
         // Mobile video image previews are higher quality
         headers: {"Cookie": "platform=mobile"});
+    debugCallback?.call(response.body);
+    if (response.statusCode != 200) {
+      _logPort
+          .send({"error", "Error downloading html: ${response.statusCode}"});
+      throw Exception("Error downloading html: ${response.statusCode}");
+    }
     // Filter out ads and non-video results
-    List<Element>? unparsedResults = parse(body)
+    List<Element>? unparsedResults = parse(response.body)
         // the base page has a different id for the video list
         .querySelector('#singleFeedSection')
         ?.querySelectorAll('li[data-video-vkey]');
@@ -604,16 +595,20 @@ Future<List<Map<String, dynamic>>> getHomePage(int page) async {
       return element.children.isNotEmpty;
     }).toList();
   } else {
-    _logPort.send({
-      "level": "debug",
-      "message": "Requesting https://www.pornhub.com/video?page=$page"
-    });
-    final body = await _performGetRequest(
-        Uri.parse("https://www.pornhub.com/video?page=$page"),
-        // Mobile video image previews are higher quality
-        headers: {"Cookie": "platform=mobile"});
+    _logPort
+        .send({"debug", "Requesting https://www.pornhub.com/video?page=$page"});
+    var response =
+        await _performGetRequest("https://www.pornhub.com/video?page=$page",
+            // Mobile video image previews are higher quality
+            headers: {"Cookie": "platform=mobile"});
+    debugCallback?.call(response.body);
+    if (response.statusCode != 200) {
+      _logPort
+          .send({"error", "Error downloading html: ${response.statusCode}"});
+      throw Exception("Error downloading html: ${response.statusCode}");
+    }
     // Filter out ads and non-video results
-    List<Element>? unparsedResults = parse(body)
+    List<Element>? unparsedResults = parse(response.body)
         // the base page has a different id for the video list
         .querySelector('ul[class^="videoList"]')
         ?.querySelectorAll('li[data-video-vkey]');
@@ -626,21 +621,38 @@ Future<List<Map<String, dynamic>>> getHomePage(int page) async {
   return _parseVideoList(resultsList);
 }
 
-Future<String> downloadThumbnail(
+/// FIXME: Why is this handling and suppressing errors?
+Future<Uint8List> downloadThumbnail(
     String uriString, Map<String, String>? thumbnailHttpHeaders) async {
-  final bytes = await requestFetch(_fetchPort, uriString, thumbnailHttpHeaders);
-  return base64Encode(bytes ?? Uint8List(0));
+  try {
+    var response =
+        await httpRequest(_fetchPort, uriString, headers: thumbnailHttpHeaders);
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      _logPort.send({
+        "level": "error",
+        "message": "Error downloading preview: ${response.statusCode}"
+      });
+      return Uint8List(0);
+    }
+  } catch (e, stacktrace) {
+    _logPort.send({
+      "level": "error",
+      "message": "Error downloading preview: $e\n$stacktrace"
+    });
+    return Uint8List(0);
+  }
 }
 
-Future<List<String>> getSearchSuggestions(String searchString) async {
-  _logPort.send({
-    "level": "debug",
-    "message": "Getting search suggestions for $searchString"
-  });
-  final Uri requestUri = Uri.parse(
-      "https://www.pornhub.com/api/v1/video/search_autocomplete?token=${_sessionCookies["token"]}&q=$searchString");
-  final body = await _performGetRequest(requestUri);
-  Map<String, dynamic> data = jsonDecode(body);
+Future<List<String>> getSearchSuggestions(String searchString,
+    [void Function(String body)? debugCallback]) async {
+  _logPort.send({"debug", "Getting search suggestions for $searchString"});
+  final String requestUri =
+      "https://www.pornhub.com/api/v1/video/search_autocomplete?token=${_sessionCookies["token"]}&q=$searchString";
+  final response = await _performGetRequest(requestUri);
+  debugCallback?.call(response.body);
+  Map<String, dynamic> data = jsonDecode(response.body);
   // The search results are just returned as key value pairs of numbers
   // e.g. {"0": "suggestion1", "1": "suggestion2", "2": "suggestion3"}
   // combine them into a simple list
@@ -654,9 +666,10 @@ Future<List<String>> getSearchSuggestions(String searchString) async {
 }
 
 Future<List<Map<String, dynamic>>> getSearchResults(
-    Map request, int page) async {
+    Map<String, dynamic> request, int page,
+    [void Function(String body)? debugCallback]) async {
   // Pornhub doesn't allow empty search queries
-  if ((request["searchString"] as String?)?.isEmpty ?? true) {
+  if (request["searchString"].isEmpty) {
     return [];
   }
   // @formatter:off
@@ -667,7 +680,7 @@ Future<List<Map<String, dynamic>>> getSearchResults(
       "${request["sortingType"] != "Relevance" ? "&o=${_sortingTypeMap[request["sortingType"]]!}" : ""}"
   // only top rated and most views support sorting by date
       "${["Rating", "Views"].contains(request["dateRange"]) && request["dateRange"] != "All time" ? "&t=${_dateRangeMap[request["dateRange"]]}": ""}"
-      "${(request["minQuality"] ?? 0) >= 720 ? "&hd=1" : ""}"
+      "${request["minQuality"] >= 720 ? "&hd=1" : ""}"
   // maxQuality not supported
       "${![600, 1200, 1800].contains(request["minDuration"]) ? "" : "&min_duration=${_minDurationMap[request["minDuration"]]!}"}"
       "${![600, 1200, 1800].contains(request["maxDuration"]) ? "" : "&max_duration=${_maxDurationMap[request["maxDuration"]]!}"}"
@@ -677,20 +690,21 @@ Future<List<Map<String, dynamic>>> getSearchResults(
       ;
   // @formatter:on
 
-  _logPort.send({"level": "debug", "message": "Requesting $urlString"});
-  String body;
-  try {
-    body = await _performGetRequest(Uri.parse(urlString),
-        // Mobile video image previews are higher quality
-        headers: {"Cookie": "platform=mobile"});
-  } catch (e) {
+  _logPort.send({"debug", "Requesting $urlString"});
+  var response = await _performGetRequest(urlString,
+      // Mobile video image previews are higher quality
+      headers: {"Cookie": "platform=mobile"});
+  debugCallback?.call(response.body);
+  if (response.statusCode != 200) {
     // Differentiate between soft 404 (browser still shows a page) and hard 404 (network failure)
-    if (e.toString().contains("Error Page Not Found")) {
+    if (response.body.contains("Error Page Not Found")) {
       throw NotFoundException();
     }
-    rethrow;
+    _logPort.send(
+        {"error", "Error downloading $urlString: ${response.statusCode}"});
+    throw Exception("Error downloading $urlString: ${response.statusCode}");
   }
-  Document resultHtml = parse(body);
+  Document resultHtml = parse(response.body);
   if (resultHtml.outerHtml == "<html><head></head><body></body></html>") {
     throw Exception("Received empty html");
   }
@@ -706,16 +720,23 @@ Future<String> getVideoUriFromID(String videoID) async {
   return _videoEndpoint + videoID;
 }
 
-Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
-  Uri videoMetadata = Uri.parse(_videoEndpoint + videoId);
-  _logPort.send({"level": "debug", "message": "Requesting $videoMetadata"});
-  final body = await _performGetRequest(
+Future<Map<String, dynamic>> getVideoMetadata(
+    String videoId, Map<String, dynamic> uvp,
+    [void Function(String body)? debugCallback]) async {
+  String videoMetadata = _videoEndpoint + videoId;
+  _logPort.send({"debug", "Requesting $videoMetadata"});
+  var response = await _performGetRequest(
     videoMetadata,
     // This header allows getting more data (such as recommended videos which are later used by getRecommendedVideos)
     headers: {"Cookie": "accessAgeDisclaimerPH=1; platform=mobile"},
   );
+  debugCallback?.call(response.body);
+  if (response.statusCode != 200) {
+    _logPort.send({"error", "Error downloading html: ${response.statusCode}"});
+    throw Exception("Error downloading html: ${response.statusCode}");
+  }
 
-  Document rawHtml = parse(body);
+  Document rawHtml = parse(response.body);
 
   // Get the video javascript and convert the main json into a map
   String jscript =
@@ -757,7 +778,7 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
   String authorId = authorRaw!.attributes["href"]!.split("/").last;
 
   // actors
-  List<Map<String, dynamic>>? actors;
+  List<({String name, String authorID, String avatar})>? actors;
   List<Element>? actorsList = rawHtml
       .querySelector('div[class*="pornstarsWrapper"]')
       ?.querySelectorAll("a");
@@ -765,14 +786,13 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
     for (Element element in actorsList) {
       try {
         actors ??= [];
-        actors.add({
-          "name": element.text.trim(),
-          "authorID": element.attributes["href"]!.split("/").last,
-          "avatar": element.children.first.attributes["src"]!
-        });
+        actors.add((
+          name: element.text.trim(),
+          authorID: element.attributes["href"]!.split("/").last,
+          avatar: element.children.first.attributes["src"]!
+        ));
       } catch (e, st) {
-        _logPort.send(
-            {"level": "warning", "message": "Failed to parse actor: $e\n$st"});
+        _logPort.send({"warning", "Failed to parse actor: $e\n$st"});
       }
     }
   }
@@ -799,30 +819,29 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
   }
 
   // Pornhub doesn't provide exact timestamps -> convert it
-  final uploadDate = _convertStringToDateTime(
+  DateTime? uploadDate = _convertStringToDateTime(
       rawHtml.querySelector('li[class="added"]')?.text.trim());
-  int? uploadDateSeconds =
-      uploadDate != null ? uploadDate.millisecondsSinceEpoch ~/ 1000 : null;
 
-  Map<String, String> m3u8StringMap = {};
+  Map<int, Uri> m3u8Map = {};
   for (Map<String, dynamic> video in jscriptMap["mediaDefinitions"]) {
     // the last item is a List of all qualities -> ignore it
     if (video["format"] == "hls") {
       var quality = video["quality"];
       if (quality.runtimeType == String) {
-        m3u8StringMap[quality] = video["videoUrl"];
+        m3u8Map[int.parse(quality)] = Uri.parse(video["videoUrl"]);
       }
     }
   }
 
-  return {
+  Map<String, dynamic> metadata = {
     "iD": videoId,
-    "m3u8Uris": m3u8StringMap,
+    "m3u8Uris": m3u8Map,
     "playbackHttpHeaders": {
-      "User-Agent": "Mozilla/5.0",
+      "User-Agent": httpUserAgent,
       "Referer": "https://www.pornhub.com/"
     },
     "title": jscriptMap["video_title"]!,
+    "universalVideoPreview": uvp,
     "authorID": authorId,
     "authorName": authorString,
     "authorSubscriberCount": _convertHumanReadableStringToInt(rawHtml
@@ -842,19 +861,22 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
     "viewsTotal": viewsTotal,
     "tags": tags,
     "categories": categories,
-    "uploadDate": uploadDateSeconds,
+    "uploadDate": tryParse(() => uploadDate!.millisecondsSinceEpoch ~/ 1000),
     "ratingsPositiveTotal": ratingsPositive,
     "ratingsNegativeTotal": ratingsNegative,
     "ratingsTotal": ratingsTotal,
     "virtualReality": jscriptMap["isVR"] == 1,
     "chapters": null,
+    "rawHtml": rawHtml.outerHtml
   };
+
+  return metadata;
 }
 
-Future<List<String>?> getProgressThumbnails(
+Future<List<Uint8List>?> getProgressThumbnails(
     String videoID, String rawHtmlString) async {
-  _cancelProgressThumbnails = false;
   final rawHtml = parse(rawHtmlString);
+
   try {
     // Get the video javascript
     String jscript =
@@ -865,14 +887,11 @@ Future<List<String>?> getProgressThumbnails(
     // Extract the progressImage url from jscript
     List<String> imageUrls =
         jscriptMap["thumbs"]["spritePatterns"].cast<String>();
-    _logPort.send({"level": "debug", "message": "Image urls: $imageUrls"});
+    _logPort.send({"debug", "Image urls: $imageUrls"});
 
     // Extract the sampling frequency
     int samplingFrequency = jscriptMap["thumbs"]["samplingFrequency"];
-    _logPort.send({
-      "level": "debug",
-      "message": "Sampling frequency: $samplingFrequency"
-    });
+    _logPort.send({"debug", "Sampling frequency: $samplingFrequency"});
 
     // Newer video previews all have the same size (600x340) with a 5x5 layout
     int width = 120;
@@ -882,42 +901,33 @@ Future<List<String>?> getProgressThumbnails(
       width = int.parse(jscriptMap["thumbs"]["thumbWidth"]);
       height = int.parse(jscriptMap["thumbs"]["thumbHeight"]);
     }
-    _logPort
-        .send({"level": "debug", "message": "Width: $width, Height: $height"});
-    _logPort.send({
-      "level": "info",
-      "message": "Downloading and processing progress images"
-    });
-    List<List<String>> allThumbnails =
+    _logPort.send({"debug", "Width: $width, Height: $height"});
+    _logPort.send({"info", "Downloading and processing progress images"});
+    List<List<Uint8List>> allThumbnails =
         List.generate(imageUrls.length, (_) => []);
     List<Future<void>> imageFutures = [];
 
     for (int i = 0; i <= allThumbnails.length - 1; i++) {
       // Create a future for downloading and processing
       imageFutures.add(Future(() async {
-        if (_cancelProgressThumbnails) return;
-        _logPort.send({
-          "level": "debug",
-          "message": "Requesting download for ${imageUrls[i]}"
-        });
+        _logPort.send({"debug", "Requesting download for ${imageUrls[i]}"});
 
-        // Request the main thread to fetch the image
-        final image = await requestFetch(_fetchPort, imageUrls[i], null);
-        if (image == null || _cancelProgressThumbnails) return;
+        final response = await httpRequest(_fetchPort, imageUrls[i]);
+        Uint8List image = response.bodyBytes;
 
         final decodedImage = decodeImage(image)!;
-        List<String> thumbnails = [];
+        List<Uint8List> thumbnails = [];
         for (int h = 0; h <= height * 4; h += height) {
           for (int w = 0; w <= width * 4; w += width) {
             // every progress image is for samplingFrequency (usually 4 or 9) seconds -> store the same image samplingFrequency times
             // To avoid overfilling the ram, create a temporary variable and store it in the list multiple times
             // As Lists contain references to data and not the data itself, this should reduce ram usage
-            String firstThumbnail = "";
+            Uint8List firstThumbnail = Uint8List(0);
             for (int j = 0; j < samplingFrequency; j++) {
               if (j == 0) {
                 // Only encode and add the first image once
-                firstThumbnail = base64Encode(encodeJpg(copyCrop(decodedImage,
-                    x: w, y: h, width: width, height: height)));
+                firstThumbnail = encodeJpg(copyCrop(decodedImage,
+                    x: w, y: h, width: width, height: height));
                 thumbnails.add(firstThumbnail); // Add the first encoded image
               } else {
                 // Reuse the reference to the first thumbnail
@@ -927,37 +937,26 @@ Future<List<String>?> getProgressThumbnails(
           }
         }
         allThumbnails[i] = thumbnails;
-        _logPort.send({
-          "level": "debug",
-          "message": "Completed processing ${imageUrls[i]}"
-        });
+        _logPort.send({"debug", "Completed processing ${imageUrls[i]}"});
       }));
     }
     // Await all futures
     await Future.wait(imageFutures);
-    if (_cancelProgressThumbnails) return null;
 
     // Combine all results into single, chronological list
-    _logPort.send({
-      "level": "debug",
-      "message": "Combining all results into single, chronological list"
-    });
-    List<String> completedProcessedImages =
+    _logPort.send(
+        {"debug", "Combining all results into single, chronological list"});
+    List<Uint8List> completedProcessedImages =
         allThumbnails.expand((x) => x).toList();
 
-    _logPort
-        .send({"level": "info", "message": "Completed processing all images"});
+    _logPort.send({"info", "Completed processing all images"});
     _logPort.send({
-      "level": "debug",
-      "message":
-          "Sending ${completedProcessedImages.length} progress images to main process"
+      "debug",
+      "Sending ${completedProcessedImages.length} progress images to main process"
     });
     return completedProcessedImages;
   } catch (e, stackTrace) {
-    _logPort.send({
-      "level": "error",
-      "message": "Error in getProgressThumbnails: $e\n$stackTrace"
-    });
+    _logPort.send({"error", "Error in getProgressThumbnails: $e\n$stackTrace"});
     return null;
   }
 }
@@ -973,7 +972,10 @@ Future<String?> getCommentUriFromID(String commentID, String videoID) async {
 }
 
 Future<List<Map<String, dynamic>>> getComments(
-    String videoID, String rawHtmlString, int page) async {
+    String videoID, String rawHtmlString, int page,
+    [void Function(String body)? debugCallback]) async {
+  Document rawHtml = parse(rawHtmlString);
+
   // Private functions
   Map<String, dynamic> parseComment(
       Element comment, String videoID, bool hidden) {
@@ -991,9 +993,6 @@ Future<List<Map<String, dynamic>>> getComments(
 
     String? iD = tryParse(
         () => comment.className.split(" ")[2].replaceAll("commentTag", ""));
-
-    final commentDate = _convertStringToDateTime(
-        tempComment.querySelector('div[class="date"]')?.text.trim());
 
     Map<String, dynamic> parsedComment = {
       // Don't enforce null safety here
@@ -1017,13 +1016,11 @@ Future<List<Map<String, dynamic>>> getComments(
       "ratingsNegativeTotal": null,
       "ratingsTotal": tryParse(() => int.parse(
           tempComment.querySelector('span[class*="voteTotal"]')!.text)),
-      "commentDate": commentDate != null
-          ? commentDate.millisecondsSinceEpoch ~/ 1000
-          : null,
-      "replyComments": [],
+      "commentDate": _convertStringToDateTime(
+          tempComment.querySelector('div[class="date"]')?.text.trim()),
+      "replyComments": []
     };
 
-    // This will also set the scrapeFailMessage if needed
     if (iD == null || author == null || commentBody == null) {
       parsedComment["scrapeFailMessage"] =
           "Error: Failed to scrape critical variable(s):"
@@ -1068,11 +1065,10 @@ Future<List<Map<String, dynamic>>> getComments(
             } else if (subChild.className ==
                 "commentBtn showMore viewRepliesBtn upperCase") {
               // the url is included in the button
-              final repliesBody = await _performGetRequest(
-                  Uri.parse(
-                      "https://www.pornhub.com${subChild.attributes["data-ajax-url"]!}"),
+              final repliesResponse = await _performGetRequest(
+                  "https://www.pornhub.com${subChild.attributes["data-ajax-url"]!}",
                   headers: {"Cookie": "KEY=${_sessionCookies["KEY"]}"});
-              Document rawReplyComments = parse(repliesBody);
+              Document rawReplyComments = parse(repliesResponse.body);
 
               tempReplies.addAll(await parseCommentList(
                   rawReplyComments.querySelector('div[class^="nestedBlock"]')!,
@@ -1081,10 +1077,8 @@ Future<List<Map<String, dynamic>>> getComments(
             }
           }
         } catch (e, stacktrace) {
-          _logPort.send({
-            "level": "warning",
-            "message": "Error parsing reply comments: $e\n$stacktrace"
-          });
+          _logPort.send(
+              {"warning", "Error parsing reply comments: $e\n$stacktrace"});
           parsedComments.last["replyComments"] = null;
           parsedComments.last["scrapeFailMessage"] =
               "Failed to scrape: replyComments";
@@ -1100,12 +1094,11 @@ Future<List<Map<String, dynamic>>> getComments(
 
   // pornhub allows to get all comments in one go -> return empty list on second page
   if (page > 1) {
-    return [];
+    debugCallback?.call(
+        "Pornhub allows to get all comments in one go -> return empty list on second page");
+    return Future.value([]);
   }
-  _logPort
-      .send({"level": "info", "message": "Getting all comments for $videoID"});
-
-  final rawHtml = parse(rawHtmlString);
+  _logPort.send({"info", "Getting all comments for $videoID"});
 
   // Each video has another id for the comments.
   // Get the video javascript
@@ -1117,7 +1110,7 @@ Future<List<Map<String, dynamic>>> getComments(
   String internalCommentsID =
       jscriptMap["playbackTracking"]["video_id"].toString();
 
-  Uri commentsUri = Uri.parse("https://www.pornhub.com/comment/show"
+  String commentsUri = "https://www.pornhub.com/comment/show"
       "?id=$internalCommentsID"
       // not sure what exactly the upper limit is, but pornhub doesn't seem to throw an error
       "&limit=9999"
@@ -1125,13 +1118,17 @@ Future<List<Map<String, dynamic>>> getComments(
       "&popular=1"
       // This is required
       "&what=video"
-      "&token=${_sessionCookies["token"]}");
-  _logPort.send(
-      {"level": "debug", "message": "Requesting comments URI: $commentsUri"});
-  final body = await _performGetRequest(commentsUri,
+      "&token=${_sessionCookies["token"]}";
+  _logPort.send({"debug", "Requesting comments URI: $commentsUri"});
+  final response = await _performGetRequest(commentsUri,
       headers: {"Cookie": "KEY=${_sessionCookies["KEY"]}"});
 
-  Document rawComments = parse(body);
+  if (response.statusCode != 200) {
+    throw ("Http error for $commentsUri: ${response.statusCode}");
+  }
+  debugCallback?.call(response.body);
+
+  Document rawComments = parse(response.body);
 
   List<Map<String, dynamic>> parsedComments = await parseCommentList(
       rawComments.querySelector("#cmtContent")!, videoID, false);
@@ -1140,91 +1137,87 @@ Future<List<Map<String, dynamic>>> getComments(
 }
 
 Future<List<Map<String, dynamic>>> getVideoSuggestions(
-    String videoID, String rawHtmlString, int page) async {
+    String videoID, String rawHtmlString, int page,
+    [void Function(String body)? debugCallback]) async {
   // Pornhub doesn't allow loading more suggestions
   if (page > 1) {
-    return [];
+    debugCallback?.call("Pornhub doesn't allow loading more suggestions");
+    return Future.value([]);
   }
-  final rawHtml = parse(rawHtmlString);
+  debugCallback?.call(rawHtmlString);
   // Filter out ads and non-video results
+  Document rawHtml = parse(rawHtmlString);
   return await _parseVideoList(rawHtml
       .querySelector("#relatedVideos")!
       .querySelectorAll('li[data-video-vkey]')
       .toList());
 }
 
-Future<String> getAuthorUriFromID(String authorID) async {
-  _logPort.send(
-      {"level": "info", "message": "Getting author page URL of: $authorID"});
+/// FIXME: Use client.head instead of client.get to improve performance
+Future<String?> getAuthorUriFromID(String authorID) async {
+  _logPort.send({"info", "Getting author page URL of: $authorID"});
 
   // Assume every author is a channel at first
-  Uri authorPageLink = Uri.parse("$_channelEndpoint$authorID");
+  String authorPageLink = "$_channelEndpoint$authorID";
 
-  _logPort.send({
-    "level": "debug",
-    "message": "Checking http status of: $authorPageLink"
-  });
-  try {
-    await _performGetRequest(authorPageLink,
-        headers: {"Cookie": "KEY=${_sessionCookies["KEY"]}"});
-    return authorPageLink.toString();
-  } catch (_) {
+  _logPort.send({"debug", "Checking http status of: $authorPageLink"});
+  var response = await httpRequest(_fetchPort, authorPageLink,
+      headers: {"Cookie": "KEY=${_sessionCookies["KEY"]}"});
+  if (response.statusCode != 200) {
     // Try again for model author type
-    authorPageLink = Uri.parse("$_modelEndpoint$authorID");
+    authorPageLink = "$_modelEndpoint$authorID";
     _logPort.send({
-      "level": "debug",
-      "message":
-          "Received non 200 status code -> Requesting model page: $authorPageLink"
+      "debug",
+      "Received non 200 status code -> Requesting model page: $authorPageLink"
     });
 
-    try {
-      await _performGetRequest(authorPageLink,
-          headers: {"Cookie": "KEY=${_sessionCookies["KEY"]}"});
-      return authorPageLink.toString();
-    } catch (e) {
+    response = await httpRequest(_fetchPort, authorPageLink,
+        headers: {"Cookie": "KEY=${_sessionCookies["KEY"]}"});
+
+    if (response.statusCode != 200) {
       _logPort.send({
-        "level": "error",
-        "message": "Error downloading html (tried channel, model): $e"
+        "error",
+        "Error downloading html (tried channel, model): ${response.statusCode}"
       });
-      throw Exception("Error downloading html (tried channel, model): $e");
+      throw Exception(
+          "Error downloading html (tried channel, model): ${response.statusCode}");
     }
   }
+  return authorPageLink;
 }
 
-Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
+Future<Map<String, dynamic>> getAuthorPage(String authorID,
+    [void Function(String body)? debugCallback]) async {
   // Assume every author is a channel at first
-  Uri authorPageLink = Uri.parse("$_channelEndpoint$authorID");
-  _logPort.send({
-    "level": "debug",
-    "message": "Requesting channel page: $authorPageLink"
-  });
-  String body;
-  try {
-    body = await _performGetRequest(authorPageLink,
+  String authorPageLink = "$_channelEndpoint$authorID";
+  _logPort.send({"debug", "Requesting channel page: $authorPageLink"});
+  var response = await _performGetRequest(authorPageLink,
+      // Mobile video image previews are higher quality
+      headers: {"Cookie": "accessAgeDisclaimerPH=1; platform=mobile"});
+  if (response.statusCode != 200) {
+    // Try again for model author type
+    authorPageLink = "$_modelEndpoint$authorID";
+    _logPort.send({
+      "debug",
+      "Received non 200 status code -> Requesting model page: $authorPageLink"
+    });
+    response = await _performGetRequest(authorPageLink,
         // Mobile video image previews are higher quality
         headers: {"Cookie": "accessAgeDisclaimerPH=1; platform=mobile"});
-  } catch (_) {
-    // Try again for model author type
-    authorPageLink = Uri.parse("$_modelEndpoint$authorID");
-    _logPort.send({
-      "level": "debug",
-      "message":
-          "Received non 200 status code -> Requesting model page: $authorPageLink"
-    });
-    try {
-      body = await _performGetRequest(authorPageLink,
-          // Mobile video image previews are higher quality
-          headers: {"Cookie": "accessAgeDisclaimerPH=1; platform=mobile"});
-    } catch (e) {
+
+    if (response.statusCode != 200) {
       _logPort.send({
-        "level": "error",
-        "message": "Error downloading html (tried channel, model): $e"
+        "error",
+        "Error downloading html (tried channel, model): ${response.statusCode}"
       });
-      throw Exception("Error downloading html (tried channel, model): $e");
+      throw Exception(
+          "Error downloading html (tried channel, model): ${response.statusCode}");
     }
   }
 
-  Document pageHtml = parse(body);
+  debugCallback?.call(response.body);
+
+  Document pageHtml = parse(response.body);
 
   Map<String, String>? advancedDescription;
   try {
@@ -1252,10 +1245,8 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
       }
     }
   } catch (e, stacktrace) {
-    _logPort.send({
-      "level": "warning",
-      "message": "Error parsing advanced description: $e\n$stacktrace"
-    });
+    _logPort.send(
+        {"warning", "Error parsing advanced description: $e\n$stacktrace"});
   }
 
   String? authorName;
@@ -1263,8 +1254,7 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
   try {
     if (pageHtml.querySelector('div[class="readMoreDrawerContentInner"]') !=
         null) {
-      _logPort.send(
-          {"level": "debug", "message": "Pornstar or model page detected"});
+      _logPort.send({"debug", "Pornstar or model page detected"});
       authorName = pageHtml
           .querySelector('span[class="title js-profile-header-title"]')!
           .text
@@ -1277,9 +1267,8 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
               .startsWith("Featured in") ??
           false) {
         _logPort.send({
-          "level": "info",
-          "message":
-              "Detected \"Featured in\" block. Adding to advanced description instead of normal"
+          "info",
+          "Detected \"Featured in\" block. Adding to advanced description instead of normal"
         });
         advancedDescription ??= {};
         for (Element element in pageHtml
@@ -1316,20 +1305,15 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
     }
   } catch (e, stacktrace) {
     if (authorName == null) {
-      _logPort.send({
-        "level": "warning",
-        "message": "Error parsing author name: $e\n$stacktrace"
-      });
+      _logPort.send({"warning", "Error parsing author name: $e\n$stacktrace"});
       rethrow;
     } else {
-      _logPort.send({
-        "level": "warning",
-        "message": "Error parsing simple description: $e\n$stacktrace"
-      });
+      _logPort.send(
+          {"warning", "Error parsing simple description: $e\n$stacktrace"});
     }
   }
 
-  Map<String, String>? externalLinks;
+  Map<String, Uri>? externalLinks;
   try {
     List<Element>? links =
         pageHtml.querySelector('ul[class="socialList"]')?.children;
@@ -1337,7 +1321,7 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
       externalLinks = {};
       for (Element link in links) {
         externalLinks[link.children.first.text.trim()] =
-            link.children.first.attributes["href"]!;
+            Uri.parse(link.children.first.attributes["href"]!);
       }
     } else {
       List<Element>? links =
@@ -1345,16 +1329,13 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
       if (links.isNotEmpty) {
         externalLinks = {};
         externalLinks[links.first.text.trim()] =
-            links.first.attributes["href"]!;
-        externalLinks["Channel owner page"] =
-            "https://www.pornhub.com${links.last.attributes["href"]!}";
+            Uri.parse(links.first.attributes["href"]!);
+        externalLinks["Channel owner page"] = Uri.parse(
+            "https://www.pornhub.com${links.last.attributes["href"]!}");
       }
     }
   } catch (e, stacktrace) {
-    _logPort.send({
-      "level": "warning",
-      "message": "Error parsing external links: $e\n$stacktrace"
-    });
+    _logPort.send({"warning", "Error parsing external links: $e\n$stacktrace"});
   }
 
   int? viewsTotal;
@@ -1393,9 +1374,9 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
     }
   } catch (e, stacktrace) {
     _logPort.send({
-      "level": "warning",
-      "message":
-          "Error parsing viewsTotal/videosTotal/subscribers/currentRating: $e\n$stacktrace"
+      "warning",
+      "Error parsing viewsTotal/videosTotal/subscribers/currentRating:"
+          " $e\n$stacktrace"
     });
   }
 
@@ -1409,10 +1390,7 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
         .first
         .attributes["src"];
   } catch (e, stacktrace) {
-    _logPort.send({
-      "level": "warning",
-      "message": "Error parsing thumbnail: $e\n$stacktrace"
-    });
+    _logPort.send({"warning", "Error parsing thumbnail: $e\n$stacktrace"});
   }
 
   String? banner;
@@ -1424,13 +1402,10 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
         .first
         .attributes["src"];
   } catch (e, stacktrace) {
-    _logPort.send({
-      "level": "warning",
-      "message": "Error parsing banner: $e\n$stacktrace"
-    });
+    _logPort.send({"warning", "Error parsing banner: $e\n$stacktrace"});
   }
 
-  return {
+  Map<String, dynamic> authorPage = {
     "iD": authorID,
     "name": authorName,
     "avatar": thumbnail,
@@ -1444,35 +1419,36 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
     "videosTotal": videosTotal,
     "subscribers": subscribers,
     "rank": rank,
+    "rawHtml": pageHtml.outerHtml,
   };
+
+  return authorPage;
 }
 
-Future<List<Map<String, dynamic>>> getAuthorVideos(
-    String authorID, int page) async {
+Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page,
+    [void Function(String body)? debugCallback]) async {
   // First get the author page URI
-  String authorPageLinkStr = await getAuthorUriFromID(authorID);
-  Uri authorPageLink = Uri.parse(authorPageLinkStr);
+  String authorPageLink = (await getAuthorUriFromID(authorID))!;
 
-  _logPort.send({
-    "level": "debug",
-    "message": "Requesting $authorPageLink/videos?page=$page"
-  });
-  String body;
-  try {
-    body =
-        await _performGetRequest(Uri.parse("$authorPageLink/videos?page=$page"),
-            // Mobile video image previews are higher quality
-            headers: {"Cookie": "platform=mobile"});
-  } catch (e) {
+  _logPort.send({"debug", "Requesting $authorPageLink/videos?page=$page"});
+  var response = await _performGetRequest("$authorPageLink/videos?page=$page",
+      // Mobile video image previews are higher quality
+      headers: {"Cookie": "platform=mobile"});
+  if (response.statusCode != 200) {
     // 404 means both error and no videos in this case
     // -> return empty list instead of throwing exception
-    _logPort.send({
-      "level": "warning",
-      "message": "Error downloading html: $e - Treating as no more videos found"
-    });
-    return [];
+    if (response.statusCode == 404) {
+      _logPort.send({
+        "warning",
+        "Error downloading html: ${response.statusCode}; Treating as no more videos found"
+      });
+      return [];
+    }
+    _logPort.send({"error", "Error downloading html: ${response.statusCode}"});
+    throw Exception("Error downloading html: ${response.statusCode}");
   }
-  Document resultHtml = parse(body);
+  debugCallback?.call(response.body);
+  Document resultHtml = parse(response.body);
 
   // Check if author has no videos listed
   if (resultHtml.querySelector('.emptyIcon.video') != null) {

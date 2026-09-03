@@ -12,6 +12,7 @@ import '/utils/exceptions.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
+import '../services/external_link_manager.dart';
 
 class XHamsterPlugin extends PluginInterface {
   @override
@@ -73,77 +74,57 @@ class XHamsterPlugin extends PluginInterface {
   String get version => "";
 
   // Set BundledPlugin specific vars
-  Map<String, dynamic> get testingMap => {
-        "ignoreScrapedErrors": {
-          "homepage": [
-            "authorID",
-            "thumbnailHttpHeaders",
-            "thumbnailBinary",
-            "ratingsPositivePercent",
-            "maxQuality",
-            "lastWatched",
-            "addedOn"
-          ],
-          "searchResults": [
-            "authorID",
-            "thumbnailHttpHeaders",
-            "thumbnailBinary",
-            "ratingsPositivePercent",
-            "maxQuality",
-            "lastWatched",
-            "addedOn"
-          ],
-          "videoMetadata": ["playbackHttpHeaders", "chapters"],
-          "videoSuggestions": [
-            "authorID",
-            "thumbnailHttpHeaders",
-            "thumbnailBinary",
-            "ratingsPositivePercent",
-            "maxQuality",
-            "lastWatched",
-            "addedOn"
-          ],
-          "authorVideos": [
-            "thumbnailHttpHeaders",
-            "thumbnailBinary",
-            "ratingsPositivePercent",
-            "maxQuality",
-            "authorName",
-            "authorID",
-            "lastWatched",
-            "addedOn"
-          ],
-          "comments": [
-            "ratingsPositiveTotal",
-            "ratingsNegativeTotal",
-            "countryID",
-            "orientation",
-            "profilePicture",
-            "ratingsTotal"
-          ],
-          "authorPage": [
-            "banner",
-            "description",
-            "rank",
-            "lastViewed",
-            "addedOn"
-          ]
-        },
-        "testingVideos": [
-          // This is an old video that uses the old progress thumbnail format
-          {"videoID": "13942649", "progressThumbnailsAmount": 105},
-          // This is a more recent video from the homepage
-          {"videoID": "xhZiTRT", "progressThumbnailsAmount": 779}
-        ],
-        "testingAuthorPageIds": [
-          // A channel-type author
-          "vixen",
-          // A creator-type author
-          "cumatozz",
-          // A user-type author
-          "dsfilmation"
-        ]
-      };
+  Map<String, dynamic> testingMap = {
+    "ignoreScrapedErrors": {
+      "homepage": [
+        "authorID",
+        "thumbnailHttpHeaders",
+        "thumbnailBinary",
+        "ratingsPositivePercent",
+        "maxQuality",
+        "lastWatched",
+        "addedOn"
+      ],
+      "searchResults": [
+        "authorID",
+        "thumbnailHttpHeaders",
+        "thumbnailBinary",
+        "ratingsPositivePercent",
+        "maxQuality",
+        "lastWatched",
+        "addedOn"
+      ],
+      "videoMetadata": ["playbackHttpHeaders", "chapters"],
+      "videoSuggestions": [
+        "authorID",
+        "thumbnailHttpHeaders",
+        "thumbnailBinary",
+        "ratingsPositivePercent",
+        "maxQuality",
+        "lastWatched",
+        "addedOn"
+      ],
+      "authorVideos": [
+        "thumbnailHttpHeaders",
+        "thumbnailBinary",
+        "ratingsPositivePercent",
+        "maxQuality",
+        "authorName",
+        "authorID",
+        "lastWatched",
+        "addedOn"
+      ],
+      "comments": [
+        "ratingsPositiveTotal",
+        "ratingsNegativeTotal",
+        "countryID",
+        "orientation",
+        "profilePicture",
+        "ratingsTotal"
+      ],
+      "authorPage": ["banner", "description", "rank", "lastViewed", "addedOn"]
+    }
+  };
 
   @override
   void Function(SendPort) get isolateEntryPoint => initBundledPluginIsolate;
@@ -172,9 +153,10 @@ final Map<String, Future<dynamic> Function(List args)> _functionsMap = {
       args[0] as String, (args[1] as Map?)?.cast<String, String>()),
   "getSearchSuggestions": (args) => getSearchSuggestions(args[0] as String),
   "getSearchResults": (args) =>
-      getSearchResults(args[0] as Map, args[1] as int),
+      getSearchResults(args[0] as Map<String, dynamic>, args[1] as int),
   "getVideoUriFromID": (args) => getVideoUriFromID(args[0] as String),
-  "getVideoMetadata": (args) => getVideoMetadata(args[0] as String),
+  "getVideoMetadata": (args) =>
+      getVideoMetadata(args[0] as String, args[1] as Map<String, dynamic>),
   "getProgressThumbnails": (args) =>
       getProgressThumbnails(args[0] as String, args[1] as String),
   "cancelGetProgressThumbnails": (args) async => cancelGetProgressThumbnails(),
@@ -233,32 +215,35 @@ const Map<int, String> _maxDurationMap = {
 Future<Map<int, Uri>> _parseM3U8(Uri playListUri) async {
   Map<int, Uri> playListMap = {};
   // download and convert the m3u8 into a string
-  String contentString = await _fetchText(playListUri.toString());
-  HlsMasterPlaylist? playList = (await HlsPlaylistParser.create()
-      .parseString(playListUri, contentString)) as HlsMasterPlaylist?;
+  var response = await httpRequest(_fetchPort, playListUri.toString());
+  if (response.statusCode == 200) {
+    String contentString = response.body;
+    HlsMasterPlaylist? playList = (await HlsPlaylistParser.create()
+        .parseString(playListUri, contentString)) as HlsMasterPlaylist?;
 
-  // verify the playList is not empty
-  if (playList != null) {
-    for (var variant in playList.variants) {
-      if (variant.format.height != null) {
-        playListMap[variant.format.height!] = variant.url;
-      } else {
-        _logPort.send(
-            {"level": "error", "message": "Error parsing m3u8: $playListUri"});
+    // verify the playList is not empty
+    if (playList != null) {
+      for (var variant in playList.variants) {
+        if (variant.format.height != null) {
+          playListMap[variant.format.height!] = variant.url;
+        } else {
+          _logPort.send({
+            "level": "error",
+            "message": "Error parsing m3u8: $playListUri"
+          });
+        }
       }
+    } else {
+      _logPort
+          .send({"level": "error", "message": "M3U8 is empty: $playListUri"});
     }
   } else {
-    _logPort.send({"level": "error", "message": "M3U8 is empty: $playListUri"});
+    _logPort.send({
+      "level": "error",
+      "message": "Error downloading m3u8 master file: ${response.statusCode}"
+    });
   }
   return playListMap;
-}
-
-Future<String> _fetchText(String url, {Map<String, String>? headers}) async {
-  final bytes = await requestFetch(_fetchPort, url, headers);
-  if (bytes == null) {
-    throw Exception("Error downloading: fetch returned null for $url");
-  }
-  return utf8.decode(bytes);
 }
 
 Future<List<Map<String, dynamic>>> _parseVideoList(
@@ -270,21 +255,18 @@ Future<List<Map<String, dynamic>>> _parseVideoList(
   for (Map<String, dynamic> element in resultsList) {
     String? iD = element["pageURL"]?.split("-").last;
     String? title = element["title"];
-    // convert time string into int list
-    int? durationSeconds;
-    try {
-      durationSeconds = element["duration"];
-    } catch (_) {}
+
     String authorName = authorNamePassed ??
         (element["landing"]?["name"] ?? "Unknown amateur author");
+
     Map<String, dynamic> uniResult = {
       // Don't enforce null safety here
       // treat error below in scrapeFailMessage instead
       "iD": iD ?? "null",
       "title": title ?? "null",
       "thumbnail": element["imageURL"],
-      "previewVideo": element["trailerURL"],
-      "duration": durationSeconds,
+      "previewVideo": Uri.tryParse(element["trailerURL"]),
+      "duration": element["duration"],
       "viewsTotal": element["views"],
       "ratingsPositivePercent": null,
       "maxQuality": element["isUHD"] == true ? 2160 : null,
@@ -295,42 +277,50 @@ Future<List<Map<String, dynamic>>> _parseVideoList(
       "verifiedAuthor": (element["landing"]?["type"] ?? "user") != "user" &&
           authorName != "Unknown amateur author",
     };
-    // getHomepage, getSearchResults and getAuthorVideos use the same _parseVideoList
-    // -> their ignore lists are the same
-    // This will also set the scrapeFailMessage if needed
+
     if (iD == null || title == null) {
       uniResult["scrapeFailMessage"] =
           "Error: Failed to scrape critical variable(s):"
           "${iD == null ? " ID" : ""}"
           "${title == null ? " title" : ""}";
     }
+
     results.add(uniResult);
   }
+
   return results;
 }
 
-Future<bool> init() async {
+Future<void> init([void Function(String body)? debugCallback]) async {
   // Request main page to check for age gate / banned country
-  final body = await _fetchText("https://xhamster.com");
+  final response = await httpRequest(_fetchPort, "https://xhamster.com");
+  if (response.statusCode != 200) {
+    throw Exception("Failed to initialize plugin. "
+        "Received status code ${response.statusCode}");
+  }
+
+  debugCallback?.call("Headers: ${response.headers}\n\nBody: ${response.body}");
+
   // Check for age blocks
-  if (parse(body).body!.classes.contains("xh-scroll-disabled")) {
+  if (parse(response.body).body!.classes.contains("xh-scroll-disabled")) {
     throw AgeGateException();
   }
-  return true;
 }
 
-Map<String, dynamic> parseExternalLink(String uriString) {
-  final uri = Uri.parse(uriString);
+Future<Map<String, dynamic>> parseExternalLink(String uriAsString) async {
+  Uri uri = Uri.parse(uriAsString);
   _logPort.send({"level": "info", "message": "Parsing ${uri.path}"});
   switch (uri.path) {
     case "/" || "":
-      int pageCount = 1;
+      int pageCount = XHamsterPlugin().initialHomePage;
       if (uri.pathSegments.isNotEmpty) {
         pageCount = int.parse(uri.pathSegments.last);
       }
-      return {"type": "homePage", "pageCount": pageCount};
+      return {"type": ContentType.homePage, "pageCount": pageCount};
+
     case var path when path.startsWith('/search/'):
       final args = uri.queryParameters;
+
       // Reverse-lookup using search Maps
       String sortingType = _sortingTypeMap.entries
           .firstWhere((entry) => entry.value == args["sort"],
@@ -348,8 +338,9 @@ Map<String, dynamic> parseExternalLink(String uriString) {
           .firstWhere((entry) => entry.value == args["max_duration"],
               orElse: () => const MapEntry(3600, ""))
           .key;
+
       return {
-        "type": "searchResultsPage",
+        "type": ContentType.searchResultsPage.toString(),
         "searchRequest": {
           "searchString": Uri.decodeQueryComponent(uri.pathSegments.last),
           "sortingType": sortingType,
@@ -358,63 +349,102 @@ Map<String, dynamic> parseExternalLink(String uriString) {
           // maxQuality not supported
           "minDuration": minDuration,
           "maxDuration": maxDuration,
-          "virtualReality": args["format"] != null,
+          "virtualReality": args["format"] != null
         },
-        "pageCount": int.parse(args["page"] ?? "1"),
+        "pageCount": int.parse(args["page"] ??
+            XHamsterPlugin().initialSearchResultsPage.toString()),
       };
+
     case var path when path.startsWith('/videos/'):
       return {
-        "type": "videoPage",
+        "type": ContentType.videoPage,
         "iD": uri.pathSegments.last.split("-").last,
       };
+
     case _
         when {"creators", "channels", "users"}.contains(uri.pathSegments.first):
       return {
-        "type": "authorPage",
+        "type": ContentType.authorPage,
         "iD": uri.pathSegments.last,
       };
+
     default:
-      return {"type": "unknown"};
+      return {"type": ContentType.unknown.toString()};
   }
 }
 
-Future<List<Map<String, dynamic>>> getHomePage(int page) async {
+Future<List<Map<String, dynamic>>> getHomePage(int page,
+    [void Function(String body)? debugCallback]) async {
   _logPort.send(
       {"level": "debug", "message": "Requesting https://xhamster.com/$page"});
-  final body = await _fetchText("https://xhamster.com/$page");
-  Document resultHtml = parse(body);
+  var response = await httpRequest(_fetchPort, "https://xhamster.com/$page");
+  debugCallback?.call(response.body);
+  if (response.statusCode != 200) {
+    _logPort.send({
+      "level": "error",
+      "message": "Error downloading html: ${response.statusCode}"
+    });
+    throw Exception("Error downloading html: ${response.statusCode}");
+  }
+  Document resultHtml = parse(response.body);
   if (resultHtml.outerHtml == "<html><head></head><body></body></html>") {
     throw Exception("Received empty html");
   }
+
   String jscript = resultHtml.querySelector('#initials-script')!.text;
   Map<String, dynamic> jscriptMap = jsonDecode(
       jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+
   return _parseVideoList(jscriptMap["layoutPage"]["videoListProps"]
           ["videoThumbProps"]
       .cast<Map<String, dynamic>>());
 }
 
-Future<String> downloadThumbnail(
+/// FIXME: Why is this handling and suppressing errors?
+Future<Uint8List> downloadThumbnail(
     String uriString, Map<String, String>? thumbnailHttpHeaders) async {
-  final bytes = await requestFetch(_fetchPort, uriString, thumbnailHttpHeaders);
-  return base64Encode(bytes ?? Uint8List(0));
+  try {
+    var response =
+        await httpRequest(_fetchPort, uriString, headers: thumbnailHttpHeaders);
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      _logPort.send({
+        "level": "error",
+        "message": "Error downloading preview: ${response.statusCode}"
+      });
+      return Uint8List(0);
+    }
+  } catch (e, stacktrace) {
+    _logPort.send({
+      "level": "error",
+      "message": "Error downloading preview: $e\n$stacktrace"
+    });
+    return Uint8List(0);
+  }
 }
 
-Future<List<String>> getSearchSuggestions(String searchString) async {
+Future<List<String>> getSearchSuggestions(String searchString,
+    [void Function(String body)? debugCallback]) async {
   List<String> parsedMap = [];
-  final body = await _fetchText(
+  var response = await httpRequest(_fetchPort,
       "https://xhamster.com/api/front/search/suggest?searchValue=$searchString",
+      // If either of these headers is missing, the server throws a 403 for some reason
       headers: {"x-csrf-token": "1", "Cookie": "x_csrf_token=1"});
-  // If either of these headers is missing, the server throws a 403 for some reason
-  for (var item in jsonDecode(body).cast<Map>()) {
-    if (item["type2"] == "search") {
-      parsedMap.add(item["plainText"]);
+  debugCallback?.call(response.body);
+  if (response.statusCode == 200) {
+    for (var item in jsonDecode(response.body).cast<Map>()) {
+      if (item["type2"] == "search") {
+        parsedMap.add(item["plainText"]);
+      }
     }
+  } else {
+    throw Exception("Error downloading json list: ${response.statusCode}");
   }
   return parsedMap;
 }
 
-Future<List<Map<String, dynamic>>> getSearchResults(
+Future<List<Map<String, dynamic>>> getSearchResults2(
     Map request, int page) async {
   // @formatter:off
   String urlString = "$_searchEndpoint${Uri.encodeComponent(request["searchString"])}"
@@ -432,11 +462,50 @@ Future<List<Map<String, dynamic>>> getSearchResults(
       ;
   // @formatter:on
   _logPort.send({"level": "debug", "message": "Requesting $urlString"});
-  final body = await _fetchText(urlString);
-  Document resultHtml = parse(body);
+  final response = await httpRequest(_fetchPort, urlString);
+  Document resultHtml = parse(response.body);
   String jscript = resultHtml.querySelector('#initials-script')!.text;
   Map<String, dynamic> jscriptMap = jsonDecode(
       jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+  return _parseVideoList(jscriptMap["searchResult"]["videoThumbProps"]
+      .cast<Map<String, dynamic>>());
+}
+
+Future<List<Map<String, dynamic>>> getSearchResults(
+    Map<String, dynamic> request, int page,
+    [void Function(String body)? debugCallback]) async {
+  // @formatter:off
+  String urlString = "$_searchEndpoint${Uri.encodeComponent(request["searchString"])}"
+      "?page=$page"
+      "&sort=${_sortingTypeMap[request["sortingType"]]!}"
+      "${request["dateRange"] != "All time" ? "&date=${_dateRangeMap[request["dateRange"]]}": ""}"
+      "${[720, 1080, 2160].contains(request["minQuality"]) ? "&quality=${request["minQuality"]}p" : ""}"
+  // no max quality filter
+      "${[0, 3600].contains(request["minDuration"]) ? "" : "&min_duration=${_minDurationMap[request["minDuration"]]!}"}"
+      "${[0, 3600].contains(request["maxDuration"]) ? "" : "&max_duration=${_maxDurationMap[request["maxDuration"]]!}"}"
+      "${request["minFramesPerSecond"] > 0 ? "&fps=${request["minFramesPerSecond"]}" : ""}"
+  // no min FPS filter
+      "${request["virtualReality"] ? "&format=vr" : ""}"
+  // Categories and keywords not yet implemented
+      ;
+  // @formatter:on
+
+  _logPort.send({"level": "debug", "message": "Requesting $urlString"});
+  var response = await httpRequest(_fetchPort, urlString);
+  debugCallback?.call(response.body);
+  if (response.statusCode != 200) {
+    _logPort.send({
+      "level": "error",
+      "message": "Error downloading html: ${response.statusCode}"
+    });
+    throw Exception("Error downloading html: ${response.statusCode}");
+  }
+  Document resultHtml = parse(response.body);
+
+  String jscript = resultHtml.querySelector('#initials-script')!.text;
+  Map<String, dynamic> jscriptMap = jsonDecode(
+      jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+
   return _parseVideoList(jscriptMap["searchResult"]["videoThumbProps"]
       .cast<Map<String, dynamic>>());
 }
@@ -445,14 +514,26 @@ Future<String> getVideoUriFromID(String videoID) async {
   return _videoEndpoint + videoID;
 }
 
-Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
+Future<Map<String, dynamic>> getVideoMetadata(
+    String videoId, Map<String, dynamic> uvp,
+    [void Function(String body)? debugCallback]) async {
   _logPort.send(
       {"level": "debug", "message": "Requesting ${_videoEndpoint + videoId}"});
-  final body = await _fetchText(_videoEndpoint + videoId);
-  Document rawHtml = parse(body);
+  var response = await httpRequest(_fetchPort, "$_videoEndpoint$videoId");
+  debugCallback?.call(response.body);
+  if (response.statusCode != 200) {
+    _logPort.send({
+      "level": "error",
+      "message": "Error downloading html: ${response.statusCode}"
+    });
+    throw Exception("Error downloading html: ${response.statusCode}");
+  }
+
+  Document rawHtml = parse(response.body);
   String jscript = rawHtml.querySelector('#initials-script')!.text;
   Map<String, dynamic> jscriptMap = jsonDecode(
       jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+
   // ratings
   int? ratingsPositive =
       jscriptMap["ratingComponent"]?["ratingModel"]?["likes"];
@@ -462,10 +543,11 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
   if (ratingsPositive != null && ratingsNegative != null) {
     ratingsTotal = ratingsPositive + ratingsNegative;
   }
+
   // Extract tags, categories and actors from jscriptMap
   List<String>? tags = [];
   List<String>? categories = [];
-  List<Map<String, dynamic>>? actors;
+  List<({String name, String authorID, String avatar})>? actors;
   try {
     for (Map<String, dynamic> element
         in jscriptMap["videoTagsComponent"]!["tags"]!) {
@@ -474,11 +556,11 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
       } else if (element["isPornstar"]!) {
         try {
           actors ??= [];
-          actors.add({
-            "name": element["name"],
-            "authorID": element["slug"],
-            "avatar": element["thumbUrl"]
-          });
+          actors.add((
+            name: element["name"],
+            authorID: element["slug"],
+            avatar: element["thumbUrl"]
+          ));
         } catch (e, st) {
           _logPort.send({
             "level": "warning",
@@ -498,11 +580,12 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
     _logPort.send({
       "level": "warning",
       "message": "Failed to parse actors/tags/categories (but continuing "
-          "anyways): $e\n$stacktrace"
+          "anyway): $e\n$stacktrace"
     });
   }
+
   // Use the tooltip as video upload date
-  int? uploadDateSeconds;
+  DateTime? date;
   String? dateString = rawHtml
       .querySelector('div[class="entity-info-container__date tooltip-nocache"]')
       ?.attributes["data-tooltip"]!;
@@ -515,21 +598,16 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
         .replaceFirst(" ", "T")
         .replaceAll(":", "")
         .replaceAll(" UTC", "");
-    final date = DateTime.tryParse(dateString);
-    if (date != null) {
-      uploadDateSeconds = date.millisecondsSinceEpoch ~/ 1000;
-    }
+    date = DateTime.tryParse(dateString);
   }
+
   // convert master m3u8 to list of media m3u8
   // TODO: Maybe check if the m3u8 is a master m3u8
   var videoM3u8 = rawHtml.querySelector(
       'link[rel="preload"][href*=".m3u8"][as="fetch"][crossorigin]');
-  // parseM3U8 is assumed available via runtime / shared utils in isolate context
   Map<int, Uri> m3u8Map =
       await _parseM3U8(Uri.parse(videoM3u8!.attributes["href"]!));
-  Map<String, String> m3u8StringMap = {
-    for (var e in m3u8Map.entries) e.key.toString(): e.value.toString()
-  };
+
   String? authorID;
   String? authorName;
   int? authorSubscriberCount;
@@ -553,13 +631,16 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
         jscriptMap["videoTagsComponent"]?["subscriptionModel"]?["subscribers"];
     authorAvatar = jscriptMap["videoTagsComponent"]?["tags"]?[0]?["thumbUrl"];
   }
+
   String? description = jscriptMap["videoModel"]?["description"] == ""
       ? null
       : jscriptMap["videoModel"]?["description"];
+
   return {
     "iD": videoId,
-    "m3u8Uris": m3u8StringMap,
+    "m3u8Uris": m3u8Map,
     "title": jscriptMap["videoModel"]!["title"]!,
+    "universalVideoPreview": uvp,
     "authorID": authorID!,
     "authorName": authorName,
     "authorSubscriberCount": authorSubscriberCount,
@@ -569,35 +650,42 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
     "viewsTotal": jscriptMap["videoTitle"]?["views"],
     "tags": tags,
     "categories": categories,
-    "uploadDate": uploadDateSeconds,
+    "uploadDate": tryParse(() => date!.millisecondsSinceEpoch ~/ 1000),
     "ratingsPositiveTotal": ratingsPositive,
     "ratingsNegativeTotal": ratingsNegative,
     "ratingsTotal": ratingsTotal,
     "virtualReality": jscriptMap["videoModel"]?["isVR"],
     "chapters": null,
+    "rawHtml": rawHtml
   };
 }
 
-Future<List<String>?> getProgressThumbnails(
+Future<List<Uint8List>?> getProgressThumbnails(
     String videoID, String rawHtmlString) async {
   _cancelProgressThumbnails = false;
   final rawHtml = parse(rawHtmlString);
+
   try {
     // Get the video json
     String jscript = rawHtml.querySelector('#initials-script')!.text;
     Map<String, dynamic> jscriptMap = jsonDecode(
         jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+
     String imageBuildUrl =
         jscriptMap["xplayerPluginSettings"]["spriteLoader"]["template"];
+
     _logPort.send({"level": "debug", "message": imageBuildUrl});
+
     // Extract the video duration
     int duration = jscriptMap["xplayerSettings"]["duration"];
+
     // Extract the width of the individual preview image from the baseUrl
     String imageWidthString = imageBuildUrl.split("/").last.split(".")[0];
     // New format has the width only, old format has width x height
     int imageWidth = int.parse(imageWidthString.contains("x")
         ? imageWidthString.split("x").first
         : imageWidthString);
+
     // Assume old format
     String suffix = "";
     String baseUrl = imageBuildUrl;
@@ -606,17 +694,15 @@ Future<List<String>?> getProgressThumbnails(
     // only one combined image in old format
     int lastImageIndex = 0;
     bool isOldFormat = true;
+
     // determine kind of preview images
-    _logPort.send({
-      "level": "debug",
-      "message": "Checking whether video uses new preview format"
-    });
+    _logPort.send({"debug", "Checking whether video uses new preview format"});
     if (imageBuildUrl.endsWith("%d.webp")) {
       isOldFormat = false;
       suffix = ".${imageBuildUrl.split(".").last}";
-      _logPort.send({"level": "debug", "message": "suffix $suffix"});
+      _logPort.send({"debug", "suffix $suffix"});
       baseUrl = imageBuildUrl.split("%d").first;
-      _logPort.send({"level": "debug", "message": "baseUrl: $baseUrl"});
+      _logPort.send({"debug", "baseUrl: $baseUrl"});
       // from limited testing it seems as if the sampling frequency is always 4 in the new format, but have this just in case
       // Although usually the sampling frequency is not 4.0, but rather something like 4.003
       // For some reason xhamster just ignores that and uses a whole number resulting in drift at the end in long videos.
@@ -625,43 +711,37 @@ Future<List<String>?> getProgressThumbnails(
       // Each combined image contains 50 images
       lastImageIndex = duration ~/ samplingFrequency ~/ 50;
     }
-    _logPort.send({"level": "debug", "message": "Is old format: $isOldFormat"});
-    _logPort.send({
-      "level": "debug",
-      "message": "Sampling frequency: $samplingFrequency"
-    });
-    _logPort
-        .send({"level": "debug", "message": "lastImageIndex: $lastImageIndex"});
-    _logPort.send({
-      "level": "info",
-      "message": "Downloading and processing progress images"
-    });
-    List<List<String>> allThumbnails =
+    _logPort.send({"debug", "Is old format: $isOldFormat"});
+    _logPort.send({"debug", "Sampling frequency: $samplingFrequency"});
+    _logPort.send({"debug", "lastImageIndex: $lastImageIndex"});
+
+    _logPort.send({"info", "Downloading and processing progress images"});
+    List<List<Uint8List>> allThumbnails =
         List.generate(lastImageIndex + 1, (_) => []);
     List<Future<void>> imageFutures = [];
+
     for (int i = 0; i <= lastImageIndex; i++) {
       // Create a future for downloading and processing
       imageFutures.add(Future(() async {
-        if (_cancelProgressThumbnails) return;
         String url = isOldFormat ? baseUrl : "$baseUrl$i$suffix";
-        _logPort.send(
-            {"level": "debug", "message": "Requesting download for $url"});
-        // Request the main thread to fetch the image
-        final image = await requestFetch(_fetchPort, url, null);
-        if (image == null || _cancelProgressThumbnails) return;
+        _logPort.send({"debug", "Requesting download for $url"});
+
+        final response = await httpRequest(_fetchPort, url);
+        Uint8List image = response.bodyBytes;
+
         final decodedImage = decodeImage(image)!;
-        List<String> thumbnails = [];
+        List<Uint8List> thumbnails = [];
         for (int w = 0; w < decodedImage.width; w += imageWidth) {
           // XHamster has a set amount of thumbnails (usually multiples of 50) for the whole video.
           // every progress image is for samplingFrequency (usually 4) seconds -> store the same image samplingFrequency times
           // To avoid overfilling the ram, create a temporary variable and store it in the list multiple times
           // As Lists contain references to data and not the data itself, this should reduce ram usage
-          String firstThumbnail = "";
+          Uint8List firstThumbnail = Uint8List(0);
           for (int j = 0; j < samplingFrequency; j++) {
             if (j == 0) {
               // Only encode and add the first image once
-              firstThumbnail = base64Encode(encodeJpg(copyCrop(decodedImage,
-                  x: w, y: 0, width: imageWidth, height: decodedImage.height)));
+              firstThumbnail = encodeJpg(copyCrop(decodedImage,
+                  x: w, y: 0, width: imageWidth, height: decodedImage.height));
               thumbnails.add(firstThumbnail); // Add the first encoded image
             } else {
               // Reuse the reference to the first thumbnail
@@ -674,37 +754,32 @@ Future<List<String>?> getProgressThumbnails(
     }
     // Await all futures
     await Future.wait(imageFutures);
-    if (_cancelProgressThumbnails) return null;
+
     // Combine all results into single, chronological list
-    List<String> completedProcessedImages =
+    List<Uint8List> completedProcessedImages =
         allThumbnails.expand((x) => x).toList();
+
     // Add 55 seconds more of the last thumbnail
     // This is done as the sampling frequency is floored. 0.99*50 = 49.5, means in theory we could be off by 50 seconds
-    if (completedProcessedImages.isNotEmpty) {
-      String lastImage = completedProcessedImages.last;
-      for (int j = 0; j < 55; j++) {
-        completedProcessedImages.add(lastImage);
-      }
+    Uint8List lastImage = completedProcessedImages.last;
+    for (int j = 0; j < 55; j++) {
+      completedProcessedImages.add(lastImage);
     }
-    _logPort
-        .send({"level": "info", "message": "Completed processing all images"});
+
+    _logPort.send({"info", "Completed processing all images"});
     _logPort.send({
-      "level": "debug",
-      "message":
-          "Total memory consumption apprx: ${completedProcessedImages.isNotEmpty ? (completedProcessedImages[0].length * completedProcessedImages.length / 1024 / 1024) : 0} mb"
+      "debug",
+      "Total memory consumption apprx: ${completedProcessedImages[0].lengthInBytes * completedProcessedImages.length / 1024 / 1024} mb"
     });
     // return the completed processed images through the separate resultsPort
     _logPort.send({
-      "level": "debug",
-      "message":
-          "Sending ${completedProcessedImages.length} progress images to main process"
+      "debug",
+      "Sending ${completedProcessedImages.length} progress images to main process"
     });
     return completedProcessedImages;
   } catch (e, stackTrace) {
-    _logPort.send({
-      "level": "error",
-      "message": "Error in getProgressThumbnails: $e\n$stackTrace"
-    });
+    _logPort.send(
+        {"error", "Error in getProgressThumbnails: $e\n$stackTrace"});
     return null;
   }
 }
@@ -720,13 +795,16 @@ Future<String> getCommentUriFromID(String commentID, String videoID) async {
 }
 
 Future<List<Map<String, dynamic>>> getComments(
-    String videoID, String rawHtmlString, int page) async {
+    String videoID, String rawHtmlString, int page,
+    [void Function(String body)? debugCallback]) async {
+  Document rawHtml = parse(rawHtmlString);
   List<Map<String, dynamic>> commentList = [];
-  final rawHtml = parse(rawHtmlString);
+
   // find the video's entity-id in the json inside the html
   String jscript = rawHtml.querySelector("#initials-script")!.text;
   Map<String, dynamic> jscriptMap = jsonDecode(
       jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+
   // use the entity id from the comment section specifically
   // Its usually an integer -> convert it to a string, just in case
   String entityID = jscriptMap["commentsComponent"]["commentsList"]["target"]
@@ -734,21 +812,31 @@ Future<List<Map<String, dynamic>>> getComments(
       .toString();
   _logPort.send(
       {"level": "debug", "message": "Video comment entity ID: $entityID"});
-  final commentUri = Uri.parse('https://xhamster.com/x-api?r='
+
+  String commentUri = 'https://xhamster.com/x-api?r='
       '[{"name":"entityCommentCollectionFetch",'
-      '"requestData":{"page":$page,"entity":{"entityModel":"videoModel","entityID":$entityID}}}]');
+      '"requestData":{"page":$page,"entity":{"entityModel":"videoModel","entityID":$entityID}}}]';
   _logPort.send(
       {"level": "debug", "message": "Comment URI (page: $page): $commentUri"});
-  final body = await _fetchText(commentUri.toString(), headers: {
-    "X-Requested-With": "XMLHttpRequest",
-  });
-  // For some reason this header is required, otherwise the request 404s.
-  final commentsJson = jsonDecode(body)[0]["responseData"];
+  final response = await httpRequest(
+    _fetchPort,
+    commentUri,
+    // For some reason this header is required, otherwise the request 404s.
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+    },
+  );
+  if (response.statusCode != 200) {
+    throw Exception("Error downloading json: ${response.statusCode}");
+  }
+  debugCallback?.call(response.body);
+  final commentsJson = jsonDecode(response.body)[0]["responseData"];
   if (commentsJson == null) {
     _logPort.send(
         {"level": "warning", "message": "No comments found for $videoID"});
     return [];
   }
+
   for (var comment in commentsJson) {
     String? iD = comment["id"];
     String? author = comment["author"]?["name"];
@@ -756,6 +844,7 @@ Future<List<Map<String, dynamic>>> getComments(
     if (comment["text"] != null) {
       commentBody = HtmlUnescape().convert(comment["text"]!).trim();
     }
+
     Map<String, dynamic> uniComment = {
       // Don't enforce null safety here
       // treat error below in scrapeFailMessage instead
@@ -774,13 +863,11 @@ Future<List<Map<String, dynamic>>> getComments(
       "ratingsNegativeTotal": null,
       // null in the json means 0
       "ratingsTotal": comment["likes"] ?? 0,
-      "commentDate": tryParse(() => DateTime.fromMillisecondsSinceEpoch(
-                  comment["created"] * 1000))!
-              .millisecondsSinceEpoch ~/
-          1000,
+      "commentDate": tryParse(
+          () => DateTime.fromMillisecondsSinceEpoch(comment["created"] * 1000)),
       "replyComments": [],
     };
-    // This will also set the scrapeFailMessage if needed
+
     if (iD == null || author == null || commentBody == null) {
       uniComment["scrapeFailMessage"] =
           "Error: Failed to scrape critical variable(s):"
@@ -788,24 +875,29 @@ Future<List<Map<String, dynamic>>> getComments(
           "${author == null ? " author" : ""}"
           "${commentBody == null ? " commentBody" : ""}";
     }
+
     commentList.add(uniComment);
   }
+
   if (commentList.length != commentsJson.length) {
     _logPort.send({
       "level": "warning",
-      "message": "${commentsJson.length - commentList.length} comments "
-          "failed to parse."
+      "message":
+          "${commentsJson.length - commentList.length} comments failed to parse."
     });
     if (commentList.length < commentsJson.length * 0.5) {
       throw Exception("More than 50% of the results failed to parse.");
     }
   }
+
   return commentList;
 }
 
 Future<List<Map<String, dynamic>>> getVideoSuggestions(
-    String videoID, String rawHtmlString, int page) async {
-  final rawHtml = parse(rawHtmlString);
+    String videoID, String rawHtmlString, int page,
+    [void Function(String body)? debugCallback]) async {
+  Document rawHtml = parse(rawHtmlString);
+
   // find the video's relatedID in the json inside the html
   String jscript = rawHtml.querySelector("#initials-script")!.text;
   // use the relatedID from the related videos section specifically
@@ -813,26 +905,33 @@ Future<List<Map<String, dynamic>>> getVideoSuggestions(
   int endIndex = jscript.substring(startIndex).indexOf(',');
   String relatedID = jscript.substring(startIndex, startIndex + endIndex);
   _logPort.send({"level": "debug", "message": "Video relatedID: $relatedID"});
+
   // API returns error if no parameters are passed,
   // but doesn't actually care which parameters are passed...
-  final suggestionsUri = Uri.parse("https://xhamster.com/api/front/video/"
-      "related?videoId=$relatedID&page=$page&params={%22none%22:{}}");
+  String suggestionsUri = "https://xhamster.com/api/front/video/"
+      "related?videoId=$relatedID&page=$page&params={%22none%22:{}}";
   _logPort.send({"level": "debug", "message": "Parsed URI: $suggestionsUri"});
-  final body = await _fetchText(suggestionsUri.toString());
+  final response = await httpRequest(_fetchPort, suggestionsUri);
+  if (response.statusCode != 200) {
+    throw Exception("Failed to get suggestions: ${response.statusCode}");
+  }
+  debugCallback?.call(response.body);
+
   List<Map<String, dynamic>> relatedVideos = [];
-  for (var result in jsonDecode(body)["videoThumbProps"]) {
+  for (var result in jsonDecode(response.body)["videoThumbProps"]) {
     String? title = tryParse(() => result["title"]);
+
     Map<String, dynamic> relatedVideo = {
       // Don't enforce null safety here
       // treat error below in scrapeFailMessage instead
       "iD": tryParse(() => result["pageURL"].trim().split("/").last) ?? "null",
       "title": title ?? "null",
       "thumbnail": result["thumbURL"],
-      "previewVideo": tryParse(() => result["trailerURL"]),
-      "duration": tryParse(() => result["duration"]),
+      "previewVideo": tryParse<Uri?>(() => Uri.parse(result["trailerURL"])),
+      "duration": result["duration"],
       "viewsTotal": result["views"],
       "ratingsPositivePercent": null,
-      "maxQuality": tryParse(() => result["isUHD"] != null ? 2160 : null),
+      "maxQuality": tryParse<int?>(() => result["isUHD"] != null ? 2160 : null),
       "virtualReality": null,
       "authorName": result["landing"]?["name"] ?? "Unknown amateur author",
       "authorID": result["landing"]?["link"]
@@ -841,111 +940,117 @@ Future<List<Map<String, dynamic>>> getVideoSuggestions(
           ?.last,
       "verifiedAuthor": result["landing"]?["name"] != null,
     };
-    // This will also set the scrapeFailMessage if needed
+
     if (title == null) {
       relatedVideo["scrapeFailMessage"] =
           "Error: Failed to scrape critical variable: title";
     }
+
     relatedVideos.add(relatedVideo);
   }
   return relatedVideos;
 }
 
-Future<String> getAuthorUriFromID(String authorID) async {
+/// FIXME: Use .head() instead of .get() for quicker processing
+Future<String?> getAuthorUriFromID(String authorID) async {
   _logPort.send(
       {"level": "info", "message": "Getting author page URL of: $authorID"});
+
   // Assume every author is a channel at first
-  Uri authorPageLink = Uri.parse("$_channelEndpoint$authorID");
+  String authorPageLink = "$_channelEndpoint$authorID";
+
   _logPort.send({
     "level": "debug",
     "message": "Checking http status of: $authorPageLink"
   });
-  try {
-    await _fetchText(authorPageLink.toString());
-    return authorPageLink.toString();
-  } catch (_) {
+  var response = await httpRequest(_fetchPort, authorPageLink);
+  if (response.statusCode != 200) {
     // Try again for creator author type
-    authorPageLink = Uri.parse("$_creatorEndpoint$authorID");
+    authorPageLink = "$_creatorEndpoint$authorID";
+
     _logPort.send({
       "level": "debug",
       "message":
           "Received non 200 status code -> Requesting creator page: $authorPageLink"
     });
-    try {
-      await _fetchText(authorPageLink.toString());
-      return authorPageLink.toString();
-    } catch (_) {
+    response = await httpRequest(_fetchPort, authorPageLink);
+
+    if (response.statusCode != 200) {
       // Try again for user author type
-      authorPageLink = Uri.parse("$_userEndpoint$authorID");
+      authorPageLink = "$_userEndpoint$authorID";
       _logPort.send({
         "level": "debug",
         "message":
             "Received non 200 status code -> Requesting user page: $authorPageLink"
       });
-      try {
-        await _fetchText(authorPageLink.toString());
-        return authorPageLink.toString();
-      } catch (e) {
+      response = await httpRequest(_fetchPort, authorPageLink);
+      if (response.statusCode != 200) {
         _logPort.send({
           "level": "error",
-          "message": "Error downloading html (tried channel, creator, user): $e"
+          "message":
+              "Error downloading html (tried channel, creator, user): ${response.statusCode}"
         });
         throw Exception(
-            "Error downloading html (tried channel, creator, user): $e");
+            "Error downloading html (tried channel, creator, user): ${response.statusCode}");
       }
     }
   }
+  return authorPageLink;
 }
 
-Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
+Future<Map<String, dynamic>> getAuthorPage(String authorID,
+    [void Function(String body)? debugCallback]) async {
   // Assume every author is a channel at first
-  Uri authorPageLink = Uri.parse("$_channelEndpoint$authorID");
+  String authorPageLink = "$_channelEndpoint$authorID";
   _logPort.send({
     "level": "debug",
     "message": "Requesting channel page: $authorPageLink"
   });
-  String body;
-  try {
-    body = await _fetchText(authorPageLink.toString());
-  } catch (_) {
+  var response = await httpRequest(_fetchPort, authorPageLink);
+  if (response.statusCode != 200) {
     // Try again for creator author type
-    authorPageLink = Uri.parse("$_creatorEndpoint$authorID");
+    authorPageLink = "$_creatorEndpoint$authorID";
     _logPort.send({
       "level": "debug",
       "message":
           "Received non 200 status code -> Requesting creator page: $authorPageLink"
     });
-    try {
-      body = await _fetchText(authorPageLink.toString());
-    } catch (_) {
+    response = await httpRequest(_fetchPort, authorPageLink);
+
+    if (response.statusCode != 200) {
       // Try again for user author type
-      authorPageLink = Uri.parse("$_userEndpoint$authorID");
+      authorPageLink = "$_userEndpoint$authorID";
       _logPort.send({
         "level": "debug",
         "message":
             "Received non 200 status code -> Requesting user page: $authorPageLink"
       });
-      try {
-        body = await _fetchText(authorPageLink.toString());
-      } catch (e) {
+      response = await httpRequest(_fetchPort, authorPageLink);
+
+      if (response.statusCode != 200) {
         _logPort.send({
           "level": "error",
-          "message": "Error downloading html (tried channel, creator, user): $e"
+          "message":
+              "Error downloading html (tried channel, creator, user): ${response.statusCode}"
         });
         throw Exception(
-            "Error downloading html (tried channel, creator, user): $e");
+            "Error downloading html (tried channel, creator, user): ${response.statusCode}");
       }
     }
   }
-  Document pageHtml = parse(body);
+
+  debugCallback?.call(response.body);
+  Document pageHtml = parse(response.body);
   String jscript = pageHtml.querySelector('#initials-script')!.text;
   Map<String, dynamic> jscriptMap = jsonDecode(
       jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+
   // Check if the profile is private
   if ((pageHtml.querySelector(".status-text")?.text ?? "") ==
       "This profile is visible to friends only") {
     throw PrivateAuthorProfileException();
   }
+
   // normal description
   String? shortDescription;
   if (jscriptMap["aboutMeComponent"]?["text"] != null) {
@@ -954,7 +1059,8 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
     shortDescription =
         shortDescription.replaceAll("<br\\/>", "\n").replaceAll("<br/>", "\n");
   }
-  Map<String, String>? externalLinks;
+
+  Map<String, Uri>? externalLinks;
   Map<String, String>? advancedDescription;
   try {
     Map<dynamic, dynamic>? infoMap = jscriptMap["infoComponent"]
@@ -998,17 +1104,17 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
             if (item.isNotEmpty) {
               item.forEach((key, value) {
                 if (key == "fapHouseMirror") {
-                  externalLinks!["FapHouse"] = value["urlLanding"];
+                  externalLinks!["FapHouse"] = Uri.parse(value["urlLanding"]);
                 } else {
                   externalLinks![key[0].toUpperCase() + key.substring(1)] =
-                      value;
+                      Uri.parse(value);
                 }
               });
             }
             break;
           case "website":
             externalLinks ??= {};
-            externalLinks!["website"] = item["URL"];
+            externalLinks!["website"] = Uri.parse(item["URL"]);
             break;
           case "geo":
             advancedDescription ??= {};
@@ -1029,7 +1135,7 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
           default:
             _logPort.send({
               "level": "debug",
-              "message": "Adding as unknown as String: $key: $item "
+              "message": "Adding as unknown as String: $key: $item"
             });
             advancedDescription![key] = item.toString();
         }
@@ -1044,8 +1150,8 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
             ?["showJoinButton"] !=
         null) {
       externalLinks ??= {};
-      externalLinks!["Official site"] = jscriptMap["layoutPage"]
-          ["channelLandingInfoProps"]["showJoinButton"]["url"];
+      externalLinks!["Official site"] = Uri.parse(jscriptMap["layoutPage"]
+          ["channelLandingInfoProps"]["showJoinButton"]["url"]);
     }
   } catch (e, stacktrace) {
     _logPort.send({
@@ -1054,6 +1160,7 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
           "Error parsing advanced description or external links: $e\n$stacktrace"
     });
   }
+
   String? name;
   if (jscriptMap["infoComponent"]?["pageTitle"] != null) {
     name = jscriptMap["infoComponent"]["pageTitle"];
@@ -1064,6 +1171,7 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
   } else {
     name = jscriptMap["displayUserModel"]?["modelName"];
   }
+
   String? thumbnail;
   if (jscriptMap["infoComponent"]?["pornstarTop"]?["thumbUrl"] != null) {
     thumbnail = jscriptMap["infoComponent"]["pornstarTop"]["thumbUrl"];
@@ -1075,6 +1183,7 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
   } else {
     thumbnail = jscriptMap["displayUserModel"]?["thumbURL"];
   }
+
   int? viewsTotal;
   int? videosTotal;
   int? subscribers;
@@ -1131,7 +1240,8 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
       });
     }
   }
-  return {
+
+  Map<String, dynamic> authorPage = {
     "iD": authorID,
     "name": name!,
     "avatar": thumbnail,
@@ -1145,41 +1255,55 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
     "videosTotal": videosTotal,
     "subscribers": subscribers,
     "rank": rank,
+    "rawHtml": pageHtml
   };
+
+  return authorPage;
 }
 
-Future<List<Map<String, dynamic>>> getAuthorVideos(
-    String authorID, int page) async {
+Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page,
+    [void Function(String body)? debugCallback]) async {
   // First get the author page URI
-  String authorPageLinkStr = await getAuthorUriFromID(authorID);
-  Uri authorPageLink = Uri.parse(authorPageLinkStr);
+  String authorPageLink = (await getAuthorUriFromID(authorID))!;
+
   // differentiate between creators/channels and users
-  Uri? videosLink;
+  String? videosLink;
   if (authorPageLink.toString().contains("user")) {
-    videosLink = Uri.parse("$authorPageLink/videos/$page");
+    videosLink = "$authorPageLink/videos/$page";
   } else {
-    videosLink = Uri.parse("$authorPageLink/best/$page");
+    videosLink = "$authorPageLink/best/$page";
   }
+
   _logPort.send({"level": "debug", "message": "Requesting $videosLink"});
   // Request mobile version to get the full jsonmap
-  String body;
-  try {
-    body = await _fetchText(videosLink.toString(),
-        headers: {"Cookie": "x_platform_switch=mobile"});
-  } catch (e) {
+  var response = await httpRequest(_fetchPort, videosLink,
+      headers: {"Cookie": "x_platform_switch=mobile"});
+  if (response.statusCode != 200) {
     // 404 means both error and no videos in this case
     // -> return empty list instead of throwing exception
+    if (response.statusCode == 404) {
+      _logPort.send({
+        "level": "warning",
+        "message":
+            "Error downloading html: ${response.statusCode}; Treating as no more videos found"
+      });
+      return [];
+    }
     _logPort.send({
-      "level": "warning",
-      "message": "Error downloading html: $e - Treating as no more videos found"
+      "level": "error",
+      "message": "Error downloading html: ${response.statusCode}"
     });
-    return [];
+    throw Exception("Error downloading html: ${response.statusCode}");
   }
-  Document resultHtml = parse(body);
+  debugCallback?.call(response.body);
+  Document resultHtml = parse(response.body);
+
   String jscript = resultHtml.querySelector('#initials-script')!.text;
   Map<String, dynamic> jscriptMap = jsonDecode(
       jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
+
   // the Map layout varies -> just search through it to find the videoThumbProps List
+
   // Stack-based iterative search
   final stack = <Map<String, dynamic>>[jscriptMap];
   List<Map<String, dynamic>>? videoThumbProps;
@@ -1194,6 +1318,7 @@ Future<List<Map<String, dynamic>>> getAuthorVideos(
       if (value is Map<String, dynamic>) stack.add(value);
     }
   }
+
   if (authorPageLink.toString().contains("user")) {
     String authorName = jscriptMap["displayUserModel"]?["name"] ??
         authorPageLink.toString().split("/").last;

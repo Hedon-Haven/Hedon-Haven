@@ -1,11 +1,12 @@
-import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/services.dart';
+import 'package:image/image.dart';
 
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
+import '../services/external_link_manager.dart';
 
 class TesterPlugin extends PluginInterface {
   @override
@@ -96,9 +97,10 @@ final Map<String, Future<dynamic> Function(List args)> _functionsMap = {
       args[0] as String, (args[1] as Map?)?.cast<String, String>()),
   "getSearchSuggestions": (args) => getSearchSuggestions(args[0] as String),
   "getSearchResults": (args) =>
-      getSearchResults(args[0] as Map, args[1] as int),
+      getSearchResults(args[0] as Map<String, dynamic>, args[1] as int),
   "getVideoUriFromID": (args) => getVideoUriFromID(args[0] as String),
-  "getVideoMetadata": (args) => getVideoMetadata(args[0] as String),
+  "getVideoMetadata": (args) =>
+      getVideoMetadata(args[0] as String, args[1] as Map<String, dynamic>),
   "getProgressThumbnails": (args) =>
       getProgressThumbnails(args[0] as String, args[1] as String),
   "cancelGetProgressThumbnails": (args) async => cancelGetProgressThumbnails(),
@@ -119,30 +121,31 @@ final Map<String, Future<dynamic> Function(List args)> _functionsMap = {
 // https://example.com/search?query=keyword&sortingType=Relevance&page=1
 // https://example.com/video?videoId=123
 // https://example.com/author?authorId=123
-Map<String, dynamic> parseExternalLink(String uriString) {
-  final uri = Uri.parse(uriString);
+Future<Map<String, dynamic>> parseExternalLink(String uriAsString) async {
+  Uri uri = Uri.parse(uriAsString);
   switch (uri.path) {
     case "/home":
       return {
-        "type": "homePage",
-        "pageCount": int.parse(uri.queryParameters["page"] ?? "0"),
+        "type": ContentType.homePage.toString(),
+        "pageCount": int.parse(uri.queryParameters["page"] ??
+            TesterPlugin().initialHomePage.toString()),
       };
 
     case "/search":
       final args = uri.queryParameters;
       return {
-        "type": "searchResultsPage",
+        "type": ContentType.searchResultsPage,
         "searchRequest": {
           "searchString": Uri.decodeQueryComponent(args["query"] ?? ""),
           "sortingType": args["sortingType"],
           "dateRange": args["dateRange"],
-          "minQuality": args["minQuality"],
-          "maxQuality": args["maxQuality"],
-          "minDuration": args["minDuration"],
-          "maxDuration": args["maxDuration"],
-          "minFramesPerSecond": args["minFramesPerSecond"],
-          "maxFramesPerSecond": args["maxFramesPerSecond"],
-          "virtualReality": args["virtualReality"],
+          "minQuality": args["minQuality"] as int?,
+          "maxQuality": args["maxQuality"] as int?,
+          "minDuration": args["minDuration"] as int?,
+          "maxDuration": args["maxDuration"] as int?,
+          "minFramesPerSecond": args["minFramesPerSecond"] as int?,
+          "maxFramesPerSecond": args["maxFramesPerSecond"] as int?,
+          "virtualReality": args["virtualReality"] as bool?,
           // categories and keywords not yet fully supported
         },
         "pageCount": int.parse(args["page"] ?? "0"),
@@ -150,24 +153,25 @@ Map<String, dynamic> parseExternalLink(String uriString) {
 
     case "/video":
       return {
-        "type": "videoPage",
-        "iD": uri.queryParameters["videoId"],
+        "type": ContentType.videoPage.toString(),
+        "iD": uri.queryParameters["videoId"]!,
       };
 
     case "/author":
       return {
-        "type": "authorPage",
-        "iD": uri.queryParameters["authorId"],
+        "type": ContentType.authorPage.toString(),
+        "iD": uri.queryParameters["authorId"]!,
       };
 
     default:
-      return {"type": "unknown"};
+      return {"type": ContentType.unknown.toString()};
   }
 }
 
-Future<List<Map<String, dynamic>>> getHomePage(int page) async {
+Future<List<Map<String, dynamic>>> getHomePage(int page,
+    [void Function(String body)? debugCallback]) async {
   // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
+  if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
   return List.generate(
     10,
     (index) => {
@@ -193,29 +197,51 @@ Future<List<Map<String, dynamic>>> getHomePage(int page) async {
   );
 }
 
-Future<String> downloadThumbnail(
+/// FIXME: Why is this handling and suppressing errors?
+Future<Uint8List> downloadThumbnail(
     String uriString, Map<String, String>? thumbnailHttpHeaders) async {
-  final bytes = await requestFetch(_fetchPort, uriString, thumbnailHttpHeaders);
-  return base64Encode(bytes ?? Uint8List(0));
+  try {
+    var response =
+        await httpRequest(_fetchPort, uriString, headers: thumbnailHttpHeaders);
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      _logPort.send({
+        "level": "error",
+        "message": "Error downloading preview: ${response.statusCode}"
+      });
+      return Uint8List(0);
+    }
+  } catch (e, stacktrace) {
+    _logPort.send({
+      "level": "error",
+      "message": "Error downloading preview: $e\n$stacktrace"
+    });
+    return Uint8List(0);
+  }
 }
 
-Future<List<String>> getSearchSuggestions(String searchString) async {
+Future<List<String>> getSearchSuggestions(String searchString,
+    [void Function(String body)? debugCallback]) async {
   // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(milliseconds: 200));
+  if (_simulateDelays) await Future.delayed(Duration(milliseconds: 200));
   return List.generate(5, (index) => "$searchString-$index");
 }
 
 Future<List<Map<String, dynamic>>> getSearchResults(
-    Map request, int page) async {
+    Map<String, dynamic> request, int page,
+    [void Function(String body)? debugCallback]) async {
   // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
-  if (page == 5) return [];
+  if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+  if (page == 5) {
+    return [];
+  }
   return List.generate(
     10,
     (index) => {
       "iD": "${(index * pi * 10000).toInt()}",
-      "title": "Test result video $index, page $page, "
-          "request ${request["searchString"]}",
+      "title":
+          "Test result video $index, page $page, request ${request["searchString"]}",
       "thumbnail": "https://placehold.co/1280x720.png",
       "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
       "previewVideo":
@@ -240,36 +266,37 @@ Future<String> getVideoUriFromID(String videoID) async {
   return "https://example.com/$videoID";
 }
 
-Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
+Future<Map<String, dynamic>> getVideoMetadata(
+    String videoId, Map<String, dynamic> uvp,
+    [void Function(String body)? debugCallback]) async {
   // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
-  const sampleUrl =
-      "https://docs.evostream.com/sample_content/assets/bunny.mp4";
+  if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
   return {
     "iD": videoId,
     "m3u8Uris": {
-      "1080": sampleUrl,
-      "720": sampleUrl,
-      "480": sampleUrl,
+      1080: "https://docs.evostream.com/sample_content/assets/bunny.mp4",
+      720: "https://docs.evostream.com/sample_content/assets/bunny.mp4",
+      480: "https://docs.evostream.com/sample_content/assets/bunny.mp4",
     },
     "title": "Tester video metadata title",
-    // Change this to test partial metadata scrape fail
+    "universalVideoPreview": uvp,
+    // Uncomment to test partial metadata scrape fail
     //scrapeFailMessage: "Test fail scrape message",
     "authorID": "tester-author-$videoId",
     "authorName": "Tester-author",
     "authorSubscriberCount": 335433,
     "authorAvatar": "https://placehold.co/1280x720.png",
     "actors": [
-      {
-        "name": "Tester-actor-1",
-        "authorID": "Tester-author-actor-1",
-        "avatar": "https://placehold.co/200x200.png",
-      },
-      {
-        "name": "Tester-actor-2",
-        "authorID": "Tester-author-actor-2",
-        "avatar": "https://placehold.co/200x200.png",
-      },
+      (
+        name: "Tester-actor-1",
+        authorID: "Tester-author-actor-1",
+        avatar: "https://placehold.co/200x200.png"
+      ),
+      (
+        name: "Tester-actor-2",
+        authorID: "Tester-author-actor-2",
+        avatar: "https://placehold.co/200x200.png"
+      )
     ],
     "description": "Tester video description" * 10,
     "viewsTotal": 2532823,
@@ -281,34 +308,34 @@ Future<Map<String, dynamic>> getVideoMetadata(String videoId) async {
     "ratingsTotal": 47384,
     "virtualReality": false,
     "chapters": {
-      "0": "Chapter 1",
-      "120": "Chapter 2",
-      "240": "Chapter 3",
+      0: "Chapter 1",
+      120: "Chapter 2",
+      240: "Chapter 3",
     },
+    "rawHtml": "",
   };
 }
 
-Future<List<String>?> getProgressThumbnails(
-    String videoID, String rawHtml) async {
-  _cancelProgressThumbnails = false;
-  List<String> completedProcessedImages = [];
+Future<List<Uint8List>?> getProgressThumbnails(
+    String videoID, String rawHtmlString) async {
+  List<Uint8List> completedProcessedImages = [];
 
-  // Simulate processing, while checking for cancellation flag
-  for (int i = 0; i < 30; i++) {
-    if (_cancelProgressThumbnails) return null;
-    await Future.delayed(const Duration(milliseconds: 100));
+  // Simulate heavy processing
+  final end = DateTime.now().add(const Duration(seconds: 3));
+  while (DateTime.now().isBefore(end)) {
+    // Burn CPU cycles
+    sqrt(DateTime.now().microsecondsSinceEpoch.toDouble());
   }
+  _logPort.send({"debug", "Heavy processing completed"});
 
-  _logPort.send({"level": "debug", "message": "Image processing completed"});
-
-  final imageRaw =
-      await requestFetch(_fetchPort, "https://placehold.co/720x480.png", null);
-  if (imageRaw == null) return null;
-  final encodedImage = base64Encode(imageRaw);
+  // Request the main thread to fetch the image
+  final response =
+      await httpRequest(_fetchPort, "https://placehold.co/720x480.png");
+  Uint8List encodedImage = encodeJpg(decodePng(response.bodyBytes)!);
   for (int i = 0; i < 1000; i++) {
-    if (_cancelProgressThumbnails) return null;
     completedProcessedImages.add(encodedImage);
   }
+
   return completedProcessedImages;
 }
 
@@ -321,67 +348,76 @@ Future<String> getCommentUriFromID(String commentID, String videoID) async {
   return "https://example.com/$videoID/$commentID";
 }
 
-Map<String, dynamic> _buildComment(int index, String videoID, int page,
-    {bool withReplies = true}) {
-  return {
-    "iD": "comment-$index",
-    "videoID": videoID,
-    "author": "author-$index",
-    "commentBody":
-        List<String>.filled(5, "test comment $index, page $page ").join(),
-    "hidden": index % 4 == 0,
-    "authorID": "author-$index",
-    "countryID": "US",
-    "orientation": null,
-    "profilePicture": "https://placehold.co/240x240.png",
-    "ratingsPositiveTotal": index % 4 == 0 ? 30 : null,
-    "ratingsNegativeTotal": index % 4 == 0 ? 2 : null,
-    "ratingsTotal": index % 4 == 0 ? 32 : 76,
-    "commentDate": DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    "replyComments": withReplies && index % 2 == 0
-        ? List.generate(
-            3,
-            (replyIndex) => {
-              "iD": "comment-reply-$replyIndex",
-              "videoID": videoID,
-              "author": "author-reply-$replyIndex",
-              "commentBody":
-                  List<String>.filled(5, "test reply comment $replyIndex ")
-                      .join(),
-              "hidden": replyIndex % 4 == 0,
-              "authorID": "author-reply-$replyIndex",
-              "countryID": "US",
-              "orientation": null,
-              "profilePicture": "https://placehold.co/240x240",
-              "ratingsPositiveTotal": replyIndex % 2 == 0 ? 4 : null,
-              "ratingsNegativeTotal": replyIndex % 2 == 0 ? 1 : null,
-              "ratingsTotal": replyIndex % 2 == 0 ? 5 : 6,
-              "commentDate": DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              "replyComments": [],
-              // Make every 4th reply comment a fail
-              "scrapeFailMessage":
-                  replyIndex % 4 != 0 ? "Test fail scrape message" : null,
-            },
-          )
-        : [],
-    // Make every 4th comment a fail
-    "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
-  };
-}
-
 Future<List<Map<String, dynamic>>> getComments(
-    String videoID, String rawHtml, int page) async {
-  if (page == 5) return [];
+    String videoID, String rawHtmlString, int page,
+    [void Function(String body)? debugCallback]) async {
+  if (page == 5) {
+    return [];
+  }
   // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
-  return List.generate(5, (index) => _buildComment(index, videoID, page));
+  if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+  return List.generate(
+    5,
+    (index) => {
+      "iD": "comment-$index",
+      "videoID": videoID,
+      "author": "author-$index",
+      "commentBody":
+          List<String>.filled(5, "test comment $index, page $page ").join(),
+      "hidden": index % 4 == 0,
+      "authorID": "author-$index",
+      "countryID": "US",
+      "orientation": null,
+      "profilePicture": "https://placehold.co/240x240.png",
+      "ratingsPositiveTotal": index % 4 == 0 ? 30 : null,
+      "ratingsNegativeTotal": index % 4 == 0 ? 2 : null,
+      "ratingsTotal": index % 4 == 0 ? 32 : 76,
+      "commentDate": DateTime.now()
+              .subtract(Duration(days: index))
+              .millisecondsSinceEpoch ~/
+          1000,
+      "replyComments": index % 2 == 0
+          ? List.generate(
+              3,
+              (index) => {
+                "iD": "comment-reply-$index",
+                "videoID": videoID,
+                "author": "author-reply-$index",
+                "commentBody":
+                    List<String>.filled(5, "test reply comment $index ").join(),
+                "hidden": index % 4 == 0,
+                "authorID": "author-reply-$index",
+                "countryID": "US",
+                "orientation": null,
+                "profilePicture": "https://placehold.co/240x240",
+                "ratingsPositiveTotal": index % 2 == 0 ? 4 : null,
+                "ratingsNegativeTotal": index % 2 == 0 ? 1 : null,
+                "ratingsTotal": index % 2 == 0 ? 5 : 6,
+                "commentDate": DateTime.now()
+                        .subtract(Duration(days: index))
+                        .millisecondsSinceEpoch ~/
+                    1000,
+                "replyComments": [],
+                // Make every 4th comment a fail
+                "scrapeFailMessage":
+                    index % 4 != 0 ? "Test fail scrape message" : null,
+              },
+            )
+          : [],
+      // Make every 4th comment a fail
+      "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
+    },
+  );
 }
 
 Future<List<Map<String, dynamic>>> getVideoSuggestions(
-    String videoID, String rawHtml, int page) async {
-  // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
-  if (page == 5) return [];
+    String videoID, String rawHtmlString, int page,
+    [void Function(String body)? debugCallback]) async {
+  // Simulate a delay without blocking the entire app
+  if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+  if (page == 5) {
+    return [];
+  }
   return List.generate(
     10,
     (index) => {
@@ -411,10 +447,10 @@ Future<String> getAuthorUriFromID(String authorID) async {
   return "https://example.com/$authorID";
 }
 
-Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
-  // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
-  return {
+Future<Map<String, dynamic>> getAuthorPage(String authorID,
+    [void Function(String body)? debugCallback]) async {
+  if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+  return Future.value({
     "iD": authorID,
     "name": "Test author name",
     "avatar": "https://placehold.co/240x240.png",
@@ -428,20 +464,22 @@ Future<Map<String, dynamic>> getAuthorPage(String authorID) async {
     "externalLinks": {
       "external link 1": "https://example.com/link1",
       "external link 2": "https://example.com/link2",
-      "external link 3": "https://example.com/link3",
+      "external link 3": "https://example.com/link3"
     },
     "viewsTotal": 23773212,
     "videosTotal": 114,
     "subscribers": 573529,
     "rank": 3746,
-  };
+    "rawHtml": ""
+  });
 }
 
-Future<List<Map<String, dynamic>>> getAuthorVideos(
-    String authorID, int page) async {
-  // Simulate a delay without blocking the entire isolate
-  if (_simulateDelays) await Future.delayed(const Duration(seconds: 2));
-  if (page == 5) return [];
+Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page,
+    [void Function(String body)? debugCallback]) async {
+  if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+  if (page == 5) {
+    return [];
+  }
   return List.generate(
     10,
     (index) => {
