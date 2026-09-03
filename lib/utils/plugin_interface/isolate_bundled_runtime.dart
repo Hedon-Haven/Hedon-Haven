@@ -2,6 +2,14 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+
+typedef HttpResponse = ({
+  int statusCode,
+  Uint8List bodyBytes,
+  String body,
+  Map<String, String> headers,
+});
 
 /// Shared isolate entry-point logic for every bundled plugin. Each plugin's
 /// own entry-point function just calls this with its own functions map.
@@ -56,8 +64,11 @@ void _handleCall(Map<String, dynamic> message,
   }
 }
 
-Future<Uint8List?> requestFetch(
-    SendPort fetchPort, String url, Map<String, String>? headers) async {
+/// Performs an http request via the main isolate's client. `body` is decoded
+/// as text using the response's own Content-Type charset (same logic
+/// package:http's Response.body uses); `bodyBytes` is the raw response.
+Future<HttpResponse> httpRequest(SendPort fetchPort, String url,
+    {Map<String, String>? headers}) async {
   final responsePort = ReceivePort();
   fetchPort.send({
     "responsePort": responsePort.sendPort,
@@ -66,5 +77,16 @@ Future<Uint8List?> requestFetch(
   });
   final response = await responsePort.first as Map;
   responsePort.close();
-  return base64Decode(response["body"] as String);
+
+  final statusCode = response["status"] as int;
+  final bytes = base64Decode(response["body"] as String);
+  final respHeaders = Map<String, String>.from(response["headers"] as Map);
+  final decoded = http.Response.bytes(bytes, statusCode, headers: respHeaders);
+
+  return (
+    statusCode: statusCode,
+    bodyBytes: bytes,
+    body: decoded.body,
+    headers: respHeaders,
+  );
 }
