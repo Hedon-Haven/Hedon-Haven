@@ -170,10 +170,12 @@ class PluginInterface {
       );
       responseSendPort.send({
         "status": response.statusCode,
-        "body": base64Encode(response.bodyBytes)
+        "body": base64Encode(response.bodyBytes),
+        "headers": response.headers,
       });
     } catch (e) {
-      responseSendPort.send({"status": 0, "body": ""});
+      responseSendPort
+          .send({"status": 0, "body": "", "headers": <String, String>{}});
     }
   }
 
