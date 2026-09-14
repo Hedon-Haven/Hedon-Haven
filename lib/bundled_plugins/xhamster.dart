@@ -131,10 +131,10 @@ class XHamsterPlugin extends PluginInterface {
 }
 
 void initBundledPluginIsolate(SendPort mainSendPort) {
-  runBundledPluginIsolate(mainSendPort, XHamsterIsolate());
+  runBundledPluginIsolate(mainSendPort, _XHamsterIsolate());
 }
 
-class XHamsterIsolate extends BundledPluginIsolate {
+class _XHamsterIsolate extends BundledPluginIsolate {
 // Private vars
   final String _videoEndpoint = "https://xhamster.com/videos/";
   final String _searchEndpoint = "https://xhamster.com/search/";

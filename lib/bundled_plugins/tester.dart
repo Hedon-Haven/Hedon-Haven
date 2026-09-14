@@ -75,10 +75,10 @@ class TesterPlugin extends PluginInterface {
 const bool _simulateDelays = false;
 
 void initBundledPluginIsolate(SendPort mainSendPort) {
-  runBundledPluginIsolate(mainSendPort, TesterIsolate());
+  runBundledPluginIsolate(mainSendPort, _TesterIsolate());
 }
 
-class TesterIsolate extends BundledPluginIsolate {
+class _TesterIsolate extends BundledPluginIsolate {
   @override
   Future<void> init() {
     return Future.value(null);

@@ -130,10 +130,10 @@ class PornhubPlugin extends PluginInterface {
 }
 
 void initBundledPluginIsolate(SendPort mainSendPort) {
-  runBundledPluginIsolate(mainSendPort, PornhubIsolate());
+  runBundledPluginIsolate(mainSendPort, _PornhubIsolate());
 }
 
-class PornhubIsolate extends BundledPluginIsolate {
+class _PornhubIsolate extends BundledPluginIsolate {
   // Private hardcoded vars
   final String _videoEndpoint =
       "https://www.pornhub.com/view_video.php?viewkey=";
