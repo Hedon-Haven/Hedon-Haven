@@ -190,6 +190,8 @@ class PluginInterface {
     final response = await replyPort.first as Map;
     replyPort.close();
     if (response.containsKey("error")) {
+      logger.e("$codeName: ${response["error"].toString()}"
+          "\n\n${response["stackTrace"].toString()}");
       throw Exception(response["error"]);
     }
     return jsonDecode(response["result"] as String);

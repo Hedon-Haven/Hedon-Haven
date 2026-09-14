@@ -15,24 +15,22 @@ typedef HttpResponse = ({
 /// own entry-point function just calls this with its own functions map.
 /// Mirrors isolate_js_runtime.dart's setup/message-loop shape.
 void runBundledPluginIsolate(
-  SendPort mainSendPort,
-  Map<String, Future<dynamic> Function(List args)> functionsMap, {
-  void Function(SendPort logPort, SendPort fetchPort)? onSetup,
-}) async {
+    SendPort mainSendPort, BundledPluginIsolate instance) async {
   final receivePort = ReceivePort();
   mainSendPort.send(receivePort.sendPort);
 
   bool initialized = false;
+  Map<String, Future<dynamic> Function(List args)>? handlers;
+
   await for (final message in receivePort) {
     if (!initialized) {
       final rootToken = message["rootToken"] as RootIsolateToken;
       final SendPort readyPort = message["readyPort"] as SendPort;
       BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
 
-      onSetup?.call(
-        message["logPort"] as SendPort,
-        message["fetchPort"] as SendPort,
-      );
+      instance.attachPorts(
+          message["logPort"] as SendPort, message["fetchPort"] as SendPort);
+      handlers = instance.buildFunctionsMap();
 
       initialized = true;
       readyPort.send(true);
@@ -44,7 +42,7 @@ void runBundledPluginIsolate(
       return;
     }
 
-    _handleCall(message, functionsMap);
+    _handleCall(message, handlers!);
   }
 }
 
@@ -67,7 +65,7 @@ void _handleCall(Map<String, dynamic> message,
 /// Performs an http request via the main isolate's client. `body` is decoded
 /// as text using the response's own Content-Type charset (same logic
 /// package:http's Response.body uses); `bodyBytes` is the raw response.
-Future<HttpResponse> httpRequest(SendPort fetchPort, String url,
+Future<HttpResponse> httpRequestMainIsolate(SendPort fetchPort, String url,
     {Map<String, String>? headers}) async {
   final responsePort = ReceivePort();
   fetchPort.send({
@@ -89,4 +87,102 @@ Future<HttpResponse> httpRequest(SendPort fetchPort, String url,
     body: decoded.body,
     headers: respHeaders,
   );
+}
+
+/// Base class for bundled plugin isolate implementations.
+abstract class BundledPluginIsolate {
+  late final SendPort _logPort;
+  late final SendPort _fetchPort;
+
+  /// Wires up isolate communication ports. Called once during setup.
+  void attachPorts(SendPort logPort, SendPort fetchPort) {
+    _logPort = logPort;
+    _fetchPort = fetchPort;
+  }
+
+  void logTrace(String message) => _log("trace", message);
+
+  void logDebug(String message) => _log("debug", message);
+
+  void logInfo(String message) => _log("info", message);
+
+  void logWarning(String message) => _log("warning", message);
+
+  void logError(String message) => _log("error", message);
+
+  void logFatal(String message) => _log("fatal", message);
+
+  void _log(String level, String message) =>
+      _logPort.send({"level": level, "message": message});
+
+  /// Perform an http request via the main isolate's client.
+  Future<HttpResponse> httpRequest(String url,
+          {Map<String, String>? headers}) =>
+      httpRequestMainIsolate(_fetchPort, url, headers: headers);
+
+  // Regular functions from PluginIsolate with serializable values
+  Future<void> init();
+
+  Future<bool> runFunctionalityTest() async => true;
+
+  Future<Map<String, dynamic>> parseExternalLink(String uriAsString);
+
+  Future<List<Map<String, dynamic>>> getHomePage(int page);
+
+  Future<Uint8List> downloadThumbnail(String uri, Map<String, String>? headers);
+
+  Future<List<String>> getSearchSuggestions(String searchString);
+
+  Future<List<Map<String, dynamic>>> getSearchResults(
+      Map<String, dynamic> request, int page);
+
+  Future<String?> getVideoUriFromID(String videoID);
+
+  Future<Map<String, dynamic>> getVideoMetadata(
+      String videoID, Map<String, dynamic> uvp);
+
+  Future<List<Uint8List>?> getProgressThumbnails(
+      String videoID, String rawHtml);
+
+  Future<String?> getCommentUriFromID(String commentID, String videoID);
+
+  Future<List<Map<String, dynamic>>> getComments(
+      String videoID, String rawHtml, int page);
+
+  Future<List<Map<String, dynamic>>> getVideoSuggestions(
+      String videoID, String rawHtml, int page);
+
+  Future<String?> getAuthorUriFromID(String authorID);
+
+  Future<Map<String, dynamic>> getAuthorPage(String authorID);
+
+  Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page);
+
+  Map<String, Future<dynamic> Function(List args)> buildFunctionsMap() => {
+        "init": (args) async => init(),
+        "runFunctionalityTest": (args) async => runFunctionalityTest(),
+        "parseExternalLink": (args) => parseExternalLink(args[0] as String),
+        "getHomePage": (args) => getHomePage(args[0] as int),
+        "downloadThumbnail": (args) => downloadThumbnail(
+            args[0] as String, (args[1] as Map?)?.cast<String, String>()),
+        "getSearchSuggestions": (args) =>
+            getSearchSuggestions(args[0] as String),
+        "getSearchResults": (args) =>
+            getSearchResults(args[0] as Map<String, dynamic>, args[1] as int),
+        "getVideoUriFromID": (args) => getVideoUriFromID(args[0] as String),
+        "getVideoMetadata": (args) => getVideoMetadata(
+            args[0] as String, args[1] as Map<String, dynamic>),
+        "getProgressThumbnails": (args) =>
+            getProgressThumbnails(args[0] as String, args[1] as String),
+        "getCommentUriFromID": (args) =>
+            getCommentUriFromID(args[0] as String, args[1] as String),
+        "getComments": (args) =>
+            getComments(args[0] as String, args[1] as String, args[2] as int),
+        "getVideoSuggestions": (args) => getVideoSuggestions(
+            args[0] as String, args[1] as String, args[2] as int),
+        "getAuthorUriFromID": (args) => getAuthorUriFromID(args[0] as String),
+        "getAuthorPage": (args) => getAuthorPage(args[0] as String),
+        "getAuthorVideos": (args) =>
+            getAuthorVideos(args[0] as String, args[1] as int),
+      };
 }
