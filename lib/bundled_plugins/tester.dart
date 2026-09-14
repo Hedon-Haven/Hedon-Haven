@@ -89,7 +89,7 @@ void initBundledPluginIsolate(SendPort mainSendPort) {
 }
 
 final Map<String, Future<dynamic> Function(List args)> _functionsMap = {
-  "init": (args) async => true,
+  "init": (args) async => null,
   "runFunctionalityTest": (args) async => true,
   "parseExternalLink": (args) async => parseExternalLink(args[0] as String),
   "getHomePage": (args) => getHomePage(args[0] as int),

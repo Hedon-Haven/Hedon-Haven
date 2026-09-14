@@ -242,7 +242,7 @@ class PluginInterface {
     _isolateReady.complete();
 
     // Some plugins might need to be prepared before they can be used (e.g. fetch cookies)
-    await _callFunction("init", []) as bool;
+    await _callFunction("init", []);
   }
 
   void dispose() {
