@@ -95,7 +95,7 @@ class _TesterIsolate extends BundledPluginIsolate {
     switch (uri.path) {
       case "/home":
         return {
-          "type": ContentType.homePage.toString(),
+          "type": ContentType.homePage,
           "pageCount": int.parse(uri.queryParameters["page"] ??
               TesterPlugin().initialHomePage.toString()),
         };
@@ -122,18 +122,18 @@ class _TesterIsolate extends BundledPluginIsolate {
 
       case "/video":
         return {
-          "type": ContentType.videoPage.toString(),
+          "type": ContentType.videoPage,
           "iD": uri.queryParameters["videoId"]!,
         };
 
       case "/author":
         return {
-          "type": ContentType.authorPage.toString(),
+          "type": ContentType.authorPage,
           "iD": uri.queryParameters["authorId"]!,
         };
 
       default:
-        return {"type": ContentType.unknown.toString()};
+        return {"type": ContentType.unknown};
     }
   }
 

@@ -32,6 +32,8 @@ enum ContentType {
         return unknown;
     }
   }
+
+  String toJson() => name;
 }
 
 class ExternalLinkParsed {

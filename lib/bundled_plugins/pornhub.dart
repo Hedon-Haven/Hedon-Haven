@@ -467,7 +467,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
     switch (uri.path) {
       case "/" || "/video":
         return {
-          "type": ContentType.homePage.toString(),
+          "type": ContentType.homePage,
           "pageCount": int.parse(uri.queryParameters["page"] ??
               PornhubPlugin().initialHomePage.toString()),
         };
@@ -511,7 +511,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
       case "/view_video.php":
         return {
-          "type": ContentType.videoPage.toString(),
+          "type": ContentType.videoPage,
           "iD": uri.queryParameters["viewkey"]!,
         };
 
@@ -519,12 +519,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
           when {"channels", "model", "pornstar"}
               .contains(uri.pathSegments.first):
         return {
-          "type": ContentType.authorPage.toString(),
+          "type": ContentType.authorPage,
           "iD": uri.pathSegments.last,
         };
 
       default:
-        return {"type": ContentType.unknown.toString()};
+        return {"type": ContentType.unknown};
     }
   }
 

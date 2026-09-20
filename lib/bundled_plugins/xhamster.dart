@@ -300,7 +300,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             .key;
 
         return {
-          "type": ContentType.searchResultsPage.toString(),
+          "type": ContentType.searchResultsPage,
           "searchRequest": {
             "searchString": Uri.decodeQueryComponent(uri.pathSegments.last),
             "sortingType": sortingType,
@@ -330,7 +330,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         };
 
       default:
-        return {"type": ContentType.unknown.toString()};
+        return {"type": ContentType.unknown};
     }
   }
 
