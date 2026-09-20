@@ -329,8 +329,7 @@ class PluginInterface {
       Uri uri, Map<String, String>? thumbnailHttpHeaders) async {
     final result = await _callFunction(
         "downloadThumbnail", [uri.toString(), thumbnailHttpHeaders]);
-    final Uint8List bytes = base64Decode(result);
-    return bytes;
+    return Uint8List.fromList((result as List).cast<int>());
   }
 
   /// Some websites have custom search results with custom elements (e.g. preview images). Only return simple word based search suggestions
@@ -377,7 +376,7 @@ class PluginInterface {
         "getProgressThumbnails", [videoID, rawHtml.outerHtml]);
     if (result == null) return null;
     return (result as List)
-        .map((e) => Uint8List.fromList(base64Decode(e)))
+        .map((e) => Uint8List.fromList((e as List).cast<int>()))
         .toList();
   }
 
