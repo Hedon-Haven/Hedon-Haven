@@ -345,14 +345,14 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
   }
 
   Future<void> handleDroppedLink(PerformDropEvent event) async {
-    event.session.items.first.dataReader!.getValue(Formats.uri, (value) async {
-      // Only accept http and https links
-      if (value != null &&
-          (value.uri.scheme == "https" || value.uri.scheme == "http")) {
-        logger.i("Received dropped link: ${value.uri.toString()}");
+    final reader = event.session.items.first.dataReader!;
+
+    // Only accept http and https links, wherever the uri came from
+    void openIfValid(Uri? uri) {
+      if (uri != null && (uri.scheme == "https" || uri.scheme == "http")) {
+        logger.i("Received dropped link: $uri");
         try {
-          await handleExternalLink(
-              value.uri, materialAppKey.currentState!.context);
+          handleExternalLink(uri, materialAppKey.currentState!.context);
         } catch (e, st) {
           logger.e("Error handling dropped link: $e\n$st");
           showToastViaOverlay("Error handling dropped link: $e",
@@ -362,6 +362,23 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
         logger.w("Dropped non-http/https link");
         showToastViaOverlay("Dropped non-http/https link",
             materialAppKey.currentState!.overlay!, 5);
+      }
+    }
+
+    reader.getValue(Formats.htmlText, (html) {
+      // Try extracting the link from the html anchor first (most reliable on Linux)
+      final href = RegExp(r'href="([^"]+)"').firstMatch(html ?? "")?.group(1);
+      if (href != null) {
+        openIfValid(Uri.tryParse(href));
+      } else {
+        // Fallback: no usable html link found, try plain text instead
+        reader.getValue(
+            Formats.plainText, (text) => openIfValid(Uri.tryParse(text ?? "")),
+            onError: (error) {
+          logger.e("Error reading dropped link: $error");
+          showToastViaOverlay("Error reading dropped link: $error",
+              materialAppKey.currentState!.overlay!, 5);
+        });
       }
     }, onError: (error) {
       logger.e("Error reading dropped link: $error");
@@ -447,11 +464,14 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
                 */
                 home: DropRegion(
                   // Formats this region can accept.
-                  formats: [Formats.uri],
+                  formats: [Formats.htmlText, Formats.plainText],
                   hitTestBehavior: HitTestBehavior.opaque,
                   // Cannot properly test for https/http here due to callback nature of onDropOver
                   onDropOver: (event) {
-                    return event.session.items.first.canProvide(Formats.uri)
+                    return event.session.items.first
+                                .canProvide(Formats.htmlText) ||
+                            event.session.items.first
+                                .canProvide(Formats.plainText)
                         ? DropOperation.copy
                         : DropOperation.none;
                   },
