@@ -56,7 +56,30 @@ void _handleCall(Map<String, dynamic> message,
     final handler = handlers[functionName];
     if (handler == null) throw Exception("Unknown function: $functionName");
 
-    replyPort.send({"result": jsonEncode(await handler(args))});
+    final result = await handler(args);
+
+    // jsonEncode can't handle int map keys -> stringify only the known int-keyed fields
+    if (result is Map && result.containsKey("m3u8Uris")) {
+      result["m3u8Uris"] = (result["m3u8Uris"] as Map)
+          .map((key, value) => MapEntry(key.toString(), value));
+    }
+    if (result is Map && result.containsKey("chapters")) {
+      result["chapters"] = (result["chapters"] as Map)
+          .map((key, value) => MapEntry(key.toString(), value));
+    }
+    // jsonEncode can't handle Records -> convert actors to plain maps
+    if (result is Map && result["actors"] != null) {
+      result["actors"] = (result["actors"] as List).map((actor) {
+        final record = actor as ({String name, String authorID, String avatar});
+        return {
+          "name": record.name,
+          "authorID": record.authorID,
+          "avatar": record.avatar
+        };
+      }).toList();
+    }
+
+    replyPort.send({"result": jsonEncode(result)});
   } catch (e, st) {
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
   }
