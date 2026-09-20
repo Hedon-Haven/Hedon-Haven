@@ -84,11 +84,11 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           () => videoPlayerException = VirtualRealityNotSupportedException());
     }
 
+    // Sort the available resolutions in ascending order
+    sortedResolutions = widget.videoMetadata.m3u8Uris.keys.toList()..sort();
+
     if (widget.videoMetadata.m3u8Uris.length > 1) {
       // select the preferred quality, or the closest to it
-
-      // Sort the available resolutions in ascending order
-      sortedResolutions = widget.videoMetadata.m3u8Uris.keys.toList()..sort();
 
       // If the user's choice is not in the list, find the next highest resolution
       if (!sortedResolutions.contains(preferredQuality)) {
