@@ -190,11 +190,11 @@ abstract class BundledPluginIsolate {
             args[0] as String, (args[1] as Map?)?.cast<String, String>()),
         "getSearchSuggestions": (args) =>
             getSearchSuggestions(args[0] as String),
-        "getSearchResults": (args) =>
-            getSearchResults(args[0] as Map<String, dynamic>, args[1] as int),
+        "getSearchResults": (args) => getSearchResults(
+            Map<String, dynamic>.from(args[0] as Map), args[1] as int),
         "getVideoUriFromID": (args) => getVideoUriFromID(args[0] as String),
         "getVideoMetadata": (args) => getVideoMetadata(
-            args[0] as String, args[1] as Map<String, dynamic>),
+            args[0] as String, Map<String, dynamic>.from(args[1] as Map)),
         "getProgressThumbnails": (args) =>
             getProgressThumbnails(args[0] as String, args[1] as String),
         "getCommentUriFromID": (args) =>
