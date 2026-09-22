@@ -6,3 +6,15 @@ T? tryParse<T>(T Function() parser) {
     return null;
   }
 }
+
+DateTime? tryParseFromUnixTime(int? unixTimeInSeconds) {
+  return tryParse(() => DateTime.fromMillisecondsSinceEpoch(
+      unixTimeInSeconds! * 1000,
+      isUtc: true));
+}
+
+/// Converts a DateTime object to seconds since unix time (as int)
+/// Returns null on failure (will not throw on anything)
+int? convertToUnixTime(DateTime? dateTime) {
+  return tryParse(() => (dateTime!.millisecondsSinceEpoch / 1000).toInt());
+}
