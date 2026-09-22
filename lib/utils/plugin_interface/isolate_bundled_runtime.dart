@@ -63,7 +63,7 @@ void _handleCall(Map<String, dynamic> message,
       result["m3u8Uris"] = (result["m3u8Uris"] as Map)
           .map((key, value) => MapEntry(key.toString(), value));
     }
-    if (result is Map && result.containsKey("chapters")) {
+    if (result is Map && result["chapters"] != null) {
       result["chapters"] = (result["chapters"] as Map)
           .map((key, value) => MapEntry(key.toString(), value));
     }
