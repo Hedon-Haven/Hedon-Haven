@@ -382,7 +382,7 @@ class PluginInterface {
   }
 
   void cancelGetProgressThumbnails() {
-    _callFunction("cancelGetProgressThumbnails", []);
+    return;
   }
 
   Future<Uri?> getCommentUriFromID(String commentID, String videoID) async {
