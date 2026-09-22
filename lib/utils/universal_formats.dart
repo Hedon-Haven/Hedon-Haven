@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:html/dom.dart';
+import 'package:html/parser.dart' as html;
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '/utils/global_vars.dart';
@@ -455,6 +456,7 @@ class UniversalVideoMetadata {
       virtualReality: map["virtualReality"] as bool? ?? false,
       chapters: (map["chapters"] as Map?)?.map(
           (k, v) => MapEntry(Duration(seconds: int.parse(k)), v as String)),
+      rawHtml: html.parse(map["rawHtml"]),
       scrapeFailMessage: map["scrapeFailMessage"],
     );
   }
@@ -581,7 +583,7 @@ class UniversalAuthorPage {
       videosTotal: map["videosTotal"],
       subscribers: map["subscribers"],
       rank: map["rank"],
-      rawHtml: Document.html(map["rawHtml"]),
+      rawHtml: html.parse(map["rawHtml"]),
       scrapeFailMessage: map["scrapeFailMessage"],
     );
   }
