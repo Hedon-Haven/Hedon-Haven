@@ -6,6 +6,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
+import '/utils/try_parse.dart';
 
 class UniversalSearchRequest {
   final String searchString;
@@ -226,12 +227,11 @@ class UniversalVideoPreview {
       "title": title,
       "plugin": plugin?.codeName,
       "thumbnail": thumbnail,
-      "thumbnailHttpHeaders": thumbnailHttpHeaders.toString(),
-      "thumbnailBinary":
-          "Uint8List(${thumbnailBinary.length} bytes) [${thumbnailBinary.take(8).toList()}...]",
-      "previewVideo": previewVideo?.toString(),
-      "previewVideoHttpHeaders": previewVideoHttpHeaders.toString(),
-      "duration": "${duration?.inSeconds}",
+      "thumbnailHttpHeaders": thumbnailHttpHeaders,
+      "thumbnailBinary": thumbnailBinary.toList(),
+      "previewVideo": previewVideo.toString(),
+      "previewVideoHttpHeaders": previewVideoHttpHeaders,
+      "duration": duration?.inSeconds,
       "viewsTotal": viewsTotal,
       "ratingsPositivePercent": ratingsPositivePercent,
       "maxQuality": maxQuality,
@@ -239,8 +239,8 @@ class UniversalVideoPreview {
       "authorName": authorName,
       "authorID": authorID,
       "verifiedAuthor": verifiedAuthor,
-      "lastWatched": lastWatched?.toString(),
-      "addedOn": addedOn?.toString(),
+      "lastWatched": convertToUnixTime(lastWatched),
+      "addedOn": convertToUnixTime(addedOn),
       "scrapeFailMessage": scrapeFailMessage
     };
   }
@@ -254,15 +254,12 @@ class UniversalVideoPreview {
       thumbnail: map["thumbnail"],
       thumbnailHttpHeaders:
           (map["thumbnailHttpHeaders"] as Map?)?.cast<String, String>(),
-      thumbnailBinary: map["thumbnailBinary"] != null
-          ? Uint8List.fromList((map["thumbnailBinary"] as List).cast<int>())
-          : null,
-      previewVideo:
-          map["previewVideo"] != null ? Uri.parse(map["previewVideo"]) : null,
+      thumbnailBinary:
+          tryParse(() => Uint8List.fromList(map["thumbnailBinary"])),
+      previewVideo: Uri.tryParse(map["previewVideo"]),
       previewVideoHttpHeaders:
           (map["previewVideoHttpHeaders"] as Map?)?.cast<String, String>(),
-      duration:
-          map["duration"] != null ? Duration(seconds: map["duration"]) : null,
+      duration: tryParse(() => Duration(seconds: map["duration"])),
       viewsTotal: map["viewsTotal"],
       ratingsPositivePercent: map["ratingsPositivePercent"],
       maxQuality: map["maxQuality"],
@@ -270,10 +267,8 @@ class UniversalVideoPreview {
       authorName: map["authorName"],
       authorID: map["authorID"],
       verifiedAuthor: map["verifiedAuthor"],
-      lastWatched: map["lastWatched"] != null
-          ? DateTime.parse(map["lastWatched"])
-          : null,
-      addedOn: map["addedOn"] != null ? DateTime.parse(map["addedOn"]) : null,
+      lastWatched: tryParseFromUnixTime(map["lastWatched"]),
+      addedOn: tryParseFromUnixTime(map["addedOn"]),
       scrapeFailMessage: map["scrapeFailMessage"],
     );
   }
@@ -387,8 +382,8 @@ class UniversalVideoMetadata {
   Map<String, dynamic> toMap() {
     return {
       "iD": iD,
-      "m3u8Uris": m3u8Uris.toString(),
-      "playbackHttpHeaders": playbackHttpHeaders?.toString(),
+      "m3u8Uris": m3u8Uris.map((k, v) => MapEntry(k.toString(), v.toString())),
+      "playbackHttpHeaders": playbackHttpHeaders,
       "title": title,
       "plugin": plugin?.codeName,
       "universalVideoPreview": universalVideoPreview.toMap(),
@@ -407,22 +402,19 @@ class UniversalVideoMetadata {
       "viewsTotal": viewsTotal,
       "tags": tags,
       "categories": categories,
-      // convert to unix timestamp
-      "uploadDate": uploadDate?.millisecondsSinceEpoch != null
-          ? (uploadDate!.millisecondsSinceEpoch / 1000).toInt()
-          : null,
+      "uploadDate": convertToUnixTime(uploadDate),
       "ratingsPositiveTotal": ratingsPositiveTotal,
       "ratingsNegativeTotal": ratingsNegativeTotal,
       "ratingsTotal": ratingsTotal,
       "virtualReality": virtualReality,
-      "chapters": chapters?.toString(),
-      "rawHtml": "Not shown due to length",
+      "chapters": chapters?.map((k, v) => MapEntry(k.inSeconds.toString(), v)),
+      "rawHtml": rawHtml.outerHtml,
       "scrapeFailMessage": scrapeFailMessage
     };
   }
 
-  static UniversalVideoMetadata fromMap(Map<String, dynamic> map,
-      PluginInterface? plugin, UniversalVideoPreview uvp) {
+  static UniversalVideoMetadata fromMap(
+      Map<String, dynamic> map, PluginInterface? plugin) {
     return UniversalVideoMetadata(
       iD: map["iD"],
       m3u8Uris: (map["m3u8Uris"] as Map)
@@ -431,7 +423,8 @@ class UniversalVideoMetadata {
           (map["playbackHttpHeaders"] as Map?)?.cast<String, String>(),
       title: map["title"],
       plugin: plugin,
-      universalVideoPreview: uvp,
+      universalVideoPreview:
+          UniversalVideoPreview.fromMap(map["universalVideoPreview"], plugin),
       authorID: map["authorID"],
       authorName: map["authorName"],
       authorSubscriberCount: map["authorSubscriberCount"],
@@ -440,16 +433,14 @@ class UniversalVideoMetadata {
           ?.map((e) => (
                 name: e["name"] as String,
                 authorID: e["authorID"] as String,
-                avatar: e["avatar"] as String,
+                avatar: e["avatar"] as String?,
               ))
           .toList(),
       description: map["description"],
       viewsTotal: map["viewsTotal"],
       tags: (map["tags"] as List?)?.cast<String>(),
       categories: (map["categories"] as List?)?.cast<String>(),
-      uploadDate: map["uploadDate"] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map["uploadDate"] * 1000)
-          : null,
+      uploadDate: tryParseFromUnixTime(map["uploadDate"]),
       ratingsPositiveTotal: map["ratingsPositiveTotal"],
       ratingsNegativeTotal: map["ratingsNegativeTotal"],
       ratingsTotal: map["ratingsTotal"],
@@ -550,17 +541,17 @@ class UniversalAuthorPage {
       "iD": iD,
       "name": name,
       "plugin": plugin?.codeName,
-      "thumbnail": avatar,
+      "avatar": avatar,
       "banner": banner,
-      "aliases": aliases.toString(),
+      "aliases": aliases,
       "description": description,
-      "advancedDescription": advancedDescription.toString(),
-      "externalLinks": externalLinks.toString(),
+      "advancedDescription": advancedDescription,
+      "externalLinks": externalLinks?.map((k, v) => MapEntry(k, v.toString())),
       "viewsTotal": viewsTotal,
       "videosTotal": videosTotal,
       "subscribers": subscribers,
       "rank": rank,
-      "rawHtml": "Not shown due to length",
+      "rawHtml": rawHtml.outerHtml,
       "scrapeFailMessage": scrapeFailMessage
     };
   }
@@ -689,11 +680,9 @@ class UniversalComment {
       "ratingsPositiveTotal": ratingsPositiveTotal,
       "ratingsNegativeTotal": ratingsNegativeTotal,
       "ratingsTotal": ratingsTotal,
-      "commentDate": commentDate?.millisecondsSinceEpoch != null
-          ? (commentDate!.millisecondsSinceEpoch / 1000).toInt()
-          : null,
+      "commentDate": convertToUnixTime(commentDate),
       "replyComments":
-          replyComments?.map((comment) => comment.toMap()).toList().toString(),
+          replyComments?.map((comment) => comment.toMap()).toList(),
       "scrapeFailMessage": scrapeFailMessage,
     };
   }
@@ -714,9 +703,7 @@ class UniversalComment {
       ratingsPositiveTotal: map["ratingsPositiveTotal"],
       ratingsNegativeTotal: map["ratingsNegativeTotal"],
       ratingsTotal: map["ratingsTotal"],
-      commentDate: map["commentDate"] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map["commentDate"] * 1000)
-          : null,
+      commentDate: tryParseFromUnixTime(map["commentDate"]),
       replyComments: (map["replyComments"] as List?)
           ?.map((c) => UniversalComment.fromMap(c, plugin))
           .toList(),

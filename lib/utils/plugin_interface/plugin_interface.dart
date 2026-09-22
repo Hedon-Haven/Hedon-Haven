@@ -367,7 +367,7 @@ class PluginInterface {
     final result =
         await _callFunction("getVideoMetadata", [videoID, uvp.toMap()]);
     final uvmMap = Map<String, dynamic>.from(result);
-    return UniversalVideoMetadata.fromMap(uvmMap, this, uvp);
+    return UniversalVideoMetadata.fromMap(uvmMap, this);
   }
 
   /// Get all progressThumbnails for a video and return them as a List
