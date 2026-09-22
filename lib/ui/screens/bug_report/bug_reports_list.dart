@@ -110,7 +110,7 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
 
   Widget buildGroupTile(MapEntry<String, List<BugReport>> bugReportGroup) {
     return FutureBuilder<PluginInterface?>(
-        future: PluginManager.getPluginByName(bugReportGroup.key),
+        future: PluginManager.getPluginByCodeName(bugReportGroup.key),
         builder: (context, snapshot) {
           // Simplify display for CustomExceptions
           if (bugReportGroup.value.length == 1 &&

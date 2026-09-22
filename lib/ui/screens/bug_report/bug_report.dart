@@ -284,7 +284,7 @@ class _BugReportScreenState extends State<BugReportScreen>
     String pluginCodeName =
         (bugReports.first as PluginBugReport).pluginCodeName;
     PluginInterface? plugin =
-        await PluginManager.getPluginByName(pluginCodeName);
+        await PluginManager.getPluginByCodeName(pluginCodeName);
     if (plugin == null && mounted) {
       await showDialog(
           context: context,

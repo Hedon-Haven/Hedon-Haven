@@ -230,7 +230,7 @@ Future<List<UniversalVideoPreview>> getWatchHistory() async {
       historyItem["verifiedAuthor"] = historyItem["verifiedAuthor"] as int == 1;
       resultsList.add(UniversalVideoPreview.fromMap(
           historyItem,
-          await PluginManager.getPluginByName(
+          await PluginManager.getPluginByCodeName(
               historyItem["plugin"] as String?)));
     } catch (e, st) {
       logger.e("Error converting watch history entry from database: $e\n$st");
@@ -250,8 +250,10 @@ Future<List<UniversalVideoPreview>> getFavorites() async {
       // Convert int back into bool
       favorite["virtualReality"] = favorite["virtualReality"] as int == 1;
       favorite["verifiedAuthor"] = favorite["verifiedAuthor"] as int == 1;
-      resultsList.add(UniversalVideoPreview.fromMap(favorite,
-          await PluginManager.getPluginByName(favorite["plugin"] as String?)));
+      resultsList.add(UniversalVideoPreview.fromMap(
+          favorite,
+          await PluginManager.getPluginByCodeName(
+              favorite["plugin"] as String?)));
     } catch (e, st) {
       logger.e("Error converting favorites entry from database: $e\n$st");
     }
