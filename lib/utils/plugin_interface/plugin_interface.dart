@@ -364,7 +364,8 @@ class PluginInterface {
   Future<UniversalVideoMetadata> getVideoMetadata(
       String videoID, UniversalVideoPreview uvp,
       [void Function(String body)? debugCallback]) async {
-    final result = await _callFunction("getVideoMetadata", [videoID, {}]);
+    final result =
+        await _callFunction("getVideoMetadata", [videoID, uvp.toMap()]);
     final uvmMap = Map<String, dynamic>.from(result);
     return UniversalVideoMetadata.fromMap(uvmMap, this, uvp);
   }
