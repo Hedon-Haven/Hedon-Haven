@@ -9,7 +9,6 @@ import 'package:html_unescape/html_unescape.dart';
 import 'package:image/image.dart';
 
 import '/utils/exceptions.dart';
-import '/utils/global_vars.dart' show httpUserAgent;
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
@@ -239,15 +238,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
         "iD": iD ?? "null",
         "title": title ?? "null",
         "thumbnail": imageDiv?.querySelector("img")?.attributes["src"],
-        "thumbnailHttpHeaders": {
-          "User-Agent": httpUserAgent,
-          "Referer": "https://www.pornhub.com/"
-        },
+        "thumbnailHttpHeaders": {"Referer": "https://www.pornhub.com/"},
         "previewVideo": imageDiv!.attributes["data-webm"]!,
-        "previewVideoHttpHeaders": {
-          "User-Agent": httpUserAgent,
-          "Referer": "https://www.pornhub.com/"
-        },
+        "previewVideoHttpHeaders": {"Referer": "https://www.pornhub.com/"},
         "duration": durationInSeconds,
         "viewsTotal": views,
         "ratingsPositivePercent": null,
@@ -794,10 +787,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
     Map<String, dynamic> metadata = {
       "iD": videoId,
       "m3u8Uris": m3u8Map,
-      "playbackHttpHeaders": {
-        "User-Agent": httpUserAgent,
-        "Referer": "https://www.pornhub.com/"
-      },
+      "playbackHttpHeaders": {"Referer": "https://www.pornhub.com/"},
       "title": jscriptMap["video_title"]!,
       "universalVideoPreview": uvp,
       "authorID": authorId,

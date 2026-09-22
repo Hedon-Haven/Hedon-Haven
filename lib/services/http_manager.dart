@@ -18,7 +18,8 @@ String findRandomProxy() {
 Future<http.Client> getHttpClient(String? proxy) async {
   return RhttpCompatibleClient.create(
     settings: ClientSettings(
-      userAgent: httpUserAgent,
+      // setting user agent here doesnt work for some reason
+      // -> set in the default client hint headers instead
       // Don't throw on 4xx or 5xx status codes, the app handles that
       throwOnStatusCode: false,
       proxySettings: (proxy != null && proxy.isNotEmpty)
