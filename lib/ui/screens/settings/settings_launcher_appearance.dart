@@ -104,82 +104,86 @@ class _LauncherAppearanceScreenState extends State<LauncherAppearance> {
         ),
         body: SafeArea(
             child: Column(children: [
-          SingleChildScrollView(
-              child: FutureBuilder<String?>(
-                  future:
-                      sharedStorage.getString("appearance_launcher_appearance"),
-                  builder: (context, snapshot) {
-                    // Don't show anything until the future is done
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const SizedBox();
-                    }
-                    return Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          children: [
-                            ListTile(
-                                title: const Text("Hedon Haven"),
-                                leading: CircleAvatar(
-                                    backgroundColor: Colors.white,
+          Expanded(
+              child: SingleChildScrollView(
+                  child: FutureBuilder<String?>(
+                      future: sharedStorage
+                          .getString("appearance_launcher_appearance"),
+                      builder: (context, snapshot) {
+                        // Don't show anything until the future is done
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const SizedBox();
+                        }
+                        return Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              children: [
+                                ListTile(
+                                    title: const Text("Hedon Haven"),
+                                    leading: CircleAvatar(
+                                        backgroundColor: Colors.white,
+                                        child: ClipOval(
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.all(20 * 0.20),
+                                            child: Image.asset(
+                                                "assets/launcher-icon/stock.png"),
+                                          ),
+                                        )),
+                                    onTap: () =>
+                                        handleOptionChange("Hedon Haven"),
+                                    trailing: Radio(
+                                      value: "Hedon Haven",
+                                      groupValue: snapshot.data!,
+                                      onChanged: handleOptionChange,
+                                    )),
+                                const SizedBox(height: 10),
+                                ListTile(
+                                    title: const Text("GSM Settings"),
+                                    leading: CircleAvatar(
+                                        backgroundColor: Colors.white,
+                                        child: ClipOval(
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.all(20 * 0.20),
+                                            child: Image.asset(
+                                                "assets/launcher-icon/fake_settings.png"),
+                                          ),
+                                        )),
+                                    onTap: () =>
+                                        handleOptionChange("GSM Settings"),
+                                    trailing: Radio(
+                                      value: "GSM Settings",
+                                      groupValue: snapshot.data!,
+                                      onChanged: handleOptionChange,
+                                    )),
+                                const SizedBox(height: 10),
+                                ListTile(
+                                  title: const Text("Reminders"),
+                                  leading: CircleAvatar(
+                                    backgroundColor:
+                                        const Color.fromARGB(255, 51, 181, 229),
                                     child: ClipOval(
                                       child: Padding(
                                         padding:
                                             const EdgeInsets.all(20 * 0.20),
                                         child: Image.asset(
-                                            "assets/launcher-icon/stock.png"),
+                                            "assets/launcher-icon/reminders.png"),
                                       ),
-                                    )),
-                                onTap: () => handleOptionChange("Hedon Haven"),
-                                trailing: Radio(
-                                  value: "Hedon Haven",
-                                  groupValue: snapshot.data!,
-                                  onChanged: handleOptionChange,
-                                )),
-                            const SizedBox(height: 10),
-                            ListTile(
-                                title: const Text("GSM Settings"),
-                                leading: CircleAvatar(
-                                    backgroundColor: Colors.white,
-                                    child: ClipOval(
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.all(20 * 0.20),
-                                        child: Image.asset(
-                                            "assets/launcher-icon/fake_settings.png"),
-                                      ),
-                                    )),
-                                onTap: () => handleOptionChange("GSM Settings"),
-                                trailing: Radio(
-                                  value: "GSM Settings",
-                                  groupValue: snapshot.data!,
-                                  onChanged: handleOptionChange,
-                                )),
-                            const SizedBox(height: 10),
-                            ListTile(
-                              title: const Text("Reminders"),
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 51, 181, 229),
-                                child: ClipOval(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(20 * 0.20),
-                                    child: Image.asset(
-                                        "assets/launcher-icon/reminders.png"),
+                                    ),
                                   ),
-                                ),
-                              ),
-                              onTap: () => handleOptionChange("Reminders"),
-                              trailing: Radio(
-                                value: "Reminders",
-                                groupValue: snapshot.data!,
-                                onChanged: handleOptionChange,
-                              ),
-                            )
-                          ],
-                        ));
-                  })),
-          if (widget.partOfOnboarding) ...[
-            Spacer(),
+                                  onTap: () => handleOptionChange("Reminders"),
+                                  trailing: Radio(
+                                    value: "Reminders",
+                                    groupValue: snapshot.data!,
+                                    onChanged: handleOptionChange,
+                                  ),
+                                )
+                              ],
+                            ));
+                      }))),
+          if (widget.partOfOnboarding)
             Padding(
                 padding: EdgeInsets.all(12),
                 child: Row(children: [
@@ -224,7 +228,6 @@ class _LauncherAppearanceScreenState extends State<LauncherAppearance> {
                                           .colorScheme
                                           .onPrimary))))
                 ]))
-          ]
         ])));
   }
 }

@@ -415,78 +415,95 @@ class _BugReportScreenState extends State<BugReportScreen>
             body: SafeArea(
                 child: Padding(
                     padding: const EdgeInsets.only(
-                        left: 20, right: 20, top: 10, bottom: 40),
+                        left: 20, right: 20, top: 10, bottom: 20),
                     child: Column(
-                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("App info: ",
-                              style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 5),
-                          buildAppInfoField(),
-                          const SizedBox(height: 15),
-                          if (totalAppReports > 0)
-                            ListTile(
-                                title:
-                                    Text("App bug reports ($totalAppReports)"),
-                                trailing: const Icon(Icons.arrow_forward),
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 0),
-                                onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        settings: RouteSettings(
-                                            name: "/bug_reports_list"),
-                                        builder: (context) =>
-                                            BugReportsListScreen(
-                                              bugReportsList:
-                                                  groupedBugReports.appReports!,
-                                            )))),
-                          if (totalBundledPluginReports > 0)
-                            ListTile(
-                                title: Text(
-                                    "Bundled plugin bug reports ($totalBundledPluginReports)"),
-                                trailing: const Icon(Icons.arrow_forward),
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 0),
-                                onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        settings: RouteSettings(
-                                            name: "/bug_reports_list"),
-                                        builder: (context) =>
-                                            BugReportsListScreen(
-                                              bugReportsList: groupedBugReports
-                                                  .bundledPluginGroups!.values
-                                                  .expand((list) => list)
-                                                  .toList(),
-                                            )))),
-                          if (totalThirdPartyPluginReports > 0)
-                            ListTile(
-                                title: Text(
-                                    "Third party plugin bug reports ($totalThirdPartyPluginReports)"),
-                                trailing: const Icon(Icons.arrow_forward),
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 0),
-                                onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        settings: RouteSettings(
-                                            name: "/bug_reports_list"),
-                                        builder: (context) =>
-                                            BugReportsListScreen(
-                                              bugReportsList: groupedBugReports
-                                                  .thirdPartyPluginGroups!
-                                                  .values
-                                                  .expand((list) => list)
-                                                  .toList(),
-                                            )))),
-                          const SizedBox(height: 10),
-                          Text("Additional details: ",
-                              style: Theme.of(context).textTheme.titleMedium),
-                          buildUserMessageField(),
-                          Spacer(),
-                          buildActionButtons()
+                          Expanded(
+                              child: SingleChildScrollView(
+                                  child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                Text("App info: ",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium),
+                                const SizedBox(height: 5),
+                                buildAppInfoField(),
+                                const SizedBox(height: 15),
+                                if (totalAppReports > 0)
+                                  ListTile(
+                                      title: Text(
+                                          "App bug reports ($totalAppReports)"),
+                                      trailing: const Icon(Icons.arrow_forward),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 0),
+                                      onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              settings: RouteSettings(
+                                                  name: "/bug_reports_list"),
+                                              builder: (context) =>
+                                                  BugReportsListScreen(
+                                                    bugReportsList:
+                                                        groupedBugReports
+                                                            .appReports!,
+                                                  )))),
+                                if (totalBundledPluginReports > 0)
+                                  ListTile(
+                                      title: Text(
+                                          "Bundled plugin bug reports ($totalBundledPluginReports)"),
+                                      trailing: const Icon(Icons.arrow_forward),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 0),
+                                      onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              settings: RouteSettings(
+                                                  name: "/bug_reports_list"),
+                                              builder: (context) =>
+                                                  BugReportsListScreen(
+                                                    bugReportsList:
+                                                        groupedBugReports
+                                                            .bundledPluginGroups!
+                                                            .values
+                                                            .expand(
+                                                                (list) => list)
+                                                            .toList(),
+                                                  )))),
+                                if (totalThirdPartyPluginReports > 0)
+                                  ListTile(
+                                      title: Text(
+                                          "Third party plugin bug reports ($totalThirdPartyPluginReports)"),
+                                      trailing: const Icon(Icons.arrow_forward),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 0),
+                                      onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              settings: RouteSettings(
+                                                  name: "/bug_reports_list"),
+                                              builder: (context) =>
+                                                  BugReportsListScreen(
+                                                    bugReportsList:
+                                                        groupedBugReports
+                                                            .thirdPartyPluginGroups!
+                                                            .values
+                                                            .expand(
+                                                                (list) => list)
+                                                            .toList(),
+                                                  )))),
+                                const SizedBox(height: 10),
+                                Text("Additional details: ",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium),
+                                buildUserMessageField(),
+                              ]))),
+                          Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: buildActionButtons())
                         ])))));
   }
 

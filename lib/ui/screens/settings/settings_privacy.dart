@@ -28,7 +28,8 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         body: SafeArea(
             child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: Column(
+                child: SingleChildScrollView(
+                    child: Column(
                   children: <Widget>[
                     FutureBuilder<bool?>(
                         future:
@@ -99,7 +100,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                         }),
                     ...buildAnalyticsOptions()
                   ],
-                ))));
+                )))));
   }
 }
 
@@ -228,7 +229,8 @@ class _ProxyScreenState extends State<ProxyScreen> {
                 child: FutureBuilder<bool?>(
                     future: sharedStorage.getBool("privacy_proxy_enabled"),
                     builder: (context, proxyEnabled) {
-                      return Column(children: <Widget>[
+                      return SingleChildScrollView(
+                          child: Column(children: <Widget>[
                         OptionsSwitch(
                             title: "Enable proxy",
                             subTitle: "Force all network requests to go through"
@@ -267,7 +269,7 @@ class _ProxyScreenState extends State<ProxyScreen> {
                             onTap: () {
                               showToast("Not yet implemented", context);
                             })
-                      ]);
+                      ]));
                     }))));
   }
 }

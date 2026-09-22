@@ -44,48 +44,64 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 padding: EdgeInsets.all(20),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 10,
                     children: [
-                      Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: SelectableText(
-                              "Would you like to enable anonymous analytics to "
-                              "help improve this app? All data is fully "
-                              "anonymized before being sent, making it "
-                              "impossible to identify any single user.",
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: SelectableText(
-                              "These settings can be adjusted anytime in "
-                              "Settings > Privacy.",
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: GestureDetector(
-                              onTap: () => launchUrl(Uri.parse(
-                                  "https://docs.hedon-haven.top/analytics.md")),
-                              child: Text(
-                                  "Read more: https://docs.hedon-haven.top/analytics.md",
-                                  style:
-                                      Theme.of(context).textTheme.bodyMedium))),
-                      ...buildAnalyticsOptions(),
-                      Spacer(),
+                      Expanded(
+                          child: SingleChildScrollView(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  spacing: 10,
+                                  children: [
+                            Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceVariant,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: SelectableText(
+                                    "Would you like to enable anonymous analytics to "
+                                    "help improve this app? All data is fully "
+                                    "anonymized before being sent, making it "
+                                    "impossible to identify any single user.",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium)),
+                            Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceVariant,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: SelectableText(
+                                    "These settings can be adjusted anytime in "
+                                    "Settings > Privacy.",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium)),
+                            Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceVariant,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: GestureDetector(
+                                    onTap: () => launchUrl(Uri.parse(
+                                        "https://docs.hedon-haven.top/analytics.md")),
+                                    child: Text(
+                                        "Read more: https://docs.hedon-haven.top/analytics.md",
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium))),
+                            ...buildAnalyticsOptions(),
+                          ]))),
                       Row(children: [
                         Align(
                             alignment: Alignment.bottomLeft,

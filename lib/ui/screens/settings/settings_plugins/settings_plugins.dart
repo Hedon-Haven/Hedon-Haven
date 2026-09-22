@@ -399,8 +399,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
                                   _togglePlugin(plugin, toggleValue));
                         },
                       )),
-                      if (widget.partOfOnboarding) ...[
-                        Spacer(),
+                      if (widget.partOfOnboarding)
                         Padding(
                             padding: EdgeInsets.all(12),
                             child: Row(children: [
@@ -439,7 +438,6 @@ class _PluginsScreenState extends State<PluginsScreen> {
                                                       .colorScheme
                                                       .onPrimary))))
                             ]))
-                      ]
                     ])))));
   }
 

@@ -20,67 +20,78 @@ class DisclaimersScreen extends StatelessWidget {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                          width: double.infinity,
-                          // Make the box slightly bigger than the Text
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                              "This app is developed and maintained by a "
-                              "single developer and is provided \"as is\" without "
-                              "any warranties, express or implied. The developer "
-                              "assumes no responsibility for any issues, damages, "
-                              "or losses resulting from its use.",
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      // this is padding around the entire widget
-                      Padding(
-                          padding: const EdgeInsets.only(top: 20),
-                          child: Container(
-                              width: double.infinity,
-                              // Make the box slightly bigger than the Text
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceVariant,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                  "This app is not affiliated with, endorsed "
-                                  "by, or connected to any external platforms, whether "
-                                  "accessed through built-in plugins or user-installed"
-                                  " ones.",
-                                  style:
-                                      Theme.of(context).textTheme.bodyMedium))),
-                      // this is padding around the entire widget
-                      Padding(
-                          padding: const EdgeInsets.only(top: 20),
-                          child: Container(
-                              width: double.infinity,
-                              // Make the box slightly bigger than the Text
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceVariant,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                  "This app aggregates content from external providers, "
-                                  "some of which may have Terms of Service (TOS) "
-                                  "that prohibit scraping or automated access. By "
-                                  "default, nothing is accessed without user consent."
-                                  " Users are responsible for reviewing the TOS of "
-                                  "each website before enabling the corresponding "
-                                  "plugin, as these terms vary by country and "
-                                  "jurisdiction. It is the user's responsibility to "
-                                  "ensure compliance with the relevant laws and TOS.",
-                                  style:
-                                      Theme.of(context).textTheme.bodyMedium))),
-                      Spacer(),
+                      Expanded(
+                          child: SingleChildScrollView(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                            Container(
+                                width: double.infinity,
+                                // Make the box slightly bigger than the Text
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceVariant,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                    "This app is developed and maintained by a "
+                                    "single developer and is provided \"as is\" without "
+                                    "any warranties, express or implied. The developer "
+                                    "assumes no responsibility for any issues, damages, "
+                                    "or losses resulting from its use.",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium)),
+                            // this is padding around the entire widget
+                            Padding(
+                                padding: const EdgeInsets.only(top: 20),
+                                child: Container(
+                                    width: double.infinity,
+                                    // Make the box slightly bigger than the Text
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceVariant,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                        "This app is not affiliated with, endorsed "
+                                        "by, or connected to any external platforms, whether "
+                                        "accessed through built-in plugins or user-installed"
+                                        " ones.",
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium))),
+                            // this is padding around the entire widget
+                            Padding(
+                                padding: const EdgeInsets.only(top: 20),
+                                child: Container(
+                                    width: double.infinity,
+                                    // Make the box slightly bigger than the Text
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceVariant,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                        "This app aggregates content from external providers, "
+                                        "some of which may have Terms of Service (TOS) "
+                                        "that prohibit scraping or automated access. By "
+                                        "default, nothing is accessed without user consent."
+                                        " Users are responsible for reviewing the TOS of "
+                                        "each website before enabling the corresponding "
+                                        "plugin, as these terms vary by country and "
+                                        "jurisdiction. It is the user's responsibility to "
+                                        "ensure compliance with the relevant laws and TOS.",
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium))),
+                          ]))),
                       Row(children: [
                         Align(
                             alignment: Alignment.bottomLeft,
