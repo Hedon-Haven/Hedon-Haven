@@ -622,21 +622,21 @@ class _PornhubIsolate extends BundledPluginIsolate {
       return [];
     }
     // @formatter:off
-  // Pornhub does not accept redundant search parameters.
-  // E.g. passing &min_duration=0 will result in a 404, even though technically 0 is the default duration in the website's ui
-  String urlString = "$_searchEndpoint${Uri.encodeComponent(request["searchString"])}"
-      "&page=$page"
-      "${request["sortingType"] != "Relevance" ? "&o=${_sortingTypeMap[request["sortingType"]]!}" : ""}"
-  // only top rated and most views support sorting by date
-      "${["Rating", "Views"].contains(request["dateRange"]) && request["dateRange"] != "All time" ? "&t=${_dateRangeMap[request["dateRange"]]}": ""}"
-      "${request["minQuality"] >= 720 ? "&hd=1" : ""}"
-  // maxQuality not supported
-      "${![600, 1200, 1800].contains(request["minDuration"]) ? "" : "&min_duration=${_minDurationMap[request["minDuration"]]!}"}"
-      "${![600, 1200, 1800].contains(request["maxDuration"]) ? "" : "&max_duration=${_maxDurationMap[request["maxDuration"]]!}"}"
-  // min and max FPS not supported
-  // virtual reality filter not supported
-  // categories and keywords not yet implemented fully
-      ;
+    // Pornhub does not accept redundant search parameters.
+    // E.g. passing &min_duration=0 will result in a 404, even though technically 0 is the default duration in the website's ui
+    String urlString = "$_searchEndpoint${Uri.encodeComponent(request["searchString"])}"
+        "&page=$page"
+        "${request["sortingType"] != "Relevance" ? "&o=${_sortingTypeMap[request["sortingType"]]!}" : ""}"
+    // only top rated and most views support sorting by date
+        "${["Rating", "Views"].contains(request["dateRange"]) && request["dateRange"] != "All time" ? "&t=${_dateRangeMap[request["dateRange"]]}": ""}"
+        "${request["minQuality"] >= 720 ? "&hd=1" : ""}"
+    // maxQuality not supported
+        "${![600, 1200, 1800].contains(request["minDuration"]) ? "" : "&min_duration=${_minDurationMap[request["minDuration"]]!}"}"
+        "${![600, 1200, 1800].contains(request["maxDuration"]) ? "" : "&max_duration=${_maxDurationMap[request["maxDuration"]]!}"}"
+    // min and max FPS not supported
+    // virtual reality filter not supported
+    // categories and keywords not yet implemented fully
+        ;
     // @formatter:on
 
     logDebug("Requesting $urlString");
