@@ -380,7 +380,7 @@ class _VideoListState extends State<VideoList> {
           return SliverPadding(
               padding: widget.noListPadding
                   ? EdgeInsets.zero
-                  : const EdgeInsets.only(right: 15, left: 15),
+                  : const EdgeInsets.only(right: 10, left: 10),
               sliver: SliverMasonryGrid.count(
                 crossAxisCount: listViewType.data! == "Grid" ? 2 : 1,
                 crossAxisSpacing: 15,
