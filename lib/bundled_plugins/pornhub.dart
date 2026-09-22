@@ -532,7 +532,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
       logDebug("Requesting https://www.pornhub.com");
       var response = await _performGetRequest("https://www.pornhub.com",
           // Mobile video image previews are higher quality
-          headers: {"Cookie": "platform=mobile"});
+          headers: {"Cookie": "platform=mobile; platform_forced=1"});
       debugCallback?.call(response.body);
       if (response.statusCode != 200) {
         logError("Error downloading html: ${response.statusCode}");
@@ -553,7 +553,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
       var response =
           await _performGetRequest("https://www.pornhub.com/video?page=$page",
               // Mobile video image previews are higher quality
-              headers: {"Cookie": "platform=mobile"});
+              headers: {"Cookie": "platform=mobile; platform_forced=1"});
       debugCallback?.call(response.body);
       if (response.statusCode != 200) {
         logError("Error downloading html: ${response.statusCode}");
@@ -642,7 +642,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
     logDebug("Requesting $urlString");
     var response = await _performGetRequest(urlString,
         // Mobile video image previews are higher quality
-        headers: {"Cookie": "platform=mobile"});
+        headers: {"Cookie": "platform=mobile; platform_forced=1"});
     debugCallback?.call(response.body);
     if (response.statusCode != 200) {
       // Differentiate between soft 404 (browser still shows a page) and hard 404 (network failure)
@@ -678,7 +678,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
     var response = await _performGetRequest(
       videoMetadata,
       // This header allows getting more data (such as recommended videos which are later used by getRecommendedVideos)
-      headers: {"Cookie": "accessAgeDisclaimerPH=1; platform=mobile"},
+      headers: {
+        "Cookie": "accessAgeDisclaimerPH=2; platform=mobile; platform_forced=1"
+      },
     );
     debugCallback?.call(response.body);
     if (response.statusCode != 200) {
@@ -1135,7 +1137,10 @@ class _PornhubIsolate extends BundledPluginIsolate {
     logDebug("Requesting channel page: $authorPageLink");
     var response = await _performGetRequest(authorPageLink,
         // Mobile video image previews are higher quality
-        headers: {"Cookie": "accessAgeDisclaimerPH=1; platform=mobile"});
+        headers: {
+          "Cookie":
+              "accessAgeDisclaimerPH=2; platform=mobile; platform_forced=1"
+        });
     if (response.statusCode != 200) {
       // Try again for model author type
       authorPageLink = "$_modelEndpoint$authorID";
@@ -1143,7 +1148,10 @@ class _PornhubIsolate extends BundledPluginIsolate {
           "Received non 200 status code -> Requesting model page: $authorPageLink");
       response = await _performGetRequest(authorPageLink,
           // Mobile video image previews are higher quality
-          headers: {"Cookie": "accessAgeDisclaimerPH=1; platform=mobile"});
+          headers: {
+            "Cookie":
+                "accessAgeDisclaimerPH=2; platform=mobile; platform_forced=1"
+          });
 
       if (response.statusCode != 200) {
         logError(
@@ -1367,7 +1375,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     var response = await _performGetRequest("$authorPageLink/videos?page=$page",
         // Mobile video image previews are higher quality
-        headers: {"Cookie": "platform=mobile"});
+        headers: {"Cookie": "platform=mobile; platform_forced=1"});
     if (response.statusCode != 200) {
       // 404 means both error and no videos in this case
       // -> return empty list instead of throwing exception
