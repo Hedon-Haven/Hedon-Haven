@@ -197,6 +197,11 @@ class _PornhubIsolate extends BundledPluginIsolate {
           ?.text
           .trim();
 
+      // Try lazy-loading source first, fall back to normal src
+      String? thumbnail =
+          imageDiv?.querySelector("img")?.attributes["data-lazy-src"] ??
+              imageDiv?.querySelector("img")?.attributes["src"];
+
       // convert time string into int list
       // pornhub automatically converts hours into minutes -> no need to check
       int? durationInSeconds;
