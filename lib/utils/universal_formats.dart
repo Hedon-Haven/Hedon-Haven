@@ -99,6 +99,8 @@ class UniversalSearchRequest {
     );
   }
 
+  Map<String, dynamic> toJson() => toMap();
+
   Map<String, dynamic> toMap() {
     return {
       "searchString": searchString,
@@ -220,7 +222,8 @@ class UniversalVideoPreview {
         virtualReality = virtualReality ?? false,
         thumbnailBinary = thumbnailBinary ?? Uint8List(0);
 
-  /// Safe to wrap with in jsonEncode
+  Map<String, dynamic> toJson() => toMap();
+
   Map<String, dynamic> toMap() {
     return {
       "iD": iD,
@@ -229,7 +232,7 @@ class UniversalVideoPreview {
       "thumbnail": thumbnail,
       "thumbnailHttpHeaders": thumbnailHttpHeaders,
       "thumbnailBinary": thumbnailBinary.toList(),
-      "previewVideo": previewVideo.toString(),
+      "previewVideo": previewVideo?.toString(),
       "previewVideoHttpHeaders": previewVideoHttpHeaders,
       "duration": duration?.inSeconds,
       "viewsTotal": viewsTotal,
@@ -256,7 +259,7 @@ class UniversalVideoPreview {
           (map["thumbnailHttpHeaders"] as Map?)?.cast<String, String>(),
       thumbnailBinary:
           tryParse(() => Uint8List.fromList(map["thumbnailBinary"])),
-      previewVideo: Uri.tryParse(map["previewVideo"]),
+      previewVideo: tryParse(() => Uri.parse(map["previewVideo"])),
       previewVideoHttpHeaders:
           (map["previewVideoHttpHeaders"] as Map?)?.cast<String, String>(),
       duration: tryParse(() => Duration(seconds: map["duration"])),
@@ -378,7 +381,8 @@ class UniversalVideoMetadata {
   })  : virtualReality = virtualReality ?? false,
         rawHtml = rawHtml ?? Document();
 
-  /// Safe to wrap with in jsonEncode
+  Map<String, dynamic> toJson() => toMap();
+
   Map<String, dynamic> toMap() {
     return {
       "iD": iD,
@@ -535,7 +539,8 @@ class UniversalAuthorPage {
     this.scrapeFailMessage,
   });
 
-  /// Safe to wrap with in jsonEncode
+  Map<String, dynamic> toJson() => toMap();
+
   Map<String, dynamic> toMap() {
     return {
       "iD": iD,
@@ -664,7 +669,8 @@ class UniversalComment {
     this.scrapeFailMessage,
   });
 
-  /// Safe to wrap with in jsonEncode
+  Map<String, dynamic> toJson() => toMap();
+
   Map<String, dynamic> toMap() {
     return {
       "iD": iD,
