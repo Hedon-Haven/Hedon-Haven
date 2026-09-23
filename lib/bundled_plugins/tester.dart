@@ -2,11 +2,14 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/services.dart';
+import 'package:html/dom.dart';
 import 'package:image/image.dart';
 
+import '/services/external_link_manager.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
-import '../services/external_link_manager.dart';
+import '/utils/universal_formats.dart';
+import '/utils/try_parse.dart';
 
 class TesterPlugin extends PluginInterface {
   @override
@@ -90,80 +93,85 @@ class _TesterIsolate extends BundledPluginIsolate {
 // https://example.com/video?videoId=123
 // https://example.com/author?authorId=123
   @override
-  Future<Map<String, dynamic>> parseExternalLink(String uriAsString) async {
+  Future<ExternalLinkParsed> parseExternalLink(String uriAsString) async {
     Uri uri = Uri.parse(uriAsString);
     switch (uri.path) {
       case "/home":
-        return {
-          "type": ContentType.homePage,
-          "pageCount": int.parse(uri.queryParameters["page"] ??
+        return ExternalLinkParsed(
+          type: ContentType.homePage,
+          pageCount: int.parse(uri.queryParameters["page"] ??
               TesterPlugin().initialHomePage.toString()),
-        };
+        );
 
       case "/search":
         final args = uri.queryParameters;
-        return {
-          "type": ContentType.searchResultsPage,
-          "searchRequest": {
-            "searchString": Uri.decodeQueryComponent(args["query"] ?? ""),
-            "sortingType": args["sortingType"],
-            "dateRange": args["dateRange"],
-            "minQuality": args["minQuality"] as int?,
-            "maxQuality": args["maxQuality"] as int?,
-            "minDuration": args["minDuration"] as int?,
-            "maxDuration": args["maxDuration"] as int?,
-            "minFramesPerSecond": args["minFramesPerSecond"] as int?,
-            "maxFramesPerSecond": args["maxFramesPerSecond"] as int?,
-            "virtualReality": args["virtualReality"] as bool?,
-            // categories and keywords not yet fully supported
-          },
-          "pageCount": int.parse(args["page"] ?? "0"),
-        };
+        return ExternalLinkParsed(
+            type: ContentType.searchResultsPage,
+            searchRequest: UniversalSearchRequest(
+              searchString:
+                  tryParse(() => Uri.decodeQueryComponent(args["query"]!)),
+              sortingType: args["sortingType"],
+              dateRange: args["dateRange"],
+              minQuality: tryParse(() => int.parse(args["minQuality"]!)),
+              maxQuality: tryParse(() => int.parse(args["maxQuality"]!)),
+              minDuration: tryParse(() => int.parse(args["minDuration"]!)),
+              maxDuration: tryParse(() => int.parse(args["maxDuration"]!)),
+              minFramesPerSecond:
+                  tryParse(() => int.parse(args["minFramesPerSecond"]!)),
+              maxFramesPerSecond:
+                  tryParse(() => int.parse(args["maxFramesPerSecond"]!)),
+              virtualReality:
+                  tryParse(() => bool.parse(args["virtualReality"]!)),
+              // categories and keywords not yet fully supported
+            ),
+            pageCount: tryParse(() => int.parse(args["page"]!)));
 
       case "/video":
-        return {
-          "type": ContentType.videoPage,
-          "iD": uri.queryParameters["videoId"]!,
-        };
+        return ExternalLinkParsed(
+          type: ContentType.videoPage,
+          iD: uri.queryParameters["videoId"]!,
+        );
 
       case "/author":
-        return {
-          "type": ContentType.authorPage,
-          "iD": uri.queryParameters["authorId"]!,
-        };
+        return ExternalLinkParsed(
+          type: ContentType.authorPage,
+          iD: uri.queryParameters["authorId"]!,
+        );
 
       default:
-        return {"type": ContentType.unknown};
+        return const ExternalLinkParsed(type: ContentType.unknown);
     }
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getHomePage(int page,
+  Future<List<UniversalVideoPreview>> getHomePage(int page,
       [void Function(String body)? debugCallback]) async {
     // Simulate a delay without blocking the entire isolate
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return List.generate(
       10,
-      (index) => {
-        "iD": "${(index * pi * 10000).toInt()}",
-        "title": "Test homepage video $index, page $page",
-        "thumbnail": "https://placehold.co/1280x720.png",
-        "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
-        "previewVideo":
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4",
-        "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
-        "duration": 120 + index * 10, // seconds
-        "viewsTotal": (index * pi * 1000000).toInt(),
-        "ratingsPositivePercent":
+      (index) => UniversalVideoPreview(
+        iD: "${(index * pi * 10000).toInt()}",
+        title: "Test homepage video $index, page $page",
+        plugin: null,
+        thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
+        previewVideo: Uri.parse(
+            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
+        duration: Duration(seconds: 120 + index * 10),
+        // seconds
+        viewsTotal: (index * pi * 1000000).toInt(),
+        ratingsPositivePercent:
             int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        "maxQuality": 720,
-        "virtualReality": false,
-        "authorName": "Tester-author $index",
-        "authorID": "Tester-author $index",
-        "verifiedAuthor": index % 2 == 0,
+        maxQuality: 720,
+        virtualReality: false,
+        authorName: "Tester-author $index",
+        authorID: "Tester-author $index",
+        verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
-      },
+        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+      ),
     );
   }
 
@@ -195,8 +203,8 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getSearchResults(
-      Map<String, dynamic> request, int page,
+  Future<List<UniversalVideoPreview>> getSearchResults(
+      UniversalSearchRequest request, int page,
       [void Function(String body)? debugCallback]) async {
     // Simulate a delay without blocking the entire isolate
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
@@ -205,27 +213,28 @@ class _TesterIsolate extends BundledPluginIsolate {
     }
     return List.generate(
       10,
-      (index) => {
-        "iD": "${(index * pi * 10000).toInt()}",
-        "title":
-            "Test result video $index, page $page, request ${request["searchString"]}",
-        "thumbnail": "https://placehold.co/1280x720.png",
-        "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
-        "previewVideo":
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4",
-        "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
-        "duration": 120 + index * 10,
-        "viewsTotal": (index * pi * 1000000).toInt(),
-        "ratingsPositivePercent":
+      (index) => UniversalVideoPreview(
+        iD: "${(index * pi * 10000).toInt()}",
+        title: "Test result video $index, page $page, "
+            "request ${request.searchString}",
+        plugin: null,
+        thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
+        previewVideo: Uri.parse(
+            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
+        duration: Duration(seconds: 120 + index * 10),
+        viewsTotal: (index * pi * 1000000).toInt(),
+        ratingsPositivePercent:
             int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        "maxQuality": 720,
-        "virtualReality": false,
-        "authorName": "Tester-author $index",
-        "authorID": "Tester-author $index",
-        "verifiedAuthor": index % 2 == 0,
+        maxQuality: 720,
+        virtualReality: false,
+        authorName: "Tester-author $index",
+        authorID: "Tester-author $index",
+        verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
-      },
+        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+      ),
     );
   }
 
@@ -235,27 +244,31 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> getVideoMetadata(
-      String videoId, Map<String, dynamic> uvp,
+  Future<UniversalVideoMetadata> getVideoMetadata(
+      String videoId, UniversalVideoPreview uvp,
       [void Function(String body)? debugCallback]) async {
     // Simulate a delay without blocking the entire isolate
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    return {
-      "iD": videoId,
-      "m3u8Uris": {
-        1080: "https://docs.evostream.com/sample_content/assets/bunny.mp4",
-        720: "https://docs.evostream.com/sample_content/assets/bunny.mp4",
-        480: "https://docs.evostream.com/sample_content/assets/bunny.mp4",
+    return UniversalVideoMetadata(
+      iD: videoId,
+      m3u8Uris: {
+        1080: Uri.parse(
+            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        720: Uri.parse(
+            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        480: Uri.parse(
+            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
       },
-      "title": "Tester video metadata title",
-      "universalVideoPreview": uvp,
+      title: "Tester video metadata title",
+      plugin: null,
+      universalVideoPreview: uvp,
       // Uncomment to test partial metadata scrape fail
       //scrapeFailMessage: "Test fail scrape message",
-      "authorID": "tester-author-$videoId",
-      "authorName": "Tester-author",
-      "authorSubscriberCount": 335433,
-      "authorAvatar": "https://placehold.co/1280x720.png",
-      "actors": [
+      authorID: "tester-author-$videoId",
+      authorName: "Tester-author",
+      authorSubscriberCount: 335433,
+      authorAvatar: "https://placehold.co/1280x720.png",
+      actors: [
         (
           name: "Tester-actor-1",
           authorID: "Tester-author-actor-1",
@@ -267,22 +280,22 @@ class _TesterIsolate extends BundledPluginIsolate {
           avatar: "https://placehold.co/200x200.png"
         )
       ],
-      "description": "Tester video description" * 10,
-      "viewsTotal": 2532823,
-      "tags": ["Tester-tag-1", "Tester-tag-2"],
-      "categories": ["Tester-category-1", "Tester-category-2"],
-      "uploadDate": DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      "ratingsPositiveTotal": 90,
-      "ratingsNegativeTotal": 10,
-      "ratingsTotal": 47384,
-      "virtualReality": false,
-      "chapters": {
-        0: "Chapter 1",
-        120: "Chapter 2",
-        240: "Chapter 3",
+      description: "Tester video description" * 10,
+      viewsTotal: 2532823,
+      tags: ["Tester-tag-1", "Tester-tag-2"],
+      categories: ["Tester-category-1", "Tester-category-2"],
+      uploadDate: DateTime.now(),
+      ratingsPositiveTotal: 90,
+      ratingsNegativeTotal: 10,
+      ratingsTotal: 47384,
+      virtualReality: false,
+      chapters: {
+        Duration.zero: "Chapter 1",
+        Duration(seconds: 120): "Chapter 2",
+        Duration(seconds: 240): "Chapter 3",
       },
-      "rawHtml": "",
-    };
+      rawHtml: Document(),
+    );
   }
 
   @override
@@ -314,7 +327,7 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getComments(
+  Future<List<UniversalComment>> getComments(
       String videoID, String rawHtmlString, int page,
       [void Function(String body)? debugCallback]) async {
     if (page == 5) {
@@ -324,61 +337,57 @@ class _TesterIsolate extends BundledPluginIsolate {
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return List.generate(
       5,
-      (index) => {
-        "iD": "comment-$index",
-        "videoID": videoID,
-        "author": "author-$index",
-        "commentBody":
+      (index) => UniversalComment(
+        iD: "comment-$index",
+        videoID: videoID,
+        author: "author-$index",
+        commentBody:
             List<String>.filled(5, "test comment $index, page $page ").join(),
-        "hidden": index % 4 == 0,
-        "authorID": "author-$index",
-        "countryID": "US",
-        "orientation": null,
-        "profilePicture": "https://placehold.co/240x240.png",
-        "ratingsPositiveTotal": index % 4 == 0 ? 30 : null,
-        "ratingsNegativeTotal": index % 4 == 0 ? 2 : null,
-        "ratingsTotal": index % 4 == 0 ? 32 : 76,
-        "commentDate": DateTime.now()
-                .subtract(Duration(days: index))
-                .millisecondsSinceEpoch ~/
-            1000,
-        "replyComments": index % 2 == 0
+        hidden: index % 4 == 0,
+        plugin: null,
+        authorID: "author-$index",
+        countryID: "US",
+        orientation: null,
+        profilePicture: "https://placehold.co/240x240.png",
+        ratingsPositiveTotal: index % 4 == 0 ? 30 : null,
+        ratingsNegativeTotal: index % 4 == 0 ? 2 : null,
+        ratingsTotal: index % 4 == 0 ? 32 : 76,
+        commentDate: DateTime.now().subtract(Duration(days: index)),
+        replyComments: index % 2 == 0
             ? List.generate(
                 3,
-                (index) => {
-                  "iD": "comment-reply-$index",
-                  "videoID": videoID,
-                  "author": "author-reply-$index",
-                  "commentBody":
+                (index) => UniversalComment(
+                  iD: "comment-reply-$index",
+                  videoID: videoID,
+                  author: "author-reply-$index",
+                  commentBody:
                       List<String>.filled(5, "test reply comment $index ")
                           .join(),
-                  "hidden": index % 4 == 0,
-                  "authorID": "author-reply-$index",
-                  "countryID": "US",
-                  "orientation": null,
-                  "profilePicture": "https://placehold.co/240x240",
-                  "ratingsPositiveTotal": index % 2 == 0 ? 4 : null,
-                  "ratingsNegativeTotal": index % 2 == 0 ? 1 : null,
-                  "ratingsTotal": index % 2 == 0 ? 5 : 6,
-                  "commentDate": DateTime.now()
-                          .subtract(Duration(days: index))
-                          .millisecondsSinceEpoch ~/
-                      1000,
-                  "replyComments": [],
+                  hidden: index % 4 == 0,
+                  plugin: null,
+                  authorID: "author-reply-$index",
+                  countryID: "US",
+                  orientation: null,
+                  profilePicture: "https://placehold.co/240x240",
+                  ratingsPositiveTotal: index % 2 == 0 ? 4 : null,
+                  ratingsNegativeTotal: index % 2 == 0 ? 1 : null,
+                  ratingsTotal: index % 2 == 0 ? 5 : 6,
+                  commentDate: DateTime.now().subtract(Duration(days: index)),
+                  replyComments: [],
                   // Make every 4th comment a fail
-                  "scrapeFailMessage":
+                  scrapeFailMessage:
                       index % 4 != 0 ? "Test fail scrape message" : null,
-                },
+                ),
               )
             : [],
         // Make every 4th comment a fail
-        "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
-      },
+        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+      ),
     );
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getVideoSuggestions(
+  Future<List<UniversalVideoPreview>> getVideoSuggestions(
       String videoID, String rawHtmlString, int page,
       [void Function(String body)? debugCallback]) async {
     // Simulate a delay without blocking the entire app
@@ -388,26 +397,27 @@ class _TesterIsolate extends BundledPluginIsolate {
     }
     return List.generate(
       10,
-      (index) => {
-        "iD": "${(index * pi * 10000).toInt()}",
-        "title": "Test suggestion video $index",
-        "thumbnail": "https://placehold.co/1280x720.png",
-        "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
-        "previewVideo":
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4",
-        "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
-        "duration": 120 + index * 10,
-        "viewsTotal": (index * pi * 1000000).toInt(),
-        "ratingsPositivePercent":
+      (index) => UniversalVideoPreview(
+        iD: "${(index * pi * 10000).toInt()}",
+        title: "Test suggestion video $index",
+        plugin: null,
+        thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
+        previewVideo: Uri.parse(
+            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
+        duration: Duration(seconds: 120 + index * 10),
+        viewsTotal: (index * pi * 1000000).toInt(),
+        ratingsPositivePercent:
             int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        "maxQuality": 720,
-        "virtualReality": false,
-        "authorName": "Tester-suggestion-author $index",
-        "authorID": "Tester-suggestion-author $index",
-        "verifiedAuthor": index % 2 == 0,
+        maxQuality: 720,
+        virtualReality: false,
+        authorName: "Tester-suggestion-author $index",
+        authorID: "Tester-suggestion-author $index",
+        verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
-      },
+        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+      ),
     );
   }
 
@@ -417,35 +427,36 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> getAuthorPage(String authorID,
+  Future<UniversalAuthorPage> getAuthorPage(String authorID,
       [void Function(String body)? debugCallback]) async {
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    return Future.value({
-      "iD": authorID,
-      "name": "Test author name",
-      "avatar": "https://placehold.co/240x240.png",
-      "banner": "https://placehold.co/1270x400.png",
-      "aliases": ["Test alias 1", "Test alias 2"],
-      "description": "Very long description" * 1000,
-      "advancedDescription": {
+    return UniversalAuthorPage(
+      iD: authorID,
+      name: "Test author name",
+      plugin: null,
+      avatar: "https://placehold.co/240x240.png",
+      banner: "https://placehold.co/1270x400.png",
+      aliases: ["Test alias 1", "Test alias 2"],
+      description: "Very long description" * 1000,
+      advancedDescription: {
         for (int i = 1; i <= 1000; i++)
           "Test description key $i": "Test description value $i",
       },
-      "externalLinks": {
-        "external link 1": "https://example.com/link1",
-        "external link 2": "https://example.com/link2",
-        "external link 3": "https://example.com/link3"
+      externalLinks: {
+        "external link 1": Uri.parse("https://example.com/link1"),
+        "external link 2": Uri.parse("https://example.com/link2"),
+        "external link 3": Uri.parse("https://example.com/link3")
       },
-      "viewsTotal": 23773212,
-      "videosTotal": 114,
-      "subscribers": 573529,
-      "rank": 3746,
-      "rawHtml": ""
-    });
+      viewsTotal: 23773212,
+      videosTotal: 114,
+      subscribers: 573529,
+      rank: 3746,
+      rawHtml: Document(),
+    );
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page,
+  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
       [void Function(String body)? debugCallback]) async {
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     if (page == 5) {
@@ -453,26 +464,27 @@ class _TesterIsolate extends BundledPluginIsolate {
     }
     return List.generate(
       10,
-      (index) => {
-        "iD": "${(index * pi * 10000).toInt()}",
-        "title": "Test author video $index, page $page",
-        "thumbnail": "https://placehold.co/1280x720.png",
-        "thumbnailHttpHeaders": {"X-Ignore": "example-header"},
-        "previewVideo":
-            "https://docs.evostream.com/sample_content/assets/bunny.mp4",
-        "previewVideoHttpHeaders": {"X-Ignore": "example-header"},
-        "duration": 120 + index * 10,
-        "viewsTotal": (index * pi * 1000000).toInt(),
-        "ratingsPositivePercent":
+      (index) => UniversalVideoPreview(
+        iD: "${(index * pi * 10000).toInt()}",
+        title: "Test author video $index, page $page",
+        plugin: null,
+        thumbnail: "https://placehold.co/1280x720.png",
+        thumbnailHttpHeaders: {"X-Ignore": "example-header"},
+        previewVideo: Uri.parse(
+            "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
+        previewVideoHttpHeaders: {"X-Ignore": "example-header"},
+        duration: Duration(seconds: 120 + index * 10),
+        viewsTotal: (index * pi * 1000000).toInt(),
+        ratingsPositivePercent:
             int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        "maxQuality": 720,
-        "virtualReality": false,
-        "authorName": "Tester-author-same $index",
-        "authorID": "Tester-author-same $index",
-        "verifiedAuthor": index % 2 == 0,
+        maxQuality: 720,
+        virtualReality: false,
+        authorName: "Tester-author-same $index",
+        authorID: "Tester-author-same $index",
+        verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        "scrapeFailMessage": index % 4 != 0 ? "Test fail scrape message" : null,
-      },
+        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+      ),
     );
   }
 }

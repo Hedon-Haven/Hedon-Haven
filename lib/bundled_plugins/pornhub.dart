@@ -8,11 +8,12 @@ import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:image/image.dart';
 
+import '/services/external_link_manager.dart';
 import '/utils/exceptions.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
-import '../services/external_link_manager.dart';
+import '/utils/universal_formats.dart';
 
 class PornhubPlugin extends PluginInterface {
   @override
@@ -179,12 +180,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
     "KEY": ""
   };
 
-  Future<List<Map<String, dynamic>>> _parseVideoList(List<Element> resultsList,
+  Future<List<UniversalVideoPreview>> _parseVideoList(List<Element> resultsList,
       [bool authorPageMode = false]) async {
     logDebug(
         "Parsing ${resultsList.length} video elements (some might be ads!)");
-    // convert the divs into UniversalSearchResults
-    List<Map<String, dynamic>> results = [];
+    // convert the divs into UniversalVideoPreviews
+    List<UniversalVideoPreview> results = [];
     for (Element resultElement in resultsList) {
       Element resultDiv = resultElement.querySelector("div")!;
       Element? imageDiv = resultDiv.querySelector("a");
@@ -237,31 +238,32 @@ class _PornhubIsolate extends BundledPluginIsolate {
       Element? authorDiv = resultDiv.querySelector('a[class*="uploaderLink"], '
           'span[class*="uploaderLink"]');
 
-      Map<String, dynamic> uniResult = {
+      UniversalVideoPreview uniResult = UniversalVideoPreview(
         // Don't enforce null safety here
         // treat error below in scrapeFailMessage instead
-        "iD": iD ?? "null",
-        "title": title ?? "null",
-        "thumbnail": imageDiv?.querySelector("img")?.attributes["src"],
-        "thumbnailHttpHeaders": {"Referer": "https://www.pornhub.com/"},
-        "previewVideo": imageDiv!.attributes["data-webm"]!,
-        "previewVideoHttpHeaders": {"Referer": "https://www.pornhub.com/"},
-        "duration": durationInSeconds,
-        "viewsTotal": views,
-        "ratingsPositivePercent": null,
-        "maxQuality": null,
-        "virtualReality": tryParse(() =>
+        iD: iD ?? "null",
+        title: title ?? "null",
+        plugin: null,
+        thumbnail: thumbnail,
+        thumbnailHttpHeaders: {"Referer": "https://www.pornhub.com/"},
+        previewVideo: Uri.tryParse(imageDiv!.attributes["data-webm"]!),
+        previewVideoHttpHeaders: {"Referer": "https://www.pornhub.com/"},
+        duration: tryParse(() => Duration(seconds: durationInSeconds!)),
+        viewsTotal: views,
+        ratingsPositivePercent: null,
+        maxQuality: null,
+        virtualReality: tryParse(() =>
             resultDiv
                 .querySelector('span[class="hd-thumbnail vr-thumbnail"]') !=
             null),
-        "authorName": authorDiv?.text.trim(),
-        "authorID": authorDiv?.attributes["href"]?.split("/").last,
+        authorName: authorDiv?.text.trim(),
+        authorID: authorDiv?.attributes["href"]?.split("/").last,
         // All authors on pornhub are verified
-        "verifiedAuthor": true,
-      };
+        verifiedAuthor: true,
+      );
 
       if (iD == null || title == null) {
-        uniResult["scrapeFailMessage"] =
+        uniResult.scrapeFailMessage =
             "Error: Failed to scrape critical variable(s):"
             "${iD == null ? " ID" : ""}"
             "${title == null ? " title" : ""}";
@@ -459,16 +461,16 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> parseExternalLink(String uriAsString) async {
+  Future<ExternalLinkParsed> parseExternalLink(String uriAsString) async {
     Uri uri = Uri.parse(uriAsString);
     logInfo("Parsing ${uri.path}");
     switch (uri.path) {
       case "/" || "/video":
-        return {
-          "type": ContentType.homePage,
-          "pageCount": int.parse(uri.queryParameters["page"] ??
+        return ExternalLinkParsed(
+          type: ContentType.homePage,
+          pageCount: int.parse(uri.queryParameters["page"] ??
               PornhubPlugin().initialHomePage.toString()),
-        };
+        );
 
       case "/video/search":
         final args = uri.queryParameters;
@@ -491,43 +493,43 @@ class _PornhubIsolate extends BundledPluginIsolate {
                 orElse: () => const MapEntry(3600, ""))
             .key;
 
-        return {
-          "type": ContentType.searchResultsPage,
-          "searchRequest": {
-            "searchString": Uri.decodeQueryComponent(args["search"] ?? ""),
-            "sortingType": sortingType,
-            "dateRange": dateRange,
-            "minQuality": args["hd"] == '1' ? 720 : 0,
+        return ExternalLinkParsed(
+          type: ContentType.searchResultsPage,
+          searchRequest: UniversalSearchRequest(
+            searchString: Uri.decodeQueryComponent(args["search"] ?? ""),
+            sortingType: sortingType,
+            dateRange: dateRange,
+            minQuality: args["hd"] == '1' ? 720 : 0,
             // no maxQuality
-            "minDuration": minDuration,
-            "maxDuration": maxDuration,
+            minDuration: minDuration,
+            maxDuration: maxDuration,
             // rest are empty / not yet supported
-          },
-          "pageCount": int.parse(args["page"] ??
+          ),
+          pageCount: int.parse(args["page"] ??
               PornhubPlugin().initialSearchResultsPage.toString()),
-        };
+        );
 
       case "/view_video.php":
-        return {
-          "type": ContentType.videoPage,
-          "iD": uri.queryParameters["viewkey"]!,
-        };
+        return ExternalLinkParsed(
+          type: ContentType.videoPage,
+          iD: uri.queryParameters["viewkey"]!,
+        );
 
       case _
           when {"channels", "model", "pornstar"}
               .contains(uri.pathSegments.first):
-        return {
-          "type": ContentType.authorPage,
-          "iD": uri.pathSegments.last,
-        };
+        return ExternalLinkParsed(
+          type: ContentType.authorPage,
+          iD: uri.pathSegments.last,
+        );
 
       default:
-        return {"type": ContentType.unknown};
+        return const ExternalLinkParsed(type: ContentType.unknown);
     }
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getHomePage(int page,
+  Future<List<UniversalVideoPreview>> getHomePage(int page,
       [void Function(String body)? debugCallback]) async {
     List<Element>? resultsList;
     // pornhub has a homepage and a separate page 1 video homepage
@@ -619,25 +621,25 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getSearchResults(
-      Map<String, dynamic> request, int page,
+  Future<List<UniversalVideoPreview>> getSearchResults(
+      UniversalSearchRequest request, int page,
       [void Function(String body)? debugCallback]) async {
     // Pornhub doesn't allow empty search queries
-    if (request["searchString"].isEmpty) {
+    if (request.searchString.isEmpty) {
       return [];
     }
     // @formatter:off
     // Pornhub does not accept redundant search parameters.
     // E.g. passing &min_duration=0 will result in a 404, even though technically 0 is the default duration in the website's ui
-    String urlString = "$_searchEndpoint${Uri.encodeComponent(request["searchString"])}"
+    String urlString = "$_searchEndpoint${Uri.encodeComponent(request.searchString)}"
         "&page=$page"
-        "${request["sortingType"] != "Relevance" ? "&o=${_sortingTypeMap[request["sortingType"]]!}" : ""}"
+        "${request.sortingType != "Relevance" ? "&o=${_sortingTypeMap[request.sortingType]!}" : ""}"
     // only top rated and most views support sorting by date
-        "${["Rating", "Views"].contains(request["dateRange"]) && request["dateRange"] != "All time" ? "&t=${_dateRangeMap[request["dateRange"]]}": ""}"
-        "${request["minQuality"] >= 720 ? "&hd=1" : ""}"
+        "${["Rating", "Views"].contains(request.dateRange) && request.dateRange != "All time" ? "&t=${_dateRangeMap[request.dateRange]}": ""}"
+        "${request.minQuality >= 720 ? "&hd=1" : ""}"
     // maxQuality not supported
-        "${![600, 1200, 1800].contains(request["minDuration"]) ? "" : "&min_duration=${_minDurationMap[request["minDuration"]]!}"}"
-        "${![600, 1200, 1800].contains(request["maxDuration"]) ? "" : "&max_duration=${_maxDurationMap[request["maxDuration"]]!}"}"
+        "${![600, 1200, 1800].contains(request.minDuration) ? "" : "&min_duration=${_minDurationMap[request.minDuration]!}"}"
+        "${![600, 1200, 1800].contains(request.maxDuration) ? "" : "&max_duration=${_maxDurationMap[request.maxDuration]!}"}"
     // min and max FPS not supported
     // virtual reality filter not supported
     // categories and keywords not yet implemented fully
@@ -675,8 +677,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> getVideoMetadata(
-      String videoId, Map<String, dynamic> uvp,
+  Future<UniversalVideoMetadata> getVideoMetadata(
+      String videoId, UniversalVideoPreview uvp,
       [void Function(String body)? debugCallback]) async {
     String videoMetadata = _videoEndpoint + videoId;
     logDebug("Requesting $videoMetadata");
@@ -735,7 +737,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
     String authorId = authorRaw!.attributes["href"]!.split("/").last;
 
     // actors
-    List<({String name, String authorID, String avatar})>? actors;
+    List<({String name, String authorID, String? avatar})>? actors;
     List<Element>? actorsList = rawHtml
         .querySelector('div[class*="pornstarsWrapper"]')
         ?.querySelectorAll("a");
@@ -746,7 +748,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
           actors.add((
             name: element.text.trim(),
             authorID: element.attributes["href"]!.split("/").last,
-            avatar: element.children.first.attributes["src"]!
+            avatar: element.children.first.attributes["src"]
           ));
         } catch (e, st) {
           logWarning("Failed to parse actor: $e\n$st");
@@ -780,52 +782,51 @@ class _PornhubIsolate extends BundledPluginIsolate {
     DateTime? uploadDate = _convertStringToDateTime(
         rawHtml.querySelector('li[class="added"]')?.text.trim());
 
-    Map<int, String> m3u8Map = {};
+    Map<int, Uri> m3u8Map = {};
     for (Map<String, dynamic> video in jscriptMap["mediaDefinitions"]) {
       // the last item is a List of all qualities -> ignore it
       if (video["format"] == "hls") {
         var quality = video["quality"];
         if (quality.runtimeType == String) {
-          m3u8Map[int.parse(quality)] = video["videoUrl"];
+          m3u8Map[int.parse(quality)] = Uri.parse(video["videoUrl"]);
         }
       }
     }
 
-    Map<String, dynamic> metadata = {
-      "iD": videoId,
-      "m3u8Uris": m3u8Map,
-      "playbackHttpHeaders": {"Referer": "https://www.pornhub.com/"},
-      "title": jscriptMap["video_title"]!,
-      "universalVideoPreview": uvp,
-      "authorID": authorId,
-      "authorName": authorString,
-      "authorSubscriberCount": _convertHumanReadableStringToInt(rawHtml
+    return UniversalVideoMetadata(
+      iD: videoId,
+      m3u8Uris: m3u8Map,
+      playbackHttpHeaders: {"Referer": "https://www.pornhub.com/"},
+      title: jscriptMap["video_title"]!,
+      plugin: null,
+      universalVideoPreview: uvp,
+      authorID: authorId,
+      authorName: authorString,
+      authorSubscriberCount: _convertHumanReadableStringToInt(rawHtml
               .querySelector('span[class="subscribersCount"]')
               ?.text
               .replaceAll(" Subscribers", "") ??
           "0"),
-      "authorAvatar":
+      authorAvatar:
           rawHtml.querySelector('img[class="userAvatar"]')?.attributes["src"],
-      "actors": actors,
-      "description": rawHtml
+      actors: actors,
+      description: rawHtml
           .querySelector(
               'div[class="categoryRow targetContainer displayNone clearfix"]')
           ?.querySelector("span")
           ?.text
           .trim(),
-      "viewsTotal": viewsTotal,
-      "tags": tags,
-      "categories": categories,
-      "uploadDate": tryParse(() => uploadDate!.millisecondsSinceEpoch ~/ 1000),
-      "ratingsPositiveTotal": ratingsPositive,
-      "ratingsNegativeTotal": ratingsNegative,
-      "ratingsTotal": ratingsTotal,
-      "virtualReality": jscriptMap["isVR"] == 1,
-      "chapters": null,
-      "rawHtml": rawHtml.outerHtml
-    };
-
-    return metadata;
+      viewsTotal: viewsTotal,
+      tags: tags,
+      categories: categories,
+      uploadDate: uploadDate,
+      ratingsPositiveTotal: ratingsPositive,
+      ratingsNegativeTotal: ratingsNegative,
+      ratingsTotal: ratingsTotal,
+      virtualReality: jscriptMap["isVR"] == 1,
+      chapters: null,
+      rawHtml: rawHtml,
+    );
   }
 
   @override
@@ -921,13 +922,13 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getComments(
+  Future<List<UniversalComment>> getComments(
       String videoID, String rawHtmlString, int page,
       [void Function(String body)? debugCallback]) async {
     Document rawHtml = parse(rawHtmlString);
 
     // Private functions
-    Map<String, dynamic> parseComment(
+    UniversalComment parseComment(
         Element comment, String videoID, bool hidden) {
       Element tempComment = comment.children.first;
 
@@ -944,35 +945,36 @@ class _PornhubIsolate extends BundledPluginIsolate {
       String? iD = tryParse(
           () => comment.className.split(" ")[2].replaceAll("commentTag", ""));
 
-      Map<String, dynamic> parsedComment = {
+      UniversalComment parsedComment = UniversalComment(
         // Don't enforce null safety here
         // treat error below in scrapeFailMessage instead
-        "iD": iD ?? "null",
-        "videoID": videoID,
-        "author": author ?? "null",
-        "commentBody": commentBody ?? "null",
-        "hidden": hidden,
+        iD: iD ?? "null",
+        videoID: videoID,
+        author: author ?? "null",
+        commentBody: commentBody ?? "null",
+        hidden: hidden,
+        plugin: null,
         // Sometimes the authorID is "unknown" (not a link) -> allow null
-        "authorID": tempComment
+        authorID: tempComment
             .querySelector('a[class="userLink clearfix"]')
             ?.attributes["href"]
             ?.substring(7),
-        "countryID": null,
-        "orientation": null,
-        "profilePicture": tempComment
+        countryID: null,
+        orientation: null,
+        profilePicture: tempComment
             .querySelector('img[class="commentAvatarImg avatarTrigger"]')
             ?.attributes["src"],
-        "ratingsPositiveTotal": null,
-        "ratingsNegativeTotal": null,
-        "ratingsTotal": tryParse(() => int.parse(
+        ratingsPositiveTotal: null,
+        ratingsNegativeTotal: null,
+        ratingsTotal: tryParse(() => int.parse(
             tempComment.querySelector('span[class*="voteTotal"]')!.text)),
-        "commentDate": _convertStringToDateTime(
+        commentDate: _convertStringToDateTime(
             tempComment.querySelector('div[class="date"]')?.text.trim()),
-        "replyComments": []
-      };
+        replyComments: [],
+      );
 
       if (iD == null || author == null || commentBody == null) {
-        parsedComment["scrapeFailMessage"] =
+        parsedComment.scrapeFailMessage =
             "Error: Failed to scrape critical variable(s):"
             "${iD == null ? " iD" : ""}"
             "${author == null ? " author" : ""}"
@@ -984,9 +986,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     /// Recursive function
     // TODO: Parallelize, but keep in mind that reply comments need to be able to be added to the prev top-level comment
-    Future<List<Map<String, dynamic>>> parseCommentList(
+    Future<List<UniversalComment>> parseCommentList(
         Element parent, String videoID, bool hidden) async {
-      List<Map<String, dynamic>> parsedComments = [];
+      List<UniversalComment> parsedComments = [];
       for (Element child in parent.children) {
         // normal / top-level comment
         if (child.className.startsWith("commentBlock")) {
@@ -998,7 +1000,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
           parsedComments.addAll(await parseCommentList(child, videoID, true));
         } else if (child.className.startsWith("nestedBlock")) {
           // reply comments
-          List<Map<String, dynamic>> tempReplies = [];
+          List<UniversalComment> tempReplies = [];
           try {
             for (Element subChild in child.children) {
               if (subChild.className == "clearfix") {
@@ -1029,12 +1031,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
             }
           } catch (e, stacktrace) {
             logWarning("Error parsing reply comments: $e\n$stacktrace");
-            parsedComments.last["replyComments"] = null;
-            parsedComments.last["scrapeFailMessage"] =
+            parsedComments.last.replyComments = null;
+            parsedComments.last.scrapeFailMessage =
                 "Failed to scrape: replyComments";
           }
           // Add replyComments to previous top-level comment
-          parsedComments.last["replyComments"] = tempReplies;
+          parsedComments.last.replyComments = tempReplies;
         }
         // Ignore all other element types
       }
@@ -1080,14 +1082,14 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     Document rawComments = parse(response.body);
 
-    List<Map<String, dynamic>> parsedComments = await parseCommentList(
+    List<UniversalComment> parsedComments = await parseCommentList(
         rawComments.querySelector("#cmtContent")!, videoID, false);
 
     return parsedComments;
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getVideoSuggestions(
+  Future<List<UniversalVideoPreview>> getVideoSuggestions(
       String videoID, String rawHtmlString, int page,
       [void Function(String body)? debugCallback]) async {
     // Pornhub doesn't allow loading more suggestions
@@ -1135,7 +1137,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> getAuthorPage(String authorID,
+  Future<UniversalAuthorPage> getAuthorPage(String authorID,
       [void Function(String body)? debugCallback]) async {
     // Assume every author is a channel at first
     String authorPageLink = "$_channelEndpoint$authorID";
@@ -1350,28 +1352,27 @@ class _PornhubIsolate extends BundledPluginIsolate {
       logWarning("Error parsing banner: $e\n$stacktrace");
     }
 
-    Map<String, dynamic> authorPage = {
-      "iD": authorID,
-      "name": authorName,
-      "avatar": thumbnail,
-      "banner": banner,
+    return UniversalAuthorPage(
+      iD: authorID,
+      name: authorName,
+      plugin: null,
+      avatar: thumbnail,
+      banner: banner,
       // Pornhub doesn't have aliases
-      "aliases": null,
-      "description": description,
-      "advancedDescription": advancedDescription,
-      "externalLinks": externalLinks,
-      "viewsTotal": viewsTotal,
-      "videosTotal": videosTotal,
-      "subscribers": subscribers,
-      "rank": rank,
-      "rawHtml": pageHtml.outerHtml,
-    };
-
-    return authorPage;
+      aliases: null,
+      description: description,
+      advancedDescription: advancedDescription,
+      externalLinks: externalLinks?.map((k, v) => MapEntry(k, Uri.parse(v))),
+      viewsTotal: viewsTotal,
+      videosTotal: videosTotal,
+      subscribers: subscribers,
+      rank: rank,
+      rawHtml: pageHtml,
+    );
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page,
+  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
       [void Function(String body)? debugCallback]) async {
     // First get the author page URI
     String authorPageLink = (await getAuthorUriFromID(authorID))!;

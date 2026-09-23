@@ -4,6 +4,9 @@ import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '/services/external_link_manager.dart';
+import '/utils/universal_formats.dart';
+
 typedef HttpResponse = ({
   int statusCode,
   Uint8List bodyBytes,
@@ -56,30 +59,7 @@ void _handleCall(Map<String, dynamic> message,
     final handler = handlers[functionName];
     if (handler == null) throw Exception("Unknown function: $functionName");
 
-    final result = await handler(args);
-
-    // jsonEncode can't handle int map keys -> stringify only the known int-keyed fields
-    if (result is Map && result.containsKey("m3u8Uris")) {
-      result["m3u8Uris"] = (result["m3u8Uris"] as Map)
-          .map((key, value) => MapEntry(key.toString(), value));
-    }
-    if (result is Map && result["chapters"] != null) {
-      result["chapters"] = (result["chapters"] as Map)
-          .map((key, value) => MapEntry(key.toString(), value));
-    }
-    // jsonEncode can't handle Records -> convert actors to plain maps
-    if (result is Map && result["actors"] != null) {
-      result["actors"] = (result["actors"] as List).map((actor) {
-        final record = actor as ({String name, String authorID, String avatar});
-        return {
-          "name": record.name,
-          "authorID": record.authorID,
-          "avatar": record.avatar
-        };
-      }).toList();
-    }
-
-    replyPort.send({"result": jsonEncode(result)});
+    replyPort.send({"result": jsonEncode(await handler(args))});
   } catch (e, st) {
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
   }
@@ -143,43 +123,43 @@ abstract class BundledPluginIsolate {
           {Map<String, String>? headers}) =>
       httpRequestMainIsolate(_fetchPort, url, headers: headers);
 
-  // Regular functions from PluginIsolate with serializable values
   Future<void> init();
 
   Future<bool> runFunctionalityTest() async => true;
 
-  Future<Map<String, dynamic>> parseExternalLink(String uriAsString);
+  Future<ExternalLinkParsed> parseExternalLink(String uriAsString);
 
-  Future<List<Map<String, dynamic>>> getHomePage(int page);
+  Future<List<UniversalVideoPreview>> getHomePage(int page);
 
   Future<Uint8List> downloadThumbnail(String uri, Map<String, String>? headers);
 
   Future<List<String>> getSearchSuggestions(String searchString);
 
-  Future<List<Map<String, dynamic>>> getSearchResults(
-      Map<String, dynamic> request, int page);
+  Future<List<UniversalVideoPreview>> getSearchResults(
+      UniversalSearchRequest request, int page);
 
   Future<String?> getVideoUriFromID(String videoID);
 
-  Future<Map<String, dynamic>> getVideoMetadata(
-      String videoID, Map<String, dynamic> uvp);
+  Future<UniversalVideoMetadata> getVideoMetadata(
+      String videoID, UniversalVideoPreview uvp);
 
   Future<List<Uint8List>?> getProgressThumbnails(
       String videoID, String rawHtml);
 
   Future<String?> getCommentUriFromID(String commentID, String videoID);
 
-  Future<List<Map<String, dynamic>>> getComments(
+  Future<List<UniversalComment>> getComments(
       String videoID, String rawHtml, int page);
 
-  Future<List<Map<String, dynamic>>> getVideoSuggestions(
+  Future<List<UniversalVideoPreview>> getVideoSuggestions(
       String videoID, String rawHtml, int page);
 
   Future<String?> getAuthorUriFromID(String authorID);
 
-  Future<Map<String, dynamic>> getAuthorPage(String authorID);
+  Future<UniversalAuthorPage> getAuthorPage(String authorID);
 
-  Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page);
+  Future<List<UniversalVideoPreview>> getAuthorVideos(
+      String authorID, int page);
 
   Map<String, Future<dynamic> Function(List args)> buildFunctionsMap() => {
         "init": (args) async => init(),
@@ -191,10 +171,14 @@ abstract class BundledPluginIsolate {
         "getSearchSuggestions": (args) =>
             getSearchSuggestions(args[0] as String),
         "getSearchResults": (args) => getSearchResults(
-            Map<String, dynamic>.from(args[0] as Map), args[1] as int),
+            UniversalSearchRequest.fromMap(
+                Map<String, dynamic>.from(args[0] as Map)),
+            args[1] as int),
         "getVideoUriFromID": (args) => getVideoUriFromID(args[0] as String),
         "getVideoMetadata": (args) => getVideoMetadata(
-            args[0] as String, Map<String, dynamic>.from(args[1] as Map)),
+            args[0] as String,
+            UniversalVideoPreview.fromMap(
+                Map<String, dynamic>.from(args[1] as Map), null)),
         "getProgressThumbnails": (args) =>
             getProgressThumbnails(args[0] as String, args[1] as String),
         "getCommentUriFromID": (args) =>

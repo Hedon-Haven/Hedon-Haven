@@ -8,11 +8,12 @@ import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:image/image.dart';
 
+import '/services/external_link_manager.dart';
 import '/utils/exceptions.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
-import '../services/external_link_manager.dart';
+import '/utils/universal_formats.dart';
 
 class XHamsterPlugin extends PluginInterface {
   @override
@@ -175,8 +176,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   };
 
   /// Parse a master m3u8 into media m3u8s
-  Future<Map<int, String>> _parseM3U8(String playListUri) async {
-    Map<int, String> playListMap = {};
+  Future<Map<int, Uri>> _parseM3U8(String playListUri) async {
+    Map<int, Uri> playListMap = {};
     // download and convert the m3u8 into a string
     var response = await httpRequest(playListUri);
     if (response.statusCode == 200) {
@@ -189,7 +190,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       if (playList != null) {
         for (var variant in playList.variants) {
           if (variant.format.height != null) {
-            playListMap[variant.format.height!] = variant.url.toString();
+            playListMap[variant.format.height!] =
+                Uri.parse(variant.url.toString());
           } else {
             logError("Error parsing m3u8: $playListUri");
           }
@@ -203,12 +205,12 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     return playListMap;
   }
 
-  Future<List<Map<String, dynamic>>> _parseVideoList(
+  Future<List<UniversalVideoPreview>> _parseVideoList(
       List<Map<String, dynamic>> resultsList,
       {String? authorNamePassed,
       String? authorIDPassed}) async {
     // convert the divs into UniversalSearchResults
-    List<Map<String, dynamic>> results = [];
+    List<UniversalVideoPreview> results = [];
     for (Map<String, dynamic> element in resultsList) {
       String? iD = element["pageURL"]?.split("-").last;
       String? title = element["title"];
@@ -216,27 +218,28 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       String authorName = authorNamePassed ??
           (element["landing"]?["name"] ?? "Unknown amateur author");
 
-      Map<String, dynamic> uniResult = {
+      UniversalVideoPreview uniResult = UniversalVideoPreview(
         // Don't enforce null safety here
         // treat error below in scrapeFailMessage instead
-        "iD": iD ?? "null",
-        "title": title ?? "null",
-        "thumbnail": element["imageURL"],
-        "previewVideo": element["trailerURL"],
-        "duration": element["duration"],
-        "viewsTotal": element["views"],
-        "ratingsPositivePercent": null,
-        "maxQuality": element["isUHD"] == true ? 2160 : null,
-        "virtualReality": false,
-        "authorName": authorName,
-        "authorID":
+        iD: iD ?? "null",
+        title: title ?? "null",
+        plugin: null,
+        thumbnail: element["imageURL"],
+        previewVideo: tryParse(() => Uri.parse(element["trailerURL"])),
+        duration: tryParse(() => Duration(seconds: element["duration"])),
+        viewsTotal: element["views"],
+        ratingsPositivePercent: null,
+        maxQuality: element["isUHD"] == true ? 2160 : null,
+        virtualReality: false,
+        authorName: authorName,
+        authorID:
             authorIDPassed ?? element["landing"]?["link"]?.split("/")?.last,
-        "verifiedAuthor": (element["landing"]?["type"] ?? "user") != "user" &&
+        verifiedAuthor: (element["landing"]?["type"] ?? "user") != "user" &&
             authorName != "Unknown amateur author",
-      };
+      );
 
       if (iD == null || title == null) {
-        uniResult["scrapeFailMessage"] =
+        uniResult.scrapeFailMessage =
             "Error: Failed to scrape critical variable(s):"
             "${iD == null ? " ID" : ""}"
             "${title == null ? " title" : ""}";
@@ -267,7 +270,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> parseExternalLink(String uriAsString) async {
+  Future<ExternalLinkParsed> parseExternalLink(String uriAsString) async {
     Uri uri = Uri.parse(uriAsString);
     logInfo("Parsing ${uri.path}");
     switch (uri.path) {
@@ -276,7 +279,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         if (uri.pathSegments.isNotEmpty) {
           pageCount = int.parse(uri.pathSegments.last);
         }
-        return {"type": ContentType.homePage, "pageCount": pageCount};
+        return ExternalLinkParsed(
+            type: ContentType.homePage, pageCount: pageCount);
 
       case var path when path.startsWith('/search/'):
         final args = uri.queryParameters;
@@ -299,43 +303,43 @@ class _XHamsterIsolate extends BundledPluginIsolate {
                 orElse: () => const MapEntry(3600, ""))
             .key;
 
-        return {
-          "type": ContentType.searchResultsPage,
-          "searchRequest": {
-            "searchString": Uri.decodeQueryComponent(uri.pathSegments.last),
-            "sortingType": sortingType,
-            "dateRange": dateRange,
-            "minQuality": 0,
+        return ExternalLinkParsed(
+          type: ContentType.searchResultsPage,
+          searchRequest: UniversalSearchRequest(
+            searchString: Uri.decodeQueryComponent(uri.pathSegments.last),
+            sortingType: sortingType,
+            dateRange: dateRange,
+            minQuality: 0,
             // maxQuality not supported
-            "minDuration": minDuration,
-            "maxDuration": maxDuration,
-            "virtualReality": args["format"] != null
-          },
-          "pageCount": int.parse(args["page"] ??
+            minDuration: minDuration,
+            maxDuration: maxDuration,
+            virtualReality: args["format"] != null,
+          ),
+          pageCount: int.parse(args["page"] ??
               XHamsterPlugin().initialSearchResultsPage.toString()),
-        };
+        );
 
       case var path when path.startsWith('/videos/'):
-        return {
-          "type": ContentType.videoPage,
-          "iD": uri.pathSegments.last.split("-").last,
-        };
+        return ExternalLinkParsed(
+          type: ContentType.videoPage,
+          iD: uri.pathSegments.last.split("-").last,
+        );
 
       case _
           when {"creators", "channels", "users"}
               .contains(uri.pathSegments.first):
-        return {
-          "type": ContentType.authorPage,
-          "iD": uri.pathSegments.last,
-        };
+        return ExternalLinkParsed(
+          type: ContentType.authorPage,
+          iD: uri.pathSegments.last,
+        );
 
       default:
-        return {"type": ContentType.unknown};
+        return const ExternalLinkParsed(type: ContentType.unknown);
     }
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getHomePage(int page,
+  Future<List<UniversalVideoPreview>> getHomePage(int page,
       [void Function(String body)? debugCallback]) async {
     logDebug("Requesting https://xhamster.com/$page");
     var response = await httpRequest("https://xhamster.com/$page");
@@ -398,20 +402,20 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     return parsedMap;
   }
 
-  Future<List<Map<String, dynamic>>> getSearchResults2(
-      Map request, int page) async {
+  Future<List<UniversalVideoPreview>> getSearchResults2(
+      UniversalSearchRequest request, int page) async {
     // @formatter:off
-    String urlString = "$_searchEndpoint${Uri.encodeComponent(request["searchString"])}"
+    String urlString = "$_searchEndpoint${Uri.encodeComponent(request.searchString)}"
         "?page=$page"
-        "&sort=${_sortingTypeMap[request["sortingType"]]!}"
-        "${request["dateRange"] != "All time" ? "&date=${_dateRangeMap[request["dateRange"]]}": ""}"
-        "${[720, 1080, 2160].contains(request["minQuality"]) ? "&quality=${request["minQuality"]}p" : ""}"
+        "&sort=${_sortingTypeMap[request.sortingType]!}"
+        "${request.dateRange != "All time" ? "&date=${_dateRangeMap[request.dateRange]}": ""}"
+        "${[720, 1080, 2160].contains(request.minQuality) ? "&quality=${request.minQuality}p" : ""}"
     // no max quality filter
-        "${[0, 3600].contains(request["minDuration"]) ? "" : "&min_duration=${_minDurationMap[request["minDuration"]]!}"}"
-        "${[0, 3600].contains(request["maxDuration"]) ? "" : "&max_duration=${_maxDurationMap[request["maxDuration"]]!}"}"
-        "${(request["minFramesPerSecond"] ?? 0) > 0 ? "&fps=${request["minFramesPerSecond"]}" : ""}"
+        "${[0, 3600].contains(request.minDuration) ? "" : "&min_duration=${_minDurationMap[request.minDuration]!}"}"
+        "${[0, 3600].contains(request.maxDuration) ? "" : "&max_duration=${_maxDurationMap[request.maxDuration]!}"}"
+        "${(request.minFramesPerSecond ?? 0) > 0 ? "&fps=${request.minFramesPerSecond}" : ""}"
     // no min FPS filter
-        "${request["virtualReality"] == true ? "&format=vr" : ""}"
+        "${request.virtualReality == true ? "&format=vr" : ""}"
     // Categories and keywords not yet implemented
         ;
     // @formatter:on
@@ -426,21 +430,21 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getSearchResults(
-      Map<String, dynamic> request, int page,
+  Future<List<UniversalVideoPreview>> getSearchResults(
+      UniversalSearchRequest request, int page,
       [void Function(String body)? debugCallback]) async {
     // @formatter:off
-    String urlString = "$_searchEndpoint${Uri.encodeComponent(request["searchString"])}"
+    String urlString = "$_searchEndpoint${Uri.encodeComponent(request.searchString)}"
         "?page=$page"
-        "&sort=${_sortingTypeMap[request["sortingType"]]!}"
-        "${request["dateRange"] != "All time" ? "&date=${_dateRangeMap[request["dateRange"]]}": ""}"
-        "${[720, 1080, 2160].contains(request["minQuality"]) ? "&quality=${request["minQuality"]}p" : ""}"
+        "&sort=${_sortingTypeMap[request.sortingType]!}"
+        "${request.dateRange != "All time" ? "&date=${_dateRangeMap[request.dateRange]}": ""}"
+        "${[720, 1080, 2160].contains(request.minQuality) ? "&quality=${request.minQuality}p" : ""}"
     // no max quality filter
-        "${[0, 3600].contains(request["minDuration"]) ? "" : "&min_duration=${_minDurationMap[request["minDuration"]]!}"}"
-        "${[0, 3600].contains(request["maxDuration"]) ? "" : "&max_duration=${_maxDurationMap[request["maxDuration"]]!}"}"
-        "${request["minFramesPerSecond"] > 0 ? "&fps=${request["minFramesPerSecond"]}" : ""}"
+        "${[0, 3600].contains(request.minDuration) ? "" : "&min_duration=${_minDurationMap[request.minDuration]!}"}"
+        "${[0, 3600].contains(request.maxDuration) ? "" : "&max_duration=${_maxDurationMap[request.maxDuration]!}"}"
+        "${request.minFramesPerSecond > 0 ? "&fps=${request.minFramesPerSecond}" : ""}"
     // no min FPS filter
-        "${request["virtualReality"] ? "&format=vr" : ""}"
+        "${request.virtualReality ? "&format=vr" : ""}"
     // Categories and keywords not yet implemented
         ;
     // @formatter:on
@@ -468,8 +472,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> getVideoMetadata(
-      String videoId, Map<String, dynamic> uvp,
+  Future<UniversalVideoMetadata> getVideoMetadata(
+      String videoId, UniversalVideoPreview uvp,
       [void Function(String body)? debugCallback]) async {
     logDebug("Requesting ${_videoEndpoint + videoId}");
     var response = await httpRequest("$_videoEndpoint$videoId");
@@ -497,7 +501,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     // Extract tags, categories and actors from jscriptMap
     List<String>? tags = [];
     List<String>? categories = [];
-    List<({String name, String authorID, String avatar})>? actors;
+    List<({String name, String authorID, String? avatar})>? actors;
     try {
       for (Map<String, dynamic> element
           in jscriptMap["videoTagsComponent"]!["tags"]!) {
@@ -547,7 +551,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     // TODO: Maybe check if the m3u8 is a master m3u8
     var videoM3u8 = rawHtml.querySelector(
         'link[rel="preload"][href*=".m3u8"][as="fetch"][crossorigin]');
-    Map<int, String> m3u8Map = await _parseM3U8(videoM3u8!.attributes["href"]!);
+    Map<int, Uri> m3u8Map = await _parseM3U8(videoM3u8!.attributes["href"]!);
 
     String? authorID;
     String? authorName;
@@ -577,28 +581,29 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         ? null
         : jscriptMap["videoModel"]?["description"];
 
-    return {
-      "iD": videoId,
-      "m3u8Uris": m3u8Map,
-      "title": jscriptMap["videoModel"]!["title"]!,
-      "universalVideoPreview": uvp,
-      "authorID": authorID!,
-      "authorName": authorName,
-      "authorSubscriberCount": authorSubscriberCount,
-      "authorAvatar": authorAvatar,
-      "actors": actors,
-      "description": description,
-      "viewsTotal": jscriptMap["videoTitle"]?["views"],
-      "tags": tags,
-      "categories": categories,
-      "uploadDate": tryParse(() => date!.millisecondsSinceEpoch ~/ 1000),
-      "ratingsPositiveTotal": ratingsPositive,
-      "ratingsNegativeTotal": ratingsNegative,
-      "ratingsTotal": ratingsTotal,
-      "virtualReality": jscriptMap["videoModel"]?["isVR"],
-      "chapters": null,
-      "rawHtml": rawHtml.outerHtml
-    };
+    return UniversalVideoMetadata(
+      iD: videoId,
+      m3u8Uris: m3u8Map,
+      title: jscriptMap["videoModel"]!["title"]!,
+      plugin: null,
+      universalVideoPreview: uvp,
+      authorID: authorID!,
+      authorName: authorName,
+      authorSubscriberCount: authorSubscriberCount,
+      authorAvatar: authorAvatar,
+      actors: actors,
+      description: description,
+      viewsTotal: jscriptMap["videoTitle"]?["views"],
+      tags: tags,
+      categories: categories,
+      uploadDate: date,
+      ratingsPositiveTotal: ratingsPositive,
+      ratingsNegativeTotal: ratingsNegative,
+      ratingsTotal: ratingsTotal,
+      virtualReality: jscriptMap["videoModel"]?["isVR"],
+      chapters: null,
+      rawHtml: rawHtml,
+    );
   }
 
   @override
@@ -730,11 +735,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getComments(
+  Future<List<UniversalComment>> getComments(
       String videoID, String rawHtmlString, int page,
       [void Function(String body)? debugCallback]) async {
     Document rawHtml = parse(rawHtmlString);
-    List<Map<String, dynamic>> commentList = [];
+    List<UniversalComment> commentList = [];
 
     // find the video's entity-id in the json inside the html
     String jscript = rawHtml.querySelector("#initials-script")!.text;
@@ -777,31 +782,32 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         commentBody = HtmlUnescape().convert(comment["text"]!).trim();
       }
 
-      Map<String, dynamic> uniComment = {
+      UniversalComment uniComment = UniversalComment(
         // Don't enforce null safety here
         // treat error below in scrapeFailMessage instead
-        "iD": iD ?? "null",
-        "videoID": videoID,
-        "author": author ?? "null",
+        iD: iD ?? "null",
+        videoID: videoID,
+        author: author ?? "null",
         // The comment body includes html chars like &amp and &nbsp, which need to be cleaned up
-        "commentBody": commentBody ?? "null",
-        "hidden": false,
-        "authorID": comment["userId"]?.toString(),
-        "countryID": comment["author"]?["personalInfo"]?["geo"]?["countryCode"],
-        "orientation": comment["author"]?["personalInfo"]?["orientation"]
+        commentBody: commentBody ?? "null",
+        hidden: false,
+        plugin: null,
+        authorID: comment["userId"]?.toString(),
+        countryID: comment["author"]?["personalInfo"]?["geo"]?["countryCode"],
+        orientation: comment["author"]?["personalInfo"]?["orientation"]
             ?["name"],
-        "profilePicture": comment["author"]?["thumbUrl"],
-        "ratingsPositiveTotal": null,
-        "ratingsNegativeTotal": null,
+        profilePicture: comment["author"]?["thumbUrl"],
+        ratingsPositiveTotal: null,
+        ratingsNegativeTotal: null,
         // null in the json means 0
-        "ratingsTotal": comment["likes"] ?? 0,
-        "commentDate": tryParse(() =>
+        ratingsTotal: comment["likes"] ?? 0,
+        commentDate: tryParse(() =>
             DateTime.fromMillisecondsSinceEpoch(comment["created"] * 1000)),
-        "replyComments": [],
-      };
+        replyComments: [],
+      );
 
       if (iD == null || author == null || commentBody == null) {
-        uniComment["scrapeFailMessage"] =
+        uniComment.scrapeFailMessage =
             "Error: Failed to scrape critical variable(s):"
             "${iD == null ? " iD" : ""}"
             "${author == null ? " author" : ""}"
@@ -823,7 +829,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getVideoSuggestions(
+  Future<List<UniversalVideoPreview>> getVideoSuggestions(
       String videoID, String rawHtmlString, int page,
       [void Function(String body)? debugCallback]) async {
     Document rawHtml = parse(rawHtmlString);
@@ -848,34 +854,33 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     }
     debugCallback?.call(response.body);
 
-    List<Map<String, dynamic>> relatedVideos = [];
+    List<UniversalVideoPreview> relatedVideos = [];
     for (var result in jsonDecode(response.body)["videoThumbProps"]) {
       String? title = tryParse(() => result["title"]);
 
-      Map<String, dynamic> relatedVideo = {
+      UniversalVideoPreview relatedVideo = UniversalVideoPreview(
         // Don't enforce null safety here
         // treat error below in scrapeFailMessage instead
-        "iD":
-            tryParse(() => result["pageURL"].trim().split("/").last) ?? "null",
-        "title": title ?? "null",
-        "thumbnail": result["thumbURL"],
-        "previewVideo": result["trailerURL"],
-        "duration": result["duration"],
-        "viewsTotal": result["views"],
-        "ratingsPositivePercent": null,
-        "maxQuality":
-            tryParse<int?>(() => result["isUHD"] != null ? 2160 : null),
-        "virtualReality": null,
-        "authorName": result["landing"]?["name"] ?? "Unknown amateur author",
-        "authorID": result["landing"]?["link"]
+        iD: tryParse(() => result["pageURL"].trim().split("/").last) ?? "null",
+        title: title ?? "null",
+        plugin: null,
+        thumbnail: result["thumbURL"],
+        previewVideo: tryParse(() => Uri.parse(result["trailerURL"])),
+        duration: tryParse(() => Duration(seconds: result["duration"])),
+        viewsTotal: result["views"],
+        ratingsPositivePercent: null,
+        maxQuality: tryParse<int?>(() => result["isUHD"] != null ? 2160 : null),
+        virtualReality: null,
+        authorName: result["landing"]?["name"] ?? "Unknown amateur author",
+        authorID: result["landing"]?["link"]
             ?.replaceAll("/videos", "")
             ?.split("/")
             ?.last,
-        "verifiedAuthor": result["landing"]?["name"] != null,
-      };
+        verifiedAuthor: result["landing"]?["name"] != null,
+      );
 
       if (title == null) {
-        relatedVideo["scrapeFailMessage"] =
+        relatedVideo.scrapeFailMessage =
             "Error: Failed to scrape critical variable: title";
       }
 
@@ -920,7 +925,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<Map<String, dynamic>> getAuthorPage(String authorID,
+  Future<UniversalAuthorPage> getAuthorPage(String authorID,
       [void Function(String body)? debugCallback]) async {
     // Assume every author is a channel at first
     String authorPageLink = "$_channelEndpoint$authorID";
@@ -971,7 +976,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           .replaceAll("<br/>", "\n");
     }
 
-    Map<String, String>? externalLinks;
+    Map<String, Uri>? externalLinks;
     Map<String, String>? advancedDescription;
     try {
       Map<dynamic, dynamic>? infoMap = jscriptMap["infoComponent"]
@@ -1015,17 +1020,17 @@ class _XHamsterIsolate extends BundledPluginIsolate {
               if (item.isNotEmpty) {
                 item.forEach((key, value) {
                   if (key == "fapHouseMirror") {
-                    externalLinks!["FapHouse"] = value["urlLanding"];
+                    externalLinks!["FapHouse"] = Uri.parse(value["urlLanding"]);
                   } else {
                     externalLinks![key[0].toUpperCase() + key.substring(1)] =
-                        value;
+                        Uri.parse(value);
                   }
                 });
               }
               break;
             case "website":
               externalLinks ??= {};
-              externalLinks!["website"] = item["URL"];
+              externalLinks!["website"] = Uri.parse(item["URL"]);
               break;
             case "geo":
               advancedDescription ??= {};
@@ -1058,8 +1063,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
               ?["showJoinButton"] !=
           null) {
         externalLinks ??= {};
-        externalLinks!["Official site"] = jscriptMap["layoutPage"]
-            ["channelLandingInfoProps"]["showJoinButton"]["url"];
+        externalLinks!["Official site"] = Uri.parse(jscriptMap["layoutPage"]
+            ["channelLandingInfoProps"]["showJoinButton"]["url"]);
       }
     } catch (e, stacktrace) {
       logWarning(
@@ -1141,28 +1146,27 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       }
     }
 
-    Map<String, dynamic> authorPage = {
-      "iD": authorID,
-      "name": name!,
-      "avatar": thumbnail,
+    return UniversalAuthorPage(
+      iD: authorID,
+      name: name!,
+      plugin: null,
+      avatar: thumbnail,
       // xhamster doesn't have banners
-      "banner": null,
-      "aliases": jscriptMap["infoComponent"]?["aliases"]?.split(", "),
-      "description": shortDescription,
-      "advancedDescription": advancedDescription,
-      "externalLinks": externalLinks,
-      "viewsTotal": viewsTotal,
-      "videosTotal": videosTotal,
-      "subscribers": subscribers,
-      "rank": rank,
-      "rawHtml": pageHtml.outerHtml
-    };
-
-    return authorPage;
+      banner: null,
+      aliases: jscriptMap["infoComponent"]?["aliases"]?.split(", "),
+      description: shortDescription,
+      advancedDescription: advancedDescription,
+      externalLinks: externalLinks,
+      viewsTotal: viewsTotal,
+      videosTotal: videosTotal,
+      subscribers: subscribers,
+      rank: rank,
+      rawHtml: pageHtml,
+    );
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getAuthorVideos(String authorID, int page,
+  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
       [void Function(String body)? debugCallback]) async {
     // First get the author page URI
     String authorPageLink = (await getAuthorUriFromID(authorID))!;
