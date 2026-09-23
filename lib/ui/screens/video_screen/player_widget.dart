@@ -181,7 +181,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     errorTimeout ??= Timer(const Duration(seconds: 10), () {
       if (!controller.value.isInitialized &&
           !controller.value.isBuffering &&
-          controller.value.position == Duration.zero) {
+          controller.value.position == Duration.zero && mounted) {
         logger.e("Video player initialization timed out");
         setState(() => videoPlayerException =
             Exception("Video player failed to initialize due to: "
