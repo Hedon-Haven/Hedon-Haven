@@ -9,6 +9,7 @@ import 'package:html_unescape/html_unescape.dart';
 import 'package:image/image.dart';
 
 import '/services/external_link_manager.dart';
+import '/utils/bundled_plugin.dart';
 import '/utils/exceptions.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
