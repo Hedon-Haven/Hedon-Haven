@@ -717,10 +717,6 @@ class UniversalComment {
     );
   }
 
-  void printAllAttributes() {
-    logger.d(toMap());
-  }
-
   /// Print values that are null, but the plugin didn't expect to be null
   /// Also returns a bool whether the data is valid
   // TODO: Set up automatic/user prompted reporting
