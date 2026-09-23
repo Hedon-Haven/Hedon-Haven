@@ -48,6 +48,17 @@ class ExternalLinkParsed {
     this.searchRequest,
     this.pageCount,
   });
+
+  Map<String, dynamic> toJson() => toMap();
+
+  Map<String, dynamic> toMap() {
+    return {
+      "type": type.toJson(),
+      "iD": iD,
+      "searchRequest": searchRequest?.toMap(),
+      "pageCount": pageCount,
+    };
+  }
 }
 
 Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
