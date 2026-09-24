@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:path/path.dart' as p;
 
+import '/utils/universal_formats.dart';
+
 late JavascriptRuntime _runtime;
 bool _initialized = false;
 
@@ -29,7 +31,7 @@ void initJSRuntimeIsolate(SendPort mainSendPort) async {
   }
 }
 
-void _setup(Map<String, dynamic> initMessage) {
+void _setup(Map<String, dynamic> initMessage) async {
   final rootToken = initMessage["rootToken"] as RootIsolateToken;
   final SendPort logPort = initMessage["logPort"] as SendPort;
   final SendPort fetchPort = initMessage["fetchPort"] as SendPort;
@@ -37,75 +39,103 @@ void _setup(Map<String, dynamic> initMessage) {
   final String cachePath = initMessage["cachePath"] as String;
   BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
 
+  // Start javascript runtime and load plugin code
   _runtime = getJavascriptRuntime(xhr: false);
   final jsCode = File("${initMessage["pluginPath"] as String}/bundle.js")
       .readAsStringSync();
   _runtime.evaluate(jsCode);
 
+  // Register "external" functions
+  _runtime.onMessage("consoleLog", (args) => _consoleLog(logPort, args));
   _runtime.onMessage(
-      "consoleLog",
-      (dynamic args) => logPort.send({
-            "level": args["level"],
-            "message": args["message"],
-          }));
-
-  _runtime.onMessage("httpRequest", (dynamic args) {
-    final responsePort = ReceivePort();
-    fetchPort.send({
-      "responsePort": responsePort.sendPort,
-      "url": args["url"],
-      "headers": args["headers"]
-    });
-    return responsePort.first.then((response) {
-      responsePort.close();
-      return jsonEncode(response as Map);
-    });
-  });
-
-  _runtime.onMessage("writeCacheFile", (dynamic message) {
-    final resolved = p.normalize(p.join(cachePath, message["filePath"]));
-    if (!resolved.startsWith(cachePath + p.separator)) {
-      logPort.send({
-        "level": "error",
-        "message": "Failed to write cache file due to invalid path: $resolved",
-      });
-      return jsonEncode("Error: Invalid path");
-    }
-    try {
-      final file = File(resolved);
-      file.createSync(recursive: true);
-      file.writeAsBytesSync(base64Decode(message["base64EncodedContents"]));
-    } catch (e, st) {
-      // Send error message back to main isolate
-      logPort.send({
-        "level": "error",
-        "message": "Failed to write cache file: $e\n$st",
-      });
-      return jsonEncode("Error: $e");
-    }
-    return jsonEncode(true);
-  });
-
-  _runtime.onMessage("readCacheFile", (dynamic message) {
-    final resolved = p.normalize(p.join(cachePath, message["filePath"]));
-    if (!resolved.startsWith(cachePath + p.separator)) {
-      return jsonEncode("Error: Invalid path");
-    }
-    try {
-      final file = File(resolved);
-      return jsonEncode(base64Encode(file.readAsBytesSync()));
-    } catch (e, st) {
-      // Send warning message back to main isolate
-      logPort.send({
-        "level": "warning",
-        "message": "Failed to read cache file: $e\n$st",
-      });
-      return jsonEncode("Error: $e");
-    }
-  });
+      "httpRequest", (args) => jsonEncode(_httpRequest(fetchPort, args)));
+  _runtime.onMessage("readCacheFile",
+      (msg) => jsonEncode(_readCacheFile(logPort, cachePath, msg)));
+  _runtime.onMessage("writeCacheFile",
+      (msg) => jsonEncode(_writeCacheFile(logPort, cachePath, msg)));
 
   _initialized = true;
   readyPort.send(true);
+}
+
+void _consoleLog(SendPort logPort, dynamic args) {
+  logPort.send({
+    "level": args["level"],
+    "message": args["message"],
+  });
+}
+
+Future<HttpResponse> _httpRequest(SendPort fetchPort, dynamic args) async {
+  final responsePort = ReceivePort();
+  fetchPort.send({
+    "responsePort": responsePort.sendPort,
+    "url": args["url"],
+    "headers": args["headers"]
+  });
+  final response = await responsePort.first as Map<String, dynamic>;
+  responsePort.close();
+  return HttpResponse.fromMap(response);
+}
+
+Map<String, dynamic> _readCacheFile(
+    SendPort logPort, String cachePath, dynamic message) {
+  final resolved = p.normalize(p.join(cachePath, message["filePath"]));
+  if (!resolved.startsWith(cachePath + p.separator)) {
+    logPort.send({
+      "level": "warning",
+      "message": "Failed to read cache file due to invalid path: $resolved",
+    });
+    return {
+      "status": "failure",
+      "message": "Invalid path: $resolved",
+    };
+  }
+  try {
+    final file = File(resolved);
+    return {"status": "success", "message": file.readAsBytesSync().toList()};
+  } catch (e, st) {
+    logPort.send({
+      "level": "error",
+      "message": "Failed to read cache file: $e\n$st",
+    });
+    return {
+      "status": "failure",
+      "message": "Unknown error: $e",
+    };
+  }
+}
+
+Map<String, dynamic> _writeCacheFile(
+    SendPort logPort, String cachePath, Map<String, dynamic> message) {
+  final resolved = p.normalize(p.join(cachePath, message["filePath"]));
+  if (!resolved.startsWith(cachePath + p.separator)) {
+    logPort.send({
+      "level": "warning",
+      "message": "Failed to write cache file due to invalid path: $resolved",
+    });
+    return {
+      "status": "failure",
+      "message": "Invalid path: $resolved",
+    };
+  }
+  try {
+    final file = File(resolved);
+    file.createSync(recursive: true);
+    file.writeAsBytesSync(message["fileContents"]);
+  } catch (e, st) {
+    logPort.send({
+      "level": "error",
+      "message": "Failed due to unknown error: $e\n$st",
+    });
+    return {
+      "status": "failure",
+      "message": "Unknown error: $e",
+    };
+  }
+  return {
+    "status": "success",
+    "message": "Contents written to $resolved",
+  };
 }
 
 void _callFunction(Map<String, dynamic> message) async {
@@ -120,7 +150,7 @@ void _callFunction(Map<String, dynamic> message) async {
     _runtime.executePendingJob();
 
     JsEvalResult finalResult = await _runtime.handlePromise(jsResult);
-    // Make sure to await dart futures before sending back to main isolate
+    // Make sure to await futures before sending back to main isolate
     var raw = finalResult.rawResult;
     if (raw is Future) {
       raw = await raw;
@@ -129,7 +159,7 @@ void _callFunction(Map<String, dynamic> message) async {
     if (finalResult.isError) {
       throw Exception("JS error: ${finalResult.rawResult}");
     }
-    replyPort.send({"result": jsonEncode(raw)});
+    replyPort.send({"result": raw});
   } catch (e, st) {
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
   }
