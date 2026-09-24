@@ -11,56 +11,6 @@ import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/universal_formats.dart';
 
-enum ContentType {
-  homePage,
-  searchResultsPage,
-  videoPage,
-  authorPage,
-  unknown;
-
-  static ContentType fromString(String value) {
-    switch (value) {
-      case 'homePage':
-        return homePage;
-      case 'searchResultsPage':
-        return searchResultsPage;
-      case 'videoPage':
-        return videoPage;
-      case 'authorPage':
-        return authorPage;
-      default:
-        return unknown;
-    }
-  }
-
-  String toJson() => name;
-}
-
-class ExternalLinkParsed {
-  final ContentType type;
-  final String? iD;
-  final UniversalSearchRequest? searchRequest;
-  final int? pageCount;
-
-  const ExternalLinkParsed({
-    required this.type,
-    this.iD,
-    this.searchRequest,
-    this.pageCount,
-  });
-
-  Map<String, dynamic> toJson() => toMap();
-
-  Map<String, dynamic> toMap() {
-    return {
-      "type": type.toJson(),
-      "iD": iD,
-      "searchRequest": searchRequest?.toMap(),
-      "pageCount": pageCount,
-    };
-  }
-}
-
 Future<void> handleExternalLink(Uri passedUri, BuildContext context) async {
   // Create map of all plugins and the links they can handle
   Map<PluginInterface, List<String>> pluginLinks = {};

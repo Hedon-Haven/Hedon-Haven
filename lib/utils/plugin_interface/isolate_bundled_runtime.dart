@@ -57,13 +57,6 @@ void _handleCall(Map<String, dynamic> message,
   }
 }
 
-typedef HttpResponse = ({
-  int statusCode,
-  Uint8List bodyBytes,
-  String body,
-  Map<String, String> headers,
-});
-
 /// Performs an http request via the main isolate's client. `body` is decoded
 /// as text using the response's own Content-Type charset (same logic
 /// package:http's Response.body uses); `bodyBytes` is the raw response.

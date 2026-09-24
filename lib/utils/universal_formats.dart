@@ -8,6 +8,90 @@ import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
 
+class HttpResponse {
+  final int statusCode;
+  final Uint8List bodyBytes;
+  final String body;
+  final Map<String, String> headers;
+
+  const HttpResponse({
+    required this.statusCode,
+    required this.bodyBytes,
+    required this.body,
+    required this.headers,
+  });
+
+  Map<String, dynamic> toJson() => toMap();
+
+  Map<String, dynamic> toMap() {
+    return {
+      "statusCode": statusCode,
+      "bodyBytes": bodyBytes.toList(),
+      "body": body,
+      "headers": headers,
+    };
+  }
+
+  static HttpResponse fromMap(Map<String, dynamic> map) {
+    return HttpResponse(
+      statusCode: map["statusCode"],
+      bodyBytes: Uint8List.fromList(map["bodyBytes"]),
+      body: map["body"],
+      headers: (map["headers"] as Map).cast<String, String>(),
+    );
+  }
+}
+
+enum ContentType {
+  homePage,
+  searchResultsPage,
+  videoPage,
+  authorPage,
+  unknown;
+
+  static ContentType fromString(String value) {
+    switch (value) {
+      case 'homePage':
+        return homePage;
+      case 'searchResultsPage':
+        return searchResultsPage;
+      case 'videoPage':
+        return videoPage;
+      case 'authorPage':
+        return authorPage;
+      default:
+        return unknown;
+    }
+  }
+
+  String toJson() => name;
+}
+
+class ExternalLinkParsed {
+  final ContentType type;
+  final String? iD;
+  final UniversalSearchRequest? searchRequest;
+  final int? pageCount;
+
+  const ExternalLinkParsed({
+    required this.type,
+    this.iD,
+    this.searchRequest,
+    this.pageCount,
+  });
+
+  Map<String, dynamic> toJson() => toMap();
+
+  Map<String, dynamic> toMap() {
+    return {
+      "type": type.toJson(),
+      "iD": iD,
+      "searchRequest": searchRequest?.toMap(),
+      "pageCount": pageCount,
+    };
+  }
+}
+
 class UniversalSearchRequest {
   final String searchString;
   final String sortingType;
