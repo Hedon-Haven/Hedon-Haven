@@ -64,10 +64,20 @@ abstract class BundledPluginIsolate {
   void _log(String level, String message) =>
       _logPort.send({"level": level, "message": message});
 
-  /// Perform an http request via the main isolate's client.
+  /// Perform an http request via the main isolate's http client.
   Future<HttpResponse> httpRequest(String url,
-          {Map<String, String>? headers}) =>
-      httpRequestMainIsolate(_fetchPort, url, headers: headers);
+      {Map<String, String>? headers}) async {
+    final responsePort = ReceivePort();
+    _fetchPort.send({
+      "responsePort": responsePort.sendPort,
+      "url": url,
+      "headers": headers,
+    });
+    final response = await responsePort.first as Map<String, dynamic>;
+    responsePort.close();
+
+    return HttpResponse.fromMap(response);
+  }
 
   Future<void> init();
 

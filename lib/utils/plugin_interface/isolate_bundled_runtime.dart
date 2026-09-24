@@ -56,30 +56,3 @@ void _handleCall(Map<String, dynamic> message,
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
   }
 }
-
-/// Performs an http request via the main isolate's client. `body` is decoded
-/// as text using the response's own Content-Type charset (same logic
-/// package:http's Response.body uses); `bodyBytes` is the raw response.
-Future<HttpResponse> httpRequestMainIsolate(SendPort fetchPort, String url,
-    {Map<String, String>? headers}) async {
-  final responsePort = ReceivePort();
-  fetchPort.send({
-    "responsePort": responsePort.sendPort,
-    "url": url,
-    "headers": headers,
-  });
-  final response = await responsePort.first as Map;
-  responsePort.close();
-
-  final statusCode = response["statusCode"] as int;
-  final bytes = base64Decode(response["body"] as String);
-  final respHeaders = Map<String, String>.from(response["headers"] as Map);
-  final decoded = http.Response.bytes(bytes, statusCode, headers: respHeaders);
-
-  return (
-    statusCode: statusCode,
-    bodyBytes: bytes,
-    body: decoded.body,
-    headers: respHeaders,
-  );
-}
