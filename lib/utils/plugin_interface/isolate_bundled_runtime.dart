@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 
 import '/utils/bundled_plugin.dart';
 
