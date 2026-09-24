@@ -37,11 +37,11 @@ void runBundledPluginIsolate(
       return;
     }
 
-    _handleCall(message, handlers!);
+    _callFunction(message, handlers!);
   }
 }
 
-void _handleCall(Map<String, dynamic> message,
+void _callFunction(Map<String, dynamic> message,
     Map<String, Future<dynamic> Function(List args)> handlers) async {
   final SendPort replyPort = message["replyPort"] as SendPort;
   try {
