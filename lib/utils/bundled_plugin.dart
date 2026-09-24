@@ -2,15 +2,12 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:hedon_haven/utils/plugin_interface/isolate_bundled_runtime.dart';
-import 'package:hedon_haven/utils/universal_formats.dart';
-
 import '/bundled_plugins/pornhub.dart';
 import '/bundled_plugins/tester.dart';
 import '/bundled_plugins/xhamster.dart';
-import '/services/external_link_manager.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
+import '/utils/universal_formats.dart';
 
 Future<PluginInterface?> getBundledPluginByName(String codename) async {
   switch (codename) {
