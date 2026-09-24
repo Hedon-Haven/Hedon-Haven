@@ -49,7 +49,7 @@ void _callFunction(Map<String, dynamic> message,
     final handler = handlers[functionName];
     if (handler == null) throw Exception("Unknown function: $functionName");
 
-    replyPort.send({"result": jsonEncode(await handler(args))});
+    replyPort.send({"result": await handler(args)});
   } catch (e, st) {
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
   }
