@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -7,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:html/dom.dart';
 import 'package:yaml/yaml.dart';
 
-import '/services/external_link_manager.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/isolate_js_runtime.dart';
 import '/utils/universal_formats.dart';
@@ -156,7 +154,7 @@ class PluginInterface {
       case "fatal":
         logger.f(message);
       default:
-        logger.i("no log level specified: $message");
+        logger.w("no log level specified: $message");
     }
   }
 
@@ -168,14 +166,15 @@ class PluginInterface {
         Uri.parse(args["url"]),
         headers: (args["headers"] as Map?)?.cast<String, String>(),
       );
-      responseSendPort.send({
-        "statusCode": response.statusCode,
-        "body": base64Encode(response.bodyBytes),
-        "headers": response.headers,
-      });
+      responseSendPort.send(HttpResponse(
+        statusCode: response.statusCode,
+        bodyBytes: response.bodyBytes,
+        body: response.body,
+        headers: response.headers,
+      ));
     } catch (e) {
-      responseSendPort
-          .send({"statusCode": 0, "body": "", "headers": <String, String>{}});
+      responseSendPort.send(HttpResponse(
+          statusCode: 0, body: "", bodyBytes: Uint8List(0), headers: {}));
     }
   }
 
@@ -187,14 +186,14 @@ class PluginInterface {
       "function": functionName,
       "args": args,
     });
-    final response = await replyPort.first as Map;
+    final response = await replyPort.first as Map<String, dynamic>;
     replyPort.close();
     if (response.containsKey("error")) {
       logger.e("$codeName: ${response["error"].toString()}"
           "\n\n${response["stackTrace"].toString()}");
       throw Exception(response["error"]);
     }
-    return jsonDecode(response["result"] as String);
+    return response["result"];
   }
 
   /// Isolate entry point to use. By default uses the JS runtime isolate
@@ -293,29 +292,18 @@ class PluginInterface {
 
   /// Parses a raw external link and returns an ExternalLinkParsed
   Future<ExternalLinkParsed> parseExternalLink(Uri uri) async {
-    final result =
-        await _callFunction("parseExternalLink", [uri.toString()]) as Map;
-
-    UniversalSearchRequest? searchRequest = result["searchRequest"] != null
-        ? UniversalSearchRequest.fromMap(result["searchRequest"])
-        : null;
-
-    return ExternalLinkParsed(
-        type: ContentType.fromString(result["type"]),
-        iD: result["iD"],
-        searchRequest: searchRequest,
-        pageCount: result["pageCount"] as int?);
+    return ExternalLinkParsed.fromMap(
+        await _callFunction("parseExternalLink", [uri.toString()]));
   }
 
   /// Return the homepage
   Future<List<UniversalVideoPreview>> getHomePage(int page,
       [void Function(String body)? debugCallback]) async {
-    final result = await _callFunction("getHomePage", [page]) as List;
+    final results = await _callFunction("getHomePage", [page]) as List;
     List<UniversalVideoPreview> list = [];
-    for (final video in result) {
+    for (final uvp in results) {
       try {
-        list.add(UniversalVideoPreview.fromMap(
-            Map<String, dynamic>.from(video), this));
+        list.add(UniversalVideoPreview.fromMap(uvp, this));
       } catch (e, st) {
         logger.e("$codeName: Error mapping video: $e$st");
         continue;
@@ -343,16 +331,12 @@ class PluginInterface {
   Future<List<UniversalVideoPreview>> getSearchResults(
       UniversalSearchRequest sr, int page,
       [void Function(String body)? debugCallback]) async {
-    final result = await _callFunction("getSearchResults", [sr.toMap(), page]);
+    final results =
+        await _callFunction("getSearchResults", [sr.toMap(), page]) as List;
 
-    // Convert to List of Maps
-    List<Map<String, dynamic>> castedList =
-        (result as List).map((e) => Map<String, dynamic>.from(e)).toList();
-
-    // Convert to List of UniversalVideoPreviews
-    List<UniversalVideoPreview> resultsList =
-        castedList.map((e) => UniversalVideoPreview.fromMap(e, this)).toList();
-    return resultsList;
+    return results
+        .map((uvp) => UniversalVideoPreview.fromMap(uvp, this))
+        .toList();
   }
 
   Future<Uri?> getVideoUriFromID(String videoID) async {
@@ -366,18 +350,19 @@ class PluginInterface {
       [void Function(String body)? debugCallback]) async {
     final result =
         await _callFunction("getVideoMetadata", [videoID, uvp.toMap()]);
-    final uvmMap = Map<String, dynamic>.from(result);
-    return UniversalVideoMetadata.fromMap(uvmMap, this);
+    return UniversalVideoMetadata.fromMap(result, this);
   }
 
   /// Get all progressThumbnails for a video and return them as a List
   Future<List<Uint8List>?> getProgressThumbnails(
       String videoID, Document rawHtml) async {
     final result = await _callFunction(
-        "getProgressThumbnails", [videoID, rawHtml.outerHtml]);
+        "getProgressThumbnails", [videoID, rawHtml.outerHtml]) as List?;
+
     if (result == null) return null;
-    return (result as List)
-        .map((e) => Uint8List.fromList((e as List).cast<int>()))
+
+    return result
+        .map((pic) => Uint8List.fromList((pic as List).cast<int>()))
         .toList();
   }
 
@@ -396,16 +381,10 @@ class PluginInterface {
       String videoID, Document rawHtml, int page,
       [void Function(String body)? debugCallback]) async {
     final result =
-        await _callFunction("getComments", [videoID, rawHtml.outerHtml, page]);
+        await _callFunction("getComments", [videoID, rawHtml.outerHtml, page])
+            as List;
 
-    // Convert to List of Maps
-    List<Map<String, dynamic>> castedList =
-        (result as List).map((e) => Map<String, dynamic>.from(e)).toList();
-
-    // Convert to List of UniversalComments
-    List<UniversalComment> resultsList =
-        castedList.map((e) => UniversalComment.fromMap(e, this)).toList();
-    return resultsList;
+    return result.map((uc) => UniversalComment.fromMap(uc, this)).toList();
   }
 
   /// Get video suggestions for a video, per page
@@ -413,16 +392,9 @@ class PluginInterface {
       String videoID, Document rawHtml, int page,
       [void Function(String body)? debugCallback]) async {
     final result = await _callFunction(
-        "getVideoSuggestions", [videoID, rawHtml.outerHtml, page]);
+        "getVideoSuggestions", [videoID, rawHtml.outerHtml, page]) as List;
 
-    // Convert to List of Maps
-    List<Map<String, dynamic>> castedList =
-        (result as List).map((e) => Map<String, dynamic>.from(e)).toList();
-
-    // Convert to List of UniversalVideoPreviews
-    List<UniversalVideoPreview> resultsList =
-        castedList.map((e) => UniversalVideoPreview.fromMap(e, this)).toList();
-    return resultsList;
+    return result.map((e) => UniversalVideoPreview.fromMap(e, this)).toList();
   }
 
   Future<Uri?> getAuthorUriFromID(String authorID) async {
@@ -434,22 +406,16 @@ class PluginInterface {
   Future<UniversalAuthorPage> getAuthorPage(String authorID,
       [void Function(String body)? debugCallback]) async {
     final result = await _callFunction("getAuthorPage", [authorID]);
-    final uapMap = Map<String, dynamic>.from(result);
-    return UniversalAuthorPage.fromMap(uapMap, this);
+
+    return UniversalAuthorPage.fromMap(result, this);
   }
 
   /// Get video suggestions for a video, per page
   Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
       [void Function(String body)? debugCallback]) async {
-    final result = await _callFunction("getAuthorVideos", [authorID, page]);
+    final result =
+        await _callFunction("getAuthorVideos", [authorID, page]) as List;
 
-    // Convert to List of Maps
-    List<Map<String, dynamic>> castedList =
-        (result as List).map((e) => Map<String, dynamic>.from(e)).toList();
-
-    // Convert to List of UniversalVideoPreviews
-    List<UniversalVideoPreview> resultsList =
-        castedList.map((e) => UniversalVideoPreview.fromMap(e, this)).toList();
-    return resultsList;
+    return result.map((e) => UniversalVideoPreview.fromMap(e, this)).toList();
   }
 }
