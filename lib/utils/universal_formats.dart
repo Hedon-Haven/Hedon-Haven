@@ -84,11 +84,20 @@ class ExternalLinkParsed {
 
   Map<String, dynamic> toMap() {
     return {
-      "type": type.toJson(),
+      "type": type,
       "iD": iD,
-      "searchRequest": searchRequest?.toMap(),
+      "searchRequest": searchRequest,
       "pageCount": pageCount,
     };
+  }
+
+  static ExternalLinkParsed fromMap(Map<String, dynamic> map) {
+    return ExternalLinkParsed(
+        type: ContentType.fromString(map["type"]),
+        iD: map["iD"],
+        searchRequest: tryParse(() =>
+            UniversalSearchRequest.fromMap(map["universalSearchRequest"])),
+        pageCount: map["pageCount"]);
   }
 }
 
