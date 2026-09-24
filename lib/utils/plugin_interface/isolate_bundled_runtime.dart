@@ -49,8 +49,28 @@ void _callFunction(Map<String, dynamic> message,
     final handler = handlers[functionName];
     if (handler == null) throw Exception("Unknown function: $functionName");
 
-    replyPort.send({"result": await handler(args)});
+    replyPort.send({"result": _serialize(await handler(args))});
   } catch (e, st) {
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
+  }
+}
+
+/// Recursively converts bundled plugins' Universal* objects (and lists of
+/// them) to Maps, so results cross the isolate boundary the same way the JS
+/// runtime isolate's JSON-based results do.
+dynamic _serialize(dynamic value) {
+  if (value is Uint8List) return value;
+  if (value is List) return value.map(_serialize).toList();
+  if (value == null ||
+      value is num ||
+      value is String ||
+      value is bool ||
+      value is Map) {
+    return value;
+  }
+  try {
+    return value.toMap();
+  } catch (_) {
+    return value;
   }
 }
