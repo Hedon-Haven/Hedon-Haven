@@ -343,6 +343,13 @@ class PluginManager {
       logger.e("Invalid plugin codeName: $codeName");
       throw Exception("Invalid plugin codeName: $codeName");
     }
+    if (codeName.startsWith("com.hedon_haven.")) {
+      await deleteDirectory(Directory(tempPath));
+      logger.e("Plugin codeName '$codeName' uses the com.hedon_haven namespace"
+          " reserved for bundled (aka built-in) plugins only");
+      throw Exception("Plugin codeName '$codeName' uses the com.hedon_haven "
+          "namespace reserved for bundled (aka built-in) plugins only");
+    }
 
     return pluginConfigMap;
   }
