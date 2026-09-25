@@ -445,7 +445,8 @@ class UniversalVideoMetadata {
             actors: [
               (name: "mock", authorID: "none", avatar: "mockAvatar"),
               (name: "mock", authorID: "none", avatar: "mockAvatar")
-            ]);
+            ],
+            rawHtml: Document());
 
   UniversalVideoMetadata({
     required this.iD,
@@ -469,10 +470,9 @@ class UniversalVideoMetadata {
     this.ratingsTotal,
     bool? virtualReality,
     this.chapters,
-    Document? rawHtml,
+    required this.rawHtml,
     this.scrapeFailMessage,
-  })  : virtualReality = virtualReality ?? false,
-        rawHtml = rawHtml ?? Document();
+  }) : virtualReality = virtualReality ?? false;
 
   Map<String, dynamic> toJson() => toMap();
 
