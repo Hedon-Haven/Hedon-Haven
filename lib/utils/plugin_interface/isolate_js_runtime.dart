@@ -47,12 +47,12 @@ void _setup(Map<String, dynamic> initMessage) async {
 
   // Register "external" functions
   _runtime.onMessage("consoleLog", (args) => _consoleLog(logPort, args));
-  _runtime.onMessage(
-      "httpRequest", (args) => jsonEncode(_httpRequest(fetchPort, args)));
+  _runtime.onMessage("httpRequest",
+      (args) async => jsonEncode(await _httpRequest(fetchPort, args)));
   _runtime.onMessage("readCacheFile",
-      (msg) => jsonEncode(_readCacheFile(logPort, cachePath, msg)));
+      (msg) async => jsonEncode(_readCacheFile(logPort, cachePath, msg)));
   _runtime.onMessage("writeCacheFile",
-      (msg) => jsonEncode(_writeCacheFile(logPort, cachePath, msg)));
+      (msg) async => jsonEncode(_writeCacheFile(logPort, cachePath, msg)));
 
   _initialized = true;
   readyPort.send(true);
