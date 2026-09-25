@@ -70,7 +70,7 @@ dynamic _serialize(dynamic value) {
   }
   try {
     return value.toMap();
-  } catch (_) {
+  } on NoSuchMethodError {
     return value;
   }
 }
