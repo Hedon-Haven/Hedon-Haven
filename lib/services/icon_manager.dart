@@ -35,6 +35,10 @@ Future<void> downloadPluginIcons({bool force = false}) async {
     await cacheDir.create();
   }
   for (PluginInterface plugin in await PluginManager.getAllPlugins()) {
+    if (plugin.iconUrl.scheme != "https") {
+      logger.w("${plugin.codeName}'s iconUrl (${plugin.iconUrl}) is not "
+          "using https. Fetching anyway!");
+    }
     try {
       http.Response response = await client.get(plugin.iconUrl);
       if (response.statusCode == 200) {
@@ -64,6 +68,10 @@ Future<void> forceDownloadIconForPlugin(PluginInterface plugin) async {
     await cacheDir.create();
   }
 
+  if (plugin.iconUrl.scheme != "https") {
+    logger.w("${plugin.codeName}'s iconUrl (${plugin.iconUrl}) is not "
+        "using https. Fetching anyway!");
+  }
   try {
     http.Response response = await client.get(plugin.iconUrl);
     if (response.statusCode == 200) {
