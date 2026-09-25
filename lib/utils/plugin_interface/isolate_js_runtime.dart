@@ -121,7 +121,7 @@ Map<String, dynamic> _writeCacheFile(
   try {
     final file = File(resolved);
     file.createSync(recursive: true);
-    file.writeAsBytesSync(message["fileContents"]);
+    file.writeAsBytesSync(List<int>.from(message["contentAsBytes"]));
   } catch (e, st) {
     logPort.send({
       "level": "error",
