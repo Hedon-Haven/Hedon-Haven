@@ -162,8 +162,20 @@ void _callFunction(Map<String, dynamic> message) async {
       throw Exception("JavaScript unhandled error: $rawResult");
     }
 
-    replyPort.send({"result": rawResult});
+    replyPort.send({"result": _normalizeJsResult(rawResult)});
   } catch (e, st) {
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
   }
+}
+
+// Converts Maps to Map<String, dynamic> instead of Map<dynamic, dynamic>
+dynamic _normalizeJsResult(dynamic value) {
+  if (value is Map) {
+    return value.map((k, v) =>
+        MapEntry<String, dynamic>(k.toString(), _normalizeJsResult(v)));
+  }
+  if (value is List) {
+    return value.map(_normalizeJsResult).toList();
+  }
+  return value;
 }
