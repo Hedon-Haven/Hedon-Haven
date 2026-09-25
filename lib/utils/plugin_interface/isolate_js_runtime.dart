@@ -150,16 +150,19 @@ void _callFunction(Map<String, dynamic> message) async {
     _runtime.executePendingJob();
 
     JsEvalResult finalResult = await _runtime.handlePromise(jsResult);
+    dynamic rawResult = finalResult.rawResult;
+
     // Make sure to await futures before sending back to main isolate
-    var raw = finalResult.rawResult;
-    if (raw is Future) {
-      raw = await raw;
+    if (rawResult is Future) {
+      rawResult = await rawResult;
     }
 
+    // Catch js-side un-handled errors
     if (finalResult.isError) {
-      throw Exception("JS error: ${finalResult.rawResult}");
+      throw Exception("JavaScript unhandled error: $rawResult");
     }
-    replyPort.send({"result": raw});
+
+    replyPort.send({"result": rawResult});
   } catch (e, st) {
     replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
   }
