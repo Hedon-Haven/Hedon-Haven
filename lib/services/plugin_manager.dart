@@ -450,6 +450,11 @@ class PluginManager {
       logger.i("${plugin.codeName} has no update URL, stopping check.");
       return null;
     }
+    if (plugin.updateUrl!.scheme != "https") {
+      logger.e("${plugin.codeName}'s updateUrl (${plugin.updateUrl}) is not "
+          "using https. Stopping check!");
+      return null;
+    }
     final response = await client.get(plugin.updateUrl!);
     if (response.statusCode != 200) {
       logger.e("Failed to get update.yaml from ${plugin.updateUrl}");
