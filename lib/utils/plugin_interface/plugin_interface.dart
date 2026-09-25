@@ -171,10 +171,13 @@ class PluginInterface {
         bodyBytes: response.bodyBytes,
         body: response.body,
         headers: response.headers,
-      ));
+      ).toMap());
     } catch (e) {
       responseSendPort.send(HttpResponse(
-          statusCode: 0, body: "", bodyBytes: Uint8List(0), headers: {}));
+          statusCode: 0,
+          body: "",
+          bodyBytes: Uint8List(0),
+          headers: {}).toMap());
     }
   }
 
