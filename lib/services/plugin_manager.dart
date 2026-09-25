@@ -133,6 +133,7 @@ class PluginManager {
           }
 
           if (!_allPlugins.add(tempPlugin)) {
+            // FIXME: This silently drops the plugin with no user-facing error
             logger.w(
                 "3rd party plugin '${tempPlugin.codeName}' conflicts with an "
                 "existing plugin codeName — not adding!");
