@@ -95,7 +95,7 @@ Map<String, dynamic> _readCacheFile(
     return {"status": "success", "message": file.readAsBytesSync().toList()};
   } catch (e, st) {
     logPort.send({
-      "level": "error",
+      "level": "warning",
       "message": "Failed to read cache file: $e\n$st",
     });
     return {
