@@ -117,7 +117,7 @@ class PluginInterface {
       contactEmail = config["metadata"]["contactEmail"];
       issueTrackerUrl = config["metadata"]["issueTrackerUrl"];
       description = config["metadata"]["description"];
-      updateUrl = Uri.parse(config["metadata"]["updateUrl"]);
+      updateUrl = tryParse(() => Uri.parse(config["metadata"]["updateUrl"]));
       iconUrl = Uri.parse(config["providerData"]["iconUrl"]);
       serviceUrl = config["providerData"]["serviceUrl"];
       handleUrls = (config["providerData"]["handleUrls"] as YamlList)
