@@ -191,7 +191,15 @@ class PluginInterface {
       "function": functionName,
       "args": args,
     });
-    final response = await replyPort.first as Map<String, dynamic>;
+    final Map<String, dynamic> response;
+    try {
+      response = await replyPort.first.timeout(const Duration(seconds: 30))
+          as Map<String, dynamic>;
+    } on TimeoutException {
+      replyPort.close();
+      logger.e("$codeName: $functionName($args) timed out after 30s");
+      throw PluginTimeoutException("$functionName($args) timed out after 30s");
+    }
     replyPort.close();
     if (response.containsKey("error")) {
       logger.e("$codeName: ${response["error"].toString()}"

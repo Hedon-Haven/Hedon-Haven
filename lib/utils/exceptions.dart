@@ -79,3 +79,11 @@ class VirtualRealityNotSupportedException extends CustomException {
   @override
   String get title => "VR not supported";
 }
+
+class PluginTimeoutException extends CustomException {
+  PluginTimeoutException(
+      [super.message = "Plugin timed out performing function"]);
+
+  @override
+  String get title => "Plugin timed out";
+}
