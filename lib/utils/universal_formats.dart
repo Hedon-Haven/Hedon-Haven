@@ -42,6 +42,44 @@ class HttpResponse {
   }
 }
 
+class NetworkTrace {
+  final String requestUrl;
+  final Map<String, String>? requestHeaders;
+  final int statusCode;
+  final Map<String, String> replyHeaders;
+  final Uint8List bodyBytes;
+
+  NetworkTrace({
+    required this.requestUrl,
+    this.requestHeaders,
+    required this.statusCode,
+    required this.replyHeaders,
+    required this.bodyBytes,
+  });
+
+  Map<String, dynamic> toJson() => toMap();
+
+  Map<String, dynamic> toMap() {
+    return {
+      "requestUrl": requestUrl,
+      "requestHeaders": requestHeaders,
+      "statusCode": statusCode,
+      "replyHeaders": replyHeaders,
+      "bodyBytes": bodyBytes.toList(),
+    };
+  }
+
+  static NetworkTrace fromMap(Map<String, dynamic> map) {
+    return NetworkTrace(
+      requestUrl: map["requestUrl"],
+      requestHeaders: (map["requestHeaders"] as Map?)?.cast<String, String>(),
+      statusCode: map["statusCode"],
+      replyHeaders: (map["replyHeaders"] as Map).cast<String, String>(),
+      bodyBytes: Uint8List.fromList(map["bodyBytes"]),
+    );
+  }
+}
+
 enum ContentType {
   homePage,
   searchResultsPage,
