@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:html/dom.dart';
@@ -81,27 +80,17 @@ class NetworkTrace {
   }
 }
 
-/// A [List] that also carries the [NetworkTrace]s of any requests made to
-/// produce it (empty if none, e.g. a third-party plugin that doesn't report
-/// them, or a paginated call that didn't need a fresh request). Implements
-/// [List] so existing call sites keep working unchanged.
-class ListWithTraces<E> extends ListBase<E> {
-  ListWithTraces(this._items, this.networkTraces);
+final _networkTracesExpando = Expando<List<NetworkTrace>>();
 
-  final List<E> _items;
-  final List<NetworkTrace> networkTraces;
+/// Lets any plugin result (a list of videos, a Uri, raw thumbnail
+/// bytes, ...) carry the [NetworkTrace]s of the isolate call that produced
+/// it, without changing that object's type anywhere. Attached in
+/// PluginInterface right after a result is built from the isolate reply.
+extension NetworkTraces on Object {
+  List<NetworkTrace> get networkTraces => _networkTracesExpando[this] ?? [];
 
-  @override
-  int get length => _items.length;
-
-  @override
-  set length(int newLength) => _items.length = newLength;
-
-  @override
-  E operator [](int index) => _items[index];
-
-  @override
-  void operator []=(int index, E value) => _items[index] = value;
+  set networkTraces(List<NetworkTrace> value) =>
+      _networkTracesExpando[this] = value;
 }
 
 enum ContentType {
