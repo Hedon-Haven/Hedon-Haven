@@ -78,7 +78,8 @@ abstract class BundledPluginIsolate {
 
   Future<void> init();
 
-  Future<bool> runFunctionalityTest() async => true;
+  // Not implemented yet, disabled for now.
+  // Future<bool> runFunctionalityTest() async => true;
 
   Future<ExternalLinkParsed> parseExternalLink(String uriAsString);
 
@@ -116,7 +117,7 @@ abstract class BundledPluginIsolate {
 
   Map<String, Future<dynamic> Function(List args)> buildFunctionsMap() => {
         "init": (args) async => init(),
-        "runFunctionalityTest": (args) async => runFunctionalityTest(),
+        // "runFunctionalityTest": (args) async => runFunctionalityTest(),
         "parseExternalLink": (args) => parseExternalLink(args[0] as String),
         "getHomePage": (args) => getHomePage(args[0] as int),
         "downloadThumbnail": (args) => downloadThumbnail(

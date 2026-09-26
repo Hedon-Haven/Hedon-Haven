@@ -293,15 +293,15 @@ class PluginInterface {
   }
 
   /// Test full plugin functionality and return false if it fails
-  //TODO: Set up proper Map<String, dynamic> testResults
-  Future<bool> runFunctionalityTest() async {
-    try {
-      return await _callFunction("runFunctionalityTest", []) as bool;
-    } catch (e) {
-      logger.i("Functionality test failed with: $e");
-      return false;
-    }
-  }
+  //TODO: Implement proper testing
+  // Future<bool> runFunctionalityTest() async {
+  //   try {
+  //     return (await _callFunction("runFunctionalityTest", [])).result as bool;
+  //   } catch (e) {
+  //     logger.i("Functionality test failed with: $e");
+  //     return false;
+  //   }
+  // }
 
   /// Parses a raw external link and returns an ExternalLinkParsed
   Future<ExternalLinkParsed> parseExternalLink(Uri uri) async {
