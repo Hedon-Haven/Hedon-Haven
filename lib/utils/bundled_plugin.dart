@@ -37,6 +37,11 @@ Future<List<PluginInterface>> getAllBundledPlugins() async {
 
 /// Base class for bundled plugin isolate implementations.
 abstract class BundledPluginIsolate {
+  /// Zone key used by [runBundledPluginIsolate] to make a per-call
+  /// [List<NetworkTrace>] available to [httpRequest] without threading it
+  /// through every function signature.
+  static const networkTraceZoneKey = #networkTraceZoneKey;
+
   late final SendPort _logPort;
   late final SendPort _fetchPort;
 
@@ -61,7 +66,9 @@ abstract class BundledPluginIsolate {
   void _log(String level, String message) =>
       _logPort.send({"level": level, "message": message});
 
-  /// Perform an http request via the main isolate's http client.
+  /// Perform an http request via the main isolate's http client. Every
+  /// call is automatically recorded as a [NetworkTrace] and sent back to
+  /// the main isolate alongside the function's result
   Future<HttpResponse> httpRequest(String url,
       {Map<String, String>? headers}) async {
     final responsePort = ReceivePort();
@@ -73,7 +80,18 @@ abstract class BundledPluginIsolate {
     final response = await responsePort.first as Map<String, dynamic>;
     responsePort.close();
 
-    return HttpResponse.fromMap(response);
+    final httpResponse = HttpResponse.fromMap(response);
+    (Zone.current[networkTraceZoneKey] as List<NetworkTrace>?)?.add(
+      NetworkTrace(
+        requestUrl: url,
+        requestHeaders: headers,
+        statusCode: httpResponse.statusCode,
+        replyHeaders: httpResponse.headers,
+        bodyBytes: httpResponse.bodyBytes,
+      ),
+    );
+
+    return httpResponse;
   }
 
   Future<void> init();

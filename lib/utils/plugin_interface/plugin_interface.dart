@@ -183,7 +183,8 @@ class PluginInterface {
     }
   }
 
-  Future<dynamic> _callFunction(String functionName, List<dynamic> args) async {
+  Future<({dynamic result, List<NetworkTrace> networkTraces})> _callFunction(
+      String functionName, List<dynamic> args) async {
     await _isolateReady.future; // blocks until isolate is ready
     final replyPort = ReceivePort();
     _isolateSendPort.send({
@@ -201,12 +202,18 @@ class PluginInterface {
       throw PluginTimeoutException("$functionName($args) timed out after 30s");
     }
     replyPort.close();
+    final networkTraces = ((response["networkTraces"] as List?) ?? [])
+        .map((e) => NetworkTrace.fromMap(Map<String, dynamic>.from(e as Map)))
+        .toList();
     if (response.containsKey("error")) {
-      logger.e("$codeName: ${response["error"].toString()}"
+      logger.e("$codeName: ${response["error"]}"
           "\n\n${response["stackTrace"].toString()}");
-      throw Exception(response["error"]);
+      final Exception exception = convertMapToException(
+          Map<String, dynamic>.from(response["error"] as Map));
+      exception.networkTraces = networkTraces;
+      throw exception;
     }
-    return response["result"];
+    return (result: response["result"], networkTraces: networkTraces);
   }
 
   /// Isolate entry point to use. By default uses the JS runtime isolate
@@ -215,10 +222,9 @@ class PluginInterface {
 
   /// Initialize the plugin isolate and init the plugin
   /// CAREFUL, this function doesn't handle errors!
-  Future<void> init(String cachePath,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<NetworkTrace>> init(String cachePath) async {
     if (_pluginIsInitialized) {
-      return;
+      return [];
     }
     _pluginIsInitialized = true;
 
@@ -256,7 +262,7 @@ class PluginInterface {
     _isolateReady.complete();
 
     // Some plugins might need to be prepared before they can be used (e.g. fetch cookies)
-    await _callFunction("init", []);
+    return (await _callFunction("init", [])).networkTraces;
   }
 
   void dispose() {
@@ -305,16 +311,17 @@ class PluginInterface {
 
   /// Parses a raw external link and returns an ExternalLinkParsed
   Future<ExternalLinkParsed> parseExternalLink(Uri uri) async {
-    return ExternalLinkParsed.fromMap(
-        await _callFunction("parseExternalLink", [uri.toString()]));
+    final call = await _callFunction("parseExternalLink", [uri.toString()]);
+    final parsed = ExternalLinkParsed.fromMap(call.result);
+    parsed.networkTraces = call.networkTraces;
+    return parsed;
   }
 
   /// Return the homepage
-  Future<List<UniversalVideoPreview>> getHomePage(int page,
-      [void Function(String body)? debugCallback]) async {
-    final results = await _callFunction("getHomePage", [page]) as List;
+  Future<List<UniversalVideoPreview>> getHomePage(int page) async {
+    final call = await _callFunction("getHomePage", [page]);
     List<UniversalVideoPreview> list = [];
-    for (final uvp in results) {
+    for (final uvp in call.result as List) {
       try {
         list.add(UniversalVideoPreview.fromMap(uvp, this));
       } catch (e, st) {
@@ -322,61 +329,70 @@ class PluginInterface {
         continue;
       }
     }
+    list.networkTraces = call.networkTraces;
     return list;
   }
 
   /// This function returns the requested thumbnail as a blob
   Future<Uint8List> downloadThumbnail(
       Uri uri, Map<String, String>? thumbnailHttpHeaders) async {
-    final result = await _callFunction(
+    final call = await _callFunction(
         "downloadThumbnail", [uri.toString(), thumbnailHttpHeaders]);
-    return Uint8List.fromList((result as List).cast<int>());
+    final bytes = Uint8List.fromList((call.result as List).cast<int>());
+    bytes.networkTraces = call.networkTraces;
+    return bytes;
   }
 
   /// Some websites have custom search results with custom elements (e.g. preview images). Only return simple word based search suggestions
-  Future<List<String>> getSearchSuggestions(String searchString,
-      [void Function(String body)? debugCallback]) async {
-    final result = await _callFunction("getSearchSuggestions", [searchString]);
-    return result.cast<String>();
+  Future<List<String>> getSearchSuggestions(String searchString) async {
+    final call = await _callFunction("getSearchSuggestions", [searchString]);
+    final list = (call.result as List).cast<String>();
+    list.networkTraces = call.networkTraces;
+    return list;
   }
 
   /// Return list of search results
   Future<List<UniversalVideoPreview>> getSearchResults(
-      UniversalSearchRequest sr, int page,
-      [void Function(String body)? debugCallback]) async {
-    final results =
-        await _callFunction("getSearchResults", [sr.toMap(), page]) as List;
-
-    return results
+      UniversalSearchRequest sr, int page) async {
+    final call = await _callFunction("getSearchResults", [sr.toMap(), page]);
+    final list = (call.result as List)
         .map((uvp) => UniversalVideoPreview.fromMap(uvp, this))
         .toList();
+    list.networkTraces = call.networkTraces;
+    return list;
   }
 
   Future<Uri?> getVideoUriFromID(String videoID) async {
-    final result = await _callFunction("getVideoUriFromID", [videoID]);
-    return Uri.tryParse(result);
+    final call = await _callFunction("getVideoUriFromID", [videoID]);
+    final uri = Uri.tryParse(call.result);
+    uri?.networkTraces = call.networkTraces;
+    return uri;
   }
 
   // TODO: Maybe find a better way to pass the uvp or get rid of it entirely?
   Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoID, UniversalVideoPreview uvp,
-      [void Function(String body)? debugCallback]) async {
-    final result =
+      String videoID, UniversalVideoPreview uvp) async {
+    final call =
         await _callFunction("getVideoMetadata", [videoID, uvp.toMap()]);
-    return UniversalVideoMetadata.fromMap(result, this);
+    final metadata = UniversalVideoMetadata.fromMap(call.result, this);
+    metadata.networkTraces = call.networkTraces;
+    return metadata;
   }
 
   /// Get all progressThumbnails for a video and return them as a List
   Future<List<Uint8List>?> getProgressThumbnails(
       String videoID, Document rawHtml) async {
-    final result = await _callFunction(
-        "getProgressThumbnails", [videoID, rawHtml.outerHtml]) as List?;
+    final call = await _callFunction(
+        "getProgressThumbnails", [videoID, rawHtml.outerHtml]);
+    final result = call.result as List?;
 
     if (result == null) return null;
 
-    return result
+    final list = result
         .map((pic) => Uint8List.fromList((pic as List).cast<int>()))
         .toList();
+    list.networkTraces = call.networkTraces;
+    return list;
   }
 
   void cancelGetProgressThumbnails() {
@@ -384,51 +400,60 @@ class PluginInterface {
   }
 
   Future<Uri?> getCommentUriFromID(String commentID, String videoID) async {
-    final result =
+    final call =
         await _callFunction("getCommentUriFromID", [commentID, videoID]);
-    return Uri.tryParse(result);
+    final uri = Uri.tryParse(call.result);
+    uri?.networkTraces = call.networkTraces;
+    return uri;
   }
 
   /// Get comments for a video, per page
   Future<List<UniversalComment>> getComments(
-      String videoID, Document rawHtml, int page,
-      [void Function(String body)? debugCallback]) async {
-    final result =
-        await _callFunction("getComments", [videoID, rawHtml.outerHtml, page])
-            as List;
-
-    return result.map((uc) => UniversalComment.fromMap(uc, this)).toList();
+      String videoID, Document rawHtml, int page) async {
+    final call =
+        await _callFunction("getComments", [videoID, rawHtml.outerHtml, page]);
+    final list = (call.result as List)
+        .map((uc) => UniversalComment.fromMap(uc, this))
+        .toList();
+    list.networkTraces = call.networkTraces;
+    return list;
   }
 
   /// Get video suggestions for a video, per page
   Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, Document rawHtml, int page,
-      [void Function(String body)? debugCallback]) async {
-    final result = await _callFunction(
-        "getVideoSuggestions", [videoID, rawHtml.outerHtml, page]) as List;
-
-    return result.map((e) => UniversalVideoPreview.fromMap(e, this)).toList();
+      String videoID, Document rawHtml, int page) async {
+    final call = await _callFunction(
+        "getVideoSuggestions", [videoID, rawHtml.outerHtml, page]);
+    final list = (call.result as List)
+        .map((e) => UniversalVideoPreview.fromMap(e, this))
+        .toList();
+    list.networkTraces = call.networkTraces;
+    return list;
   }
 
   Future<Uri?> getAuthorUriFromID(String authorID) async {
-    final result = await _callFunction("getAuthorUriFromID", [authorID]);
-    return Uri.tryParse(result);
+    final call = await _callFunction("getAuthorUriFromID", [authorID]);
+    final uri = Uri.tryParse(call.result);
+    uri?.networkTraces = call.networkTraces;
+    return uri;
   }
 
   /// Request author page and convert it to UniversalFormat
-  Future<UniversalAuthorPage> getAuthorPage(String authorID,
-      [void Function(String body)? debugCallback]) async {
-    final result = await _callFunction("getAuthorPage", [authorID]);
-
-    return UniversalAuthorPage.fromMap(result, this);
+  Future<UniversalAuthorPage> getAuthorPage(String authorID) async {
+    final call = await _callFunction("getAuthorPage", [authorID]);
+    final authorPage = UniversalAuthorPage.fromMap(call.result, this);
+    authorPage.networkTraces = call.networkTraces;
+    return authorPage;
   }
 
   /// Get video suggestions for a video, per page
-  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
-      [void Function(String body)? debugCallback]) async {
-    final result =
-        await _callFunction("getAuthorVideos", [authorID, page]) as List;
-
-    return result.map((e) => UniversalVideoPreview.fromMap(e, this)).toList();
+  Future<List<UniversalVideoPreview>> getAuthorVideos(
+      String authorID, int page) async {
+    final call = await _callFunction("getAuthorVideos", [authorID, page]);
+    final list = (call.result as List)
+        .map((e) => UniversalVideoPreview.fromMap(e, this))
+        .toList();
+    list.networkTraces = call.networkTraces;
+    return list;
   }
 }

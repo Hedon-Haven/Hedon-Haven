@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
 
 import '/utils/bundled_plugin.dart';
+import '/utils/exceptions.dart';
+import '/utils/universal_formats.dart';
 
 /// Shared isolate entry-point logic for every bundled plugin. Each plugin's
 /// own entry-point function just calls this with its own functions map.
@@ -42,6 +45,10 @@ void runBundledPluginIsolate(
 void _callFunction(Map<String, dynamic> message,
     Map<String, Future<dynamic> Function(List args)> handlers) async {
   final SendPort replyPort = message["replyPort"] as SendPort;
+  // Created before the handler runs and sent back on both success and
+  // failure, so a call that throws partway through still surfaces whatever
+  // was downloaded up to that point.
+  final List<NetworkTrace> networkTraces = [];
   try {
     final String functionName = message["function"] as String;
     final List args = message["args"] as List;
@@ -49,9 +56,20 @@ void _callFunction(Map<String, dynamic> message,
     final handler = handlers[functionName];
     if (handler == null) throw Exception("Unknown function: $functionName");
 
-    replyPort.send({"result": _serialize(await handler(args))});
+    final result = await runZoned(() => handler(args), zoneValues: {
+      BundledPluginIsolate.networkTraceZoneKey: networkTraces,
+    });
+
+    replyPort.send({
+      "result": _serialize(result),
+      "networkTraces": _serialize(networkTraces),
+    });
   } catch (e, st) {
-    replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
+    replyPort.send({
+      "error": convertExceptionToMap(e),
+      "stackTrace": st.toString(),
+      "networkTraces": _serialize(networkTraces),
+    });
   }
 }
 
