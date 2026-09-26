@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:html/dom.dart';
 import 'package:image/image.dart';
 
-import '/services/external_link_manager.dart';
 import '/utils/bundled_plugin.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
@@ -145,8 +144,7 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getHomePage(int page,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<UniversalVideoPreview>> getHomePage(int page) async {
     // Simulate a delay without blocking the entire isolate
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return List.generate(
@@ -196,8 +194,7 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<String>> getSearchSuggestions(String searchString,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<String>> getSearchSuggestions(String searchString) async {
     // Simulate a delay without blocking the entire isolate
     if (_simulateDelays) await Future.delayed(Duration(milliseconds: 200));
     return List.generate(5, (index) => "$searchString-$index");
@@ -205,8 +202,7 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getSearchResults(
-      UniversalSearchRequest request, int page,
-      [void Function(String body)? debugCallback]) async {
+      UniversalSearchRequest request, int page) async {
     // Simulate a delay without blocking the entire isolate
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     if (page == 5) {
@@ -246,8 +242,7 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoId, UniversalVideoPreview uvp,
-      [void Function(String body)? debugCallback]) async {
+      String videoId, UniversalVideoPreview uvp) async {
     // Simulate a delay without blocking the entire isolate
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return UniversalVideoMetadata(
@@ -329,8 +324,7 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalComment>> getComments(
-      String videoID, String rawHtmlString, int page,
-      [void Function(String body)? debugCallback]) async {
+      String videoID, String rawHtmlString, int page) async {
     if (page == 5) {
       return [];
     }
@@ -389,8 +383,7 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, String rawHtmlString, int page,
-      [void Function(String body)? debugCallback]) async {
+      String videoID, String rawHtmlString, int page) async {
     // Simulate a delay without blocking the entire app
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     if (page == 5) {
@@ -428,8 +421,7 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<UniversalAuthorPage> getAuthorPage(String authorID,
-      [void Function(String body)? debugCallback]) async {
+  Future<UniversalAuthorPage> getAuthorPage(String authorID) async {
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return UniversalAuthorPage(
       iD: authorID,
@@ -457,8 +449,8 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<UniversalVideoPreview>> getAuthorVideos(
+      String authorID, int page) async {
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     if (page == 5) {
       return [];

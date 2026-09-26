@@ -8,7 +8,6 @@ import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:image/image.dart';
 
-import '/services/external_link_manager.dart';
 import '/utils/bundled_plugin.dart';
 import '/utils/exceptions.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
@@ -414,7 +413,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<void> init([void Function(String body)? debugCallback]) async {
+  Future<void> init() async {
     logInfo("Initializing ${PornhubPlugin().codeName} plugin");
     // To be able to make search suggestion requests later, both a session cookie and a token are needed
     // Get the sessions cookie (called ss) from the response headers
@@ -427,9 +426,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
     setCookies = response.headers["set-cookie"];
     logDebug("Set cookies received: $setCookies");
     Document rawHtml = parse(response.body);
-
-    debugCallback
-        ?.call("Headers: ${response.headers}\n\nBody: ${response.body}");
 
     // Check for age blocks
     if (rawHtml.body!.classes.contains("apt-landing")) {
@@ -530,8 +526,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getHomePage(int page,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<UniversalVideoPreview>> getHomePage(int page) async {
     List<Element>? resultsList;
     // pornhub has a homepage and a separate page 1 video homepage
     // -> load main homepage first, then load first video homepage
@@ -541,7 +536,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
       var response = await _performGetRequest("https://www.pornhub.com",
           // Mobile video image previews are higher quality
           headers: {"Cookie": "platform=mobile; platform_forced=1"});
-      debugCallback?.call(response.body);
       if (response.statusCode != 200) {
         logError("Error downloading html: ${response.statusCode}");
         throw Exception("Error downloading html: ${response.statusCode}");
@@ -562,7 +556,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
           await _performGetRequest("https://www.pornhub.com/video?page=$page",
               // Mobile video image previews are higher quality
               headers: {"Cookie": "platform=mobile; platform_forced=1"});
-      debugCallback?.call(response.body);
       if (response.statusCode != 200) {
         logError("Error downloading html: ${response.statusCode}");
         throw Exception("Error downloading html: ${response.statusCode}");
@@ -601,13 +594,11 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<String>> getSearchSuggestions(String searchString,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<String>> getSearchSuggestions(String searchString) async {
     logDebug("Getting search suggestions for $searchString");
     final String requestUri =
         "https://www.pornhub.com/api/v1/video/search_autocomplete?token=${_sessionCookies["token"]}&q=$searchString";
     final response = await _performGetRequest(requestUri);
-    debugCallback?.call(response.body);
     Map<String, dynamic> data = jsonDecode(response.body);
     // The search results are just returned as key value pairs of numbers
     // e.g. {"0": "suggestion1", "1": "suggestion2", "2": "suggestion3"}
@@ -623,8 +614,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getSearchResults(
-      UniversalSearchRequest request, int page,
-      [void Function(String body)? debugCallback]) async {
+      UniversalSearchRequest request, int page) async {
     // Pornhub doesn't allow empty search queries
     if (request.searchString.isEmpty) {
       return [];
@@ -651,7 +641,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
     var response = await _performGetRequest(urlString,
         // Mobile video image previews are higher quality
         headers: {"Cookie": "platform=mobile; platform_forced=1"});
-    debugCallback?.call(response.body);
     if (response.statusCode != 200) {
       // Differentiate between soft 404 (browser still shows a page) and hard 404 (network failure)
       if (response.body.contains("Error Page Not Found")) {
@@ -679,8 +668,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
   @override
   Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoId, UniversalVideoPreview uvp,
-      [void Function(String body)? debugCallback]) async {
+      String videoId, UniversalVideoPreview uvp) async {
     String videoMetadata = _videoEndpoint + videoId;
     logDebug("Requesting $videoMetadata");
     var response = await _performGetRequest(
@@ -690,7 +678,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
         "Cookie": "accessAgeDisclaimerPH=2; platform=mobile; platform_forced=1"
       },
     );
-    debugCallback?.call(response.body);
     if (response.statusCode != 200) {
       logError("Error downloading html: ${response.statusCode}");
       throw Exception("Error downloading html: ${response.statusCode}");
@@ -924,8 +911,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalComment>> getComments(
-      String videoID, String rawHtmlString, int page,
-      [void Function(String body)? debugCallback]) async {
+      String videoID, String rawHtmlString, int page) async {
     Document rawHtml = parse(rawHtmlString);
 
     // Private functions
@@ -1047,8 +1033,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     // pornhub allows to get all comments in one go -> return empty list on second page
     if (page > 1) {
-      debugCallback?.call(
-          "Pornhub allows to get all comments in one go -> return empty list on second page");
       return Future.value([]);
     }
     logInfo("Getting all comments for $videoID");
@@ -1079,7 +1063,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
     if (response.statusCode != 200) {
       throw ("Http error for $commentsUri: ${response.statusCode}");
     }
-    debugCallback?.call(response.body);
 
     Document rawComments = parse(response.body);
 
@@ -1091,14 +1074,11 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, String rawHtmlString, int page,
-      [void Function(String body)? debugCallback]) async {
+      String videoID, String rawHtmlString, int page) async {
     // Pornhub doesn't allow loading more suggestions
     if (page > 1) {
-      debugCallback?.call("Pornhub doesn't allow loading more suggestions");
       return Future.value([]);
     }
-    debugCallback?.call(rawHtmlString);
     // Filter out ads and non-video results
     Document rawHtml = parse(rawHtmlString);
     return await _parseVideoList(rawHtml
@@ -1138,8 +1118,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<UniversalAuthorPage> getAuthorPage(String authorID,
-      [void Function(String body)? debugCallback]) async {
+  Future<UniversalAuthorPage> getAuthorPage(String authorID) async {
     // Assume every author is a channel at first
     String authorPageLink = "$_channelEndpoint$authorID";
     logDebug("Requesting channel page: $authorPageLink");
@@ -1168,8 +1147,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
             "Error downloading html (tried channel, model): ${response.statusCode}");
       }
     }
-
-    debugCallback?.call(response.body);
 
     Document pageHtml = parse(response.body);
 
@@ -1373,8 +1350,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<UniversalVideoPreview>> getAuthorVideos(
+      String authorID, int page) async {
     // First get the author page URI
     String authorPageLink = (await getAuthorUriFromID(authorID))!;
 
@@ -1394,7 +1371,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
       logError("Error downloading html: ${response.statusCode}");
       throw Exception("Error downloading html: ${response.statusCode}");
     }
-    debugCallback?.call(response.body);
     Document resultHtml = parse(response.body);
 
     // Check if author has no videos listed

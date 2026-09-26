@@ -8,7 +8,6 @@ import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:image/image.dart';
 
-import '/services/external_link_manager.dart';
 import '/utils/bundled_plugin.dart';
 import '/utils/exceptions.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
@@ -253,16 +252,13 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<void> init([void Function(String body)? debugCallback]) async {
+  Future<void> init() async {
     // Request main page to check for age gate / banned country
     final response = await httpRequest("https://xhamster.com");
     if (response.statusCode != 200) {
       throw Exception("Failed to initialize plugin. "
           "Received status code ${response.statusCode}");
     }
-
-    debugCallback
-        ?.call("Headers: ${response.headers}\n\nBody: ${response.body}");
 
     // Check for age blocks
     if (parse(response.body).body!.classes.contains("xh-scroll-disabled")) {
@@ -340,11 +336,9 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getHomePage(int page,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<UniversalVideoPreview>> getHomePage(int page) async {
     logDebug("Requesting https://xhamster.com/$page");
     var response = await httpRequest("https://xhamster.com/$page");
-    debugCallback?.call(response.body);
     if (response.statusCode != 200) {
       logError("Error downloading html: ${response.statusCode}");
       throw Exception("Error downloading html: ${response.statusCode}");
@@ -383,14 +377,12 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<String>> getSearchSuggestions(String searchString,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<String>> getSearchSuggestions(String searchString) async {
     List<String> parsedMap = [];
     var response = await httpRequest(
         "https://xhamster.com/api/front/search/suggest?searchValue=$searchString",
         // If either of these headers is missing, the server throws a 403 for some reason
         headers: {"x-csrf-token": "1", "Cookie": "x_csrf_token=1"});
-    debugCallback?.call(response.body);
     if (response.statusCode == 200) {
       for (var item in jsonDecode(response.body).cast<Map>()) {
         if (item["type2"] == "search") {
@@ -432,8 +424,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getSearchResults(
-      UniversalSearchRequest request, int page,
-      [void Function(String body)? debugCallback]) async {
+      UniversalSearchRequest request, int page) async {
     // @formatter:off
     String urlString = "$_searchEndpoint${Uri.encodeComponent(request.searchString)}"
         "?page=$page"
@@ -452,7 +443,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
     logDebug("Requesting $urlString");
     var response = await httpRequest(urlString);
-    debugCallback?.call(response.body);
     if (response.statusCode != 200) {
       logError("Error downloading html: ${response.statusCode}");
       throw Exception("Error downloading html: ${response.statusCode}");
@@ -474,11 +464,9 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
   @override
   Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoId, UniversalVideoPreview uvp,
-      [void Function(String body)? debugCallback]) async {
+      String videoId, UniversalVideoPreview uvp) async {
     logDebug("Requesting ${_videoEndpoint + videoId}");
     var response = await httpRequest("$_videoEndpoint$videoId");
-    debugCallback?.call(response.body);
     if (response.statusCode != 200) {
       logError("Error downloading html: ${response.statusCode}");
       throw Exception("Error downloading html: ${response.statusCode}");
@@ -737,8 +725,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalComment>> getComments(
-      String videoID, String rawHtmlString, int page,
-      [void Function(String body)? debugCallback]) async {
+      String videoID, String rawHtmlString, int page) async {
     Document rawHtml = parse(rawHtmlString);
     List<UniversalComment> commentList = [];
 
@@ -768,7 +755,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     if (response.statusCode != 200) {
       throw Exception("Error downloading json: ${response.statusCode}");
     }
-    debugCallback?.call(response.body);
     final commentsJson = jsonDecode(response.body)[0]["responseData"];
     if (commentsJson == null) {
       logWarning("No comments found for $videoID");
@@ -831,8 +817,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, String rawHtmlString, int page,
-      [void Function(String body)? debugCallback]) async {
+      String videoID, String rawHtmlString, int page) async {
     Document rawHtml = parse(rawHtmlString);
 
     // find the video's relatedID in the json inside the html
@@ -853,7 +838,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     if (response.statusCode != 200) {
       throw Exception("Failed to get suggestions: ${response.statusCode}");
     }
-    debugCallback?.call(response.body);
 
     List<UniversalVideoPreview> relatedVideos = [];
     for (var result in jsonDecode(response.body)["videoThumbProps"]) {
@@ -926,8 +910,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<UniversalAuthorPage> getAuthorPage(String authorID,
-      [void Function(String body)? debugCallback]) async {
+  Future<UniversalAuthorPage> getAuthorPage(String authorID) async {
     // Assume every author is a channel at first
     String authorPageLink = "$_channelEndpoint$authorID";
     logDebug("Requesting channel page: $authorPageLink");
@@ -955,7 +938,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       }
     }
 
-    debugCallback?.call(response.body);
     Document pageHtml = parse(response.body);
     String jscript = pageHtml.querySelector('#initials-script')!.text;
     Map<String, dynamic> jscriptMap = jsonDecode(
@@ -1167,8 +1149,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID, int page,
-      [void Function(String body)? debugCallback]) async {
+  Future<List<UniversalVideoPreview>> getAuthorVideos(
+      String authorID, int page) async {
     // First get the author page URI
     String authorPageLink = (await getAuthorUriFromID(authorID))!;
 
@@ -1195,7 +1177,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       logError("Error downloading html: ${response.statusCode}");
       throw Exception("Error downloading html: ${response.statusCode}");
     }
-    debugCallback?.call(response.body);
     Document resultHtml = parse(response.body);
 
     String jscript = resultHtml.querySelector('#initials-script')!.text;
