@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:html/dom.dart';
@@ -78,6 +79,29 @@ class NetworkTrace {
       bodyBytes: Uint8List.fromList(map["bodyBytes"]),
     );
   }
+}
+
+/// A [List] that also carries the [NetworkTrace]s of any requests made to
+/// produce it (empty if none, e.g. a third-party plugin that doesn't report
+/// them, or a paginated call that didn't need a fresh request). Implements
+/// [List] so existing call sites keep working unchanged.
+class ListWithTraces<E> extends ListBase<E> {
+  ListWithTraces(this._items, this.networkTraces);
+
+  final List<E> _items;
+  final List<NetworkTrace> networkTraces;
+
+  @override
+  int get length => _items.length;
+
+  @override
+  set length(int newLength) => _items.length = newLength;
+
+  @override
+  E operator [](int index) => _items[index];
+
+  @override
+  void operator []=(int index, E value) => _items[index] = value;
 }
 
 enum ContentType {
