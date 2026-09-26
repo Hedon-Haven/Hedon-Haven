@@ -1351,7 +1351,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getAuthorVideos(
-      String authorID, int page) async {
+      String authorID, String rawHtmlString, int page) async {
     // First get the author page URI
     String authorPageLink = (await getAuthorUriFromID(authorID))!;
 

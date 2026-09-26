@@ -448,8 +448,9 @@ class PluginInterface {
 
   /// Get video suggestions for a video, per page
   Future<List<UniversalVideoPreview>> getAuthorVideos(
-      String authorID, int page) async {
-    final call = await _callFunction("getAuthorVideos", [authorID, page]);
+      String authorID, Document rawHtml, int page) async {
+    final call = await _callFunction(
+        "getAuthorVideos", [authorID, rawHtml.outerHtml, page]);
     final list = (call.result as List)
         .map((e) => UniversalVideoPreview.fromMap(e, this))
         .toList();

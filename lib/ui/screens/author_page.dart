@@ -63,8 +63,8 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
       authorPage = await widget.authorPage;
       // Start loading author videos but don't wait for them
       try {
-        authorVideos =
-            loadingHandler.getAuthorVideos(authorPage!.plugin!, authorPage!.iD);
+        authorVideos = loadingHandler.getAuthorVideos(
+            authorPage!.plugin!, authorPage!.iD, authorPage!.rawHtml);
       } catch (e, stacktrace) {
         logger.e("Error loading author videos: $e\n$stacktrace");
         loadingHandler.authorVideosBugReports = [
@@ -375,6 +375,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                       loadingHandler.getAuthorVideos(
                                           authorPage!.plugin!,
                                           authorPage!.iD,
+                                          authorPage!.rawHtml,
                                           await authorVideos),
                                   noResultsMessage:
                                       "This author has no videos on this platform",

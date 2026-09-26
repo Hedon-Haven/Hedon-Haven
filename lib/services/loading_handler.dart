@@ -473,7 +473,7 @@ class LoadingHandler {
   }
 
   Future<List<UniversalVideoPreview>?> getAuthorVideos(
-      PluginInterface plugin, String authorID,
+      PluginInterface plugin, String authorID, Document rawHtml,
       [List<UniversalVideoPreview>? previousResults]) async {
     List<UniversalVideoPreview>? combinedResults = previousResults;
     combinedResults ??= [];
@@ -497,8 +497,8 @@ class LoadingHandler {
       logger.i(
           "Getting author video results from ${plugin.codeName} for page $authorVideosPageCounter");
       try {
-        newResults =
-            await plugin.getAuthorVideos(authorID, authorVideosPageCounter);
+        newResults = await plugin.getAuthorVideos(
+            authorID, rawHtml, authorVideosPageCounter);
         logger.i(
             "Got ${newResults.length} author videos from ${plugin.codeName} for page $authorVideosPageCounter");
       } catch (exception, stacktrace) {

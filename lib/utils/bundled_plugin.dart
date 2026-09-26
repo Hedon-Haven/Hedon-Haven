@@ -131,7 +131,7 @@ abstract class BundledPluginIsolate {
   Future<UniversalAuthorPage> getAuthorPage(String authorID);
 
   Future<List<UniversalVideoPreview>> getAuthorVideos(
-      String authorID, int page);
+      String authorID, String rawHtml, int page);
 
   Map<String, Future<dynamic> Function(List args)> buildFunctionsMap() => {
         "init": (args) async => init(),
@@ -161,7 +161,7 @@ abstract class BundledPluginIsolate {
             args[0] as String, args[1] as String, args[2] as int),
         "getAuthorUriFromID": (args) => getAuthorUriFromID(args[0] as String),
         "getAuthorPage": (args) => getAuthorPage(args[0] as String),
-        "getAuthorVideos": (args) =>
-            getAuthorVideos(args[0] as String, args[1] as int),
+        "getAuthorVideos": (args) => getAuthorVideos(
+            args[0] as String, args[1] as String, args[2] as int),
       };
 }

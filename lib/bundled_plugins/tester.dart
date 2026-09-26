@@ -450,7 +450,7 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getAuthorVideos(
-      String authorID, int page) async {
+      String authorID, String rawHtmlString, int page) async {
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     if (page == 5) {
       return [];
