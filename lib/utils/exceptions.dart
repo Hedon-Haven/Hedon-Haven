@@ -100,7 +100,7 @@ final List<CustomException Function(String)> _knownExceptionTypes = [
   PluginTimeoutException.new,
 ];
 
-/// Converts any Exception (including special treatment for CustomExceptions) 
+/// Converts any Exception (including special treatment for CustomExceptions)
 /// to a serializable Map
 Map<String, dynamic> convertExceptionToMap(Object exception) {
   return {

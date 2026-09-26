@@ -1301,24 +1301,23 @@ class _PornhubIsolate extends BundledPluginIsolate {
     }
 
     return UniversalAuthorPage(
-      iD: authorID,
-      name: authorName,
-      plugin: null,
-      avatar: thumbnail,
-      banner: banner,
-      description: description,
-      advancedDescription: advancedDescription,
-      externalLinks: externalLinks?.map((k, v) => MapEntry(k, Uri.parse(v))),
-      viewsTotal: viewsTotal,
-      videosTotal: videosTotal,
-      subscribers: subscribers,
-      rank: rank,
-      rawHtml: pageHtml,
-      unavailableFields: {
-        // Pornhub doesn't have aliases
-        "aliases",
-      }
-    );
+        iD: authorID,
+        name: authorName,
+        plugin: null,
+        avatar: thumbnail,
+        banner: banner,
+        description: description,
+        advancedDescription: advancedDescription,
+        externalLinks: externalLinks?.map((k, v) => MapEntry(k, Uri.parse(v))),
+        viewsTotal: viewsTotal,
+        videosTotal: videosTotal,
+        subscribers: subscribers,
+        rank: rank,
+        rawHtml: pageHtml,
+        unavailableFields: {
+          // Pornhub doesn't have aliases
+          "aliases",
+        });
   }
 
   @override
