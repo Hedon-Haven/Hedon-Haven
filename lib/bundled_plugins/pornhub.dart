@@ -80,51 +80,6 @@ class PornhubPlugin extends PluginInterface {
   @override
   String get version => "";
 
-  // Set BundledPlugin specific vars
-  Map<String, dynamic> testingMap = {
-    "ignoreScrapedErrors": {
-      "homepage": [
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "searchResults": [
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "videoMetadata": ["chapters", "description", "ratingsNegativeTotal"],
-      "videoSuggestions": [
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "lastWatched",
-        "addedOn",
-        "maxQuality"
-      ],
-      "authorVideos": [
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "authorName",
-        "authorID",
-        "lastWatched",
-        "addedOn"
-      ],
-      "comments": [
-        "authorID",
-        "countryID",
-        "orientation",
-        "ratingsPositiveTotal",
-        "ratingsNegativeTotal",
-      ],
-      "authorPage": ["aliases", "videosTotal", "lastViewed", "addedOn"]
-    }
-  };
-
   @override
   void Function(SendPort) get isolateEntryPoint => initBundledPluginIsolate;
 }
@@ -260,6 +215,14 @@ class _PornhubIsolate extends BundledPluginIsolate {
         authorID: authorDiv?.attributes["href"]?.split("/").last,
         // All authors on pornhub are verified
         verifiedAuthor: true,
+        unavailableFields: {
+          // Not shown on any video listing page
+          "ratingsPositivePercent",
+          "maxQuality",
+          // The author's own video listing doesn't repeat their name/id per item
+          if (authorPageMode) "authorName",
+          if (authorPageMode) "authorID",
+        },
       );
 
       if (iD == null || title == null) {
@@ -697,7 +660,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     // ratings
     int? ratingsPositive;
-    int? ratingsNegative;
     for (var interaction in JSONLD["interactionStatistic"]) {
       if (interaction["interactionType"] == "http://schema.org/LikeAction") {
         ratingsPositive = int.tryParse(
@@ -809,11 +771,16 @@ class _PornhubIsolate extends BundledPluginIsolate {
       categories: categories,
       uploadDate: uploadDate,
       ratingsPositiveTotal: ratingsPositive,
-      ratingsNegativeTotal: ratingsNegative,
       ratingsTotal: ratingsTotal,
       virtualReality: jscriptMap["isVR"] == 1,
+      //TODO: Add chapter scraping
       chapters: null,
       rawHtml: rawHtml,
+      unavailableFields: {
+        "chapters",
+        // Pornhub removed dislikes site-wide
+        "ratingsNegativeTotal"
+      },
     );
   }
 
@@ -941,23 +908,26 @@ class _PornhubIsolate extends BundledPluginIsolate {
         commentBody: commentBody ?? "null",
         hidden: hidden,
         plugin: null,
-        // Sometimes the authorID is "unknown" (not a link) -> allow null
         authorID: tempComment
             .querySelector('a[class="userLink clearfix"]')
             ?.attributes["href"]
             ?.substring(7),
-        countryID: null,
-        orientation: null,
         profilePicture: tempComment
             .querySelector('img[class="commentAvatarImg avatarTrigger"]')
             ?.attributes["src"],
-        ratingsPositiveTotal: null,
-        ratingsNegativeTotal: null,
         ratingsTotal: tryParse(() => int.parse(
             tempComment.querySelector('span[class*="voteTotal"]')!.text)),
         commentDate: _convertStringToDateTime(
             tempComment.querySelector('div[class="date"]')?.text.trim()),
         replyComments: [],
+        unavailableFields: {
+          // Pornhub doesn't expose commenter country/orientation
+          "countryID",
+          "orientation",
+          // Comments only have a single net vote total, no positive/negative split
+          "ratingsPositiveTotal",
+          "ratingsNegativeTotal"
+        },
       );
 
       if (iD == null || author == null || commentBody == null) {
@@ -1336,8 +1306,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
       plugin: null,
       avatar: thumbnail,
       banner: banner,
-      // Pornhub doesn't have aliases
-      aliases: null,
       description: description,
       advancedDescription: advancedDescription,
       externalLinks: externalLinks?.map((k, v) => MapEntry(k, Uri.parse(v))),
@@ -1346,6 +1314,10 @@ class _PornhubIsolate extends BundledPluginIsolate {
       subscribers: subscribers,
       rank: rank,
       rawHtml: pageHtml,
+      unavailableFields: {
+        // Pornhub doesn't have aliases
+        "aliases",
+      }
     );
   }
 

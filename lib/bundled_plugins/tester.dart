@@ -170,6 +170,7 @@ class _TesterIsolate extends BundledPluginIsolate {
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
         scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        unavailableFields: const {},
       ),
     );
   }
@@ -231,6 +232,7 @@ class _TesterIsolate extends BundledPluginIsolate {
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
         scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        unavailableFields: const {},
       ),
     );
   }
@@ -291,6 +293,7 @@ class _TesterIsolate extends BundledPluginIsolate {
         Duration(seconds: 240): "Chapter 3",
       },
       rawHtml: Document(),
+      unavailableFields: const {},
     );
   }
 
@@ -372,11 +375,13 @@ class _TesterIsolate extends BundledPluginIsolate {
                   // Make every 4th comment a fail
                   scrapeFailMessage:
                       index % 4 != 0 ? "Test fail scrape message" : null,
+                  unavailableFields: const {},
                 ),
               )
             : [],
         // Make every 4th comment a fail
         scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        unavailableFields: const {},
       ),
     );
   }
@@ -411,6 +416,7 @@ class _TesterIsolate extends BundledPluginIsolate {
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
         scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        unavailableFields: const {},
       ),
     );
   }
@@ -445,6 +451,7 @@ class _TesterIsolate extends BundledPluginIsolate {
       subscribers: 573529,
       rank: 3746,
       rawHtml: Document(),
+      unavailableFields: const {},
     );
   }
 
@@ -477,6 +484,7 @@ class _TesterIsolate extends BundledPluginIsolate {
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
         scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        unavailableFields: const {},
       ),
     );
   }

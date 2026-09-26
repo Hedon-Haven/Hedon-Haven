@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_hls_parser/flutter_hls_parser.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
@@ -73,59 +73,6 @@ class XHamsterPlugin extends PluginInterface {
 
   @override
   String get version => "";
-
-  // Set BundledPlugin specific vars
-  Map<String, dynamic> testingMap = {
-    "ignoreScrapedErrors": {
-      "homepage": [
-        "authorID",
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "searchResults": [
-        "authorID",
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "videoMetadata": ["playbackHttpHeaders", "chapters"],
-      "videoSuggestions": [
-        "authorID",
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "lastWatched",
-        "addedOn"
-      ],
-      "authorVideos": [
-        "thumbnailHttpHeaders",
-        "thumbnailBinary",
-        "ratingsPositivePercent",
-        "maxQuality",
-        "authorName",
-        "authorID",
-        "lastWatched",
-        "addedOn"
-      ],
-      "comments": [
-        "ratingsPositiveTotal",
-        "ratingsNegativeTotal",
-        "countryID",
-        "orientation",
-        "profilePicture",
-        "ratingsTotal"
-      ],
-      "authorPage": ["banner", "description", "rank", "lastViewed", "addedOn"]
-    }
-  };
 
   @override
   void Function(SendPort) get isolateEntryPoint => initBundledPluginIsolate;
@@ -228,7 +175,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         previewVideo: tryParse(() => Uri.parse(element["trailerURL"])),
         duration: tryParse(() => Duration(seconds: element["duration"])),
         viewsTotal: element["views"],
-        ratingsPositivePercent: null,
         maxQuality: element["isUHD"] == true ? 2160 : null,
         virtualReality: false,
         authorName: authorName,
@@ -236,6 +182,15 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             authorIDPassed ?? element["landing"]?["link"]?.split("/")?.last,
         verifiedAuthor: (element["landing"]?["type"] ?? "user") != "user" &&
             authorName != "Unknown amateur author",
+        unavailableFields: {
+          // Not shown on listing pages
+          "ratingsPositivePercent",
+          // Only non-null when isUHD is true
+          "maxQuality",
+          // Never provided on listing pages
+          "thumbnailHttpHeaders",
+          "previewVideoHttpHeaders",
+        },
       );
 
       if (iD == null || title == null) {
@@ -393,33 +348,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       throw Exception("Error downloading json list: ${response.statusCode}");
     }
     return parsedMap;
-  }
-
-  Future<List<UniversalVideoPreview>> getSearchResults2(
-      UniversalSearchRequest request, int page) async {
-    // @formatter:off
-    String urlString = "$_searchEndpoint${Uri.encodeComponent(request.searchString)}"
-        "?page=$page"
-        "&sort=${_sortingTypeMap[request.sortingType]!}"
-        "${request.dateRange != "All time" ? "&date=${_dateRangeMap[request.dateRange]}": ""}"
-        "${[720, 1080, 2160].contains(request.minQuality) ? "&quality=${request.minQuality}p" : ""}"
-    // no max quality filter
-        "${[0, 3600].contains(request.minDuration) ? "" : "&min_duration=${_minDurationMap[request.minDuration]!}"}"
-        "${[0, 3600].contains(request.maxDuration) ? "" : "&max_duration=${_maxDurationMap[request.maxDuration]!}"}"
-        "${(request.minFramesPerSecond ?? 0) > 0 ? "&fps=${request.minFramesPerSecond}" : ""}"
-    // no min FPS filter
-        "${request.virtualReality == true ? "&format=vr" : ""}"
-    // Categories and keywords not yet implemented
-        ;
-    // @formatter:on
-    logDebug("Requesting $urlString");
-    final response = await httpRequest(urlString);
-    Document resultHtml = parse(response.body);
-    String jscript = resultHtml.querySelector('#initials-script')!.text;
-    Map<String, dynamic> jscriptMap = jsonDecode(
-        jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
-    return _parseVideoList(jscriptMap["searchResult"]["videoThumbProps"]
-        .cast<Map<String, dynamic>>());
   }
 
   @override
@@ -590,8 +518,14 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       ratingsNegativeTotal: ratingsNegative,
       ratingsTotal: ratingsTotal,
       virtualReality: jscriptMap["videoModel"]?["isVR"],
+      //TODO: Add chapter scraping
       chapters: null,
       rawHtml: rawHtml,
+      unavailableFields: {
+        "chapters",
+        // xhamster's m3u8 streams don't require custom playback headers
+        "playbackHttpHeaders",
+      },
     );
   }
 
@@ -784,13 +718,16 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         orientation: comment["author"]?["personalInfo"]?["orientation"]
             ?["name"],
         profilePicture: comment["author"]?["thumbUrl"],
-        ratingsPositiveTotal: null,
-        ratingsNegativeTotal: null,
         // null in the json means 0
         ratingsTotal: comment["likes"] ?? 0,
         commentDate: tryParse(() =>
             DateTime.fromMillisecondsSinceEpoch(comment["created"] * 1000)),
         replyComments: [],
+        unavailableFields: {
+          // xhamster doesn't expose a positive/negative rating split for comments
+          "ratingsPositiveTotal",
+          "ratingsNegativeTotal",
+        },
       );
 
       if (iD == null || author == null || commentBody == null) {
@@ -862,6 +799,14 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             ?.split("/")
             ?.last,
         verifiedAuthor: result["landing"]?["name"] != null,
+        unavailableFields: {
+          "ratingsPositivePercent",
+          // Only non-null when isUHD is true
+          "maxQuality",
+          // Never provided on the suggestions endpoint
+          "thumbnailHttpHeaders",
+          "previewVideoHttpHeaders",
+        },
       );
 
       if (title == null) {
@@ -1134,8 +1079,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       name: name!,
       plugin: null,
       avatar: thumbnail,
-      // xhamster doesn't have banners
-      banner: null,
       aliases: jscriptMap["infoComponent"]?["aliases"]?.split(", "),
       description: shortDescription,
       advancedDescription: advancedDescription,
@@ -1145,6 +1088,10 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       subscribers: subscribers,
       rank: rank,
       rawHtml: pageHtml,
+      unavailableFields: {
+        // xhamster doesn't have banners
+        "banner",
+      },
     );
   }
 
