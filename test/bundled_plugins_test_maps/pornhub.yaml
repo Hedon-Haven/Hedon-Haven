@@ -1,0 +1,22 @@
+testingSearchSuggestions:
+  - query: "Compil"
+    expectedSuggestion: "Compilation"
+
+testingSearchResults:
+  - searchString: "Art"
+
+testingVideos:
+  # This is the most watched video on pornhub (that is available in all regions)
+  - videoID: "ph5fa4d22a641bd"
+    progressThumbnailsAmount: 2025
+  # This is a more recent video
+  - videoID: "67cc2add0ac5e"
+    progressThumbnailsAmount: 800
+
+testingAuthorPageIds:
+  # A channel-type author
+  - "vixen"
+  # A model-type author
+  - "sweetie-fox"
+  # A pornstar-type author
+  - "mia-khalifa"

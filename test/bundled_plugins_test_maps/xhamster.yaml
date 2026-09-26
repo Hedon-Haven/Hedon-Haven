@@ -1,0 +1,22 @@
+testingSearchSuggestions:
+  - query: "Compil"
+    expectedSuggestion: "Compilation"
+
+testingSearchResults:
+  - searchString: "Art"
+
+testingVideos:
+  # This is an old video that uses the old progress thumbnail format
+  - videoID: "13942649"
+    progressThumbnailsAmount: 105
+  # This is a more recent video from the homepage
+  - videoID: "xhZiTRT"
+    progressThumbnailsAmount: 779
+
+testingAuthorPageIds:
+  # A channel-type author
+  - "vixen"
+  # A creator-type author
+  - "cumatozz"
+  # A user-type author
+  - "dsfilmation"

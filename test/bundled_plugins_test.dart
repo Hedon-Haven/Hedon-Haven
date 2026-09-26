@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hedon_haven/services/http_manager.dart';
 import 'package:hedon_haven/utils/bundled_plugin.dart';
@@ -13,6 +12,7 @@ import 'package:hedon_haven/utils/universal_formats.dart';
 import 'package:logger/logger.dart';
 import 'package:mockito/mockito.dart';
 import 'package:rhttp/rhttp.dart';
+import 'package:yaml/yaml.dart';
 
 // Keep in mind this import wont work until "flutter pub run build_runner build" is run
 import 'utils/generate_mocks.mocks.dart';
@@ -24,6 +24,48 @@ void timeout() {
   test("Waiting for 20 seconds before next test group...", () async {
     await Future.delayed(Duration(seconds: 20));
   });
+}
+
+/// Dumps every network request/reply that produced a result to [dirPath], so
+/// a failed scrape can be inspected (e.g. opening the .html directly to
+/// check why a css selector stopped matching). One call can involve several
+/// requests (retries, pagination helpers, ...), so all of them get dumped,
+/// not just "the" page body like the old callback-based dumping did.
+void dumpNetworkTraces(String dirPath, List<NetworkTrace> traces) {
+  Directory(dirPath).createSync(recursive: true);
+  for (int i = 0; i < traces.length; i++) {
+    final contentType = traces[i].replyHeaders["content-type"] ?? "";
+    final extension = contentType.contains("json")
+        ? "json"
+        : contentType.contains("html")
+            ? "html"
+            : contentType.contains("javascript")
+                ? "js"
+                : "bin";
+    File("$dirPath/$i.$extension").writeAsBytesSync(traces[i].bodyBytes);
+  }
+  File("$dirPath/manifest.json").writeAsStringSync(JsonEncoder.withIndent("  ")
+      .convert(traces
+          .map((t) => {"requestUrl": t.requestUrl, "statusCode": t.statusCode})
+          .toList()));
+}
+
+/// Runs [call], dumping whatever network traces it produced to [dirPath]
+/// before returning/rethrowing. A thrown exception carries the traces
+/// gathered up to the point of failure the same way a successful result
+/// does (see PluginInterface._callFunction) -> dump those too instead of
+/// losing them, since they're exactly what you'd want to inspect a failure
+/// with.
+Future<T> dumpingTraces<T extends Object>(
+    String dirPath, Future<T> Function() call) async {
+  try {
+    final result = await call();
+    dumpNetworkTraces(dirPath, result.networkTraces);
+    return result;
+  } catch (e) {
+    dumpNetworkTraces(dirPath, e.networkTraces);
+    rethrow;
+  }
 }
 
 void main() async {
@@ -52,33 +94,34 @@ void main() async {
     return;
   }
 
-  BundledPlugin pluginAsBundled =
-      (await getBundledPluginByNameAsBundledPlugin(plugin.codeName))!;
-  Map<String, dynamic> scrapedErrorsMap =
-      pluginAsBundled.testingMap["ignoreScrapedErrors"];
-  List<Map<String, dynamic>> videosMap =
-      pluginAsBundled.testingMap["testingVideos"];
-  List<String> authorPageIds =
-      pluginAsBundled.testingMap["testingAuthorPageIds"];
+  File testMapFile = File("${Directory.current.path}/test/"
+      "bundled_plugins_test_maps/${plugin.codeName.split(".").last}.yaml");
+  if (!testMapFile.existsSync()) {
+    logger.f("No test map found at ${testMapFile.path}");
+    return;
+  }
+  YamlMap testMap = loadYaml(testMapFile.readAsStringSync());
+  List<Map<String, dynamic>> testingSearchSuggestions =
+      (testMap["testingSearchSuggestions"] as YamlList)
+          .map((e) => Map<String, dynamic>.from(e as YamlMap))
+          .toList();
+  List<Map<String, dynamic>> testingSearchResults =
+      (testMap["testingSearchResults"] as YamlList)
+          .map((e) => Map<String, dynamic>.from(e as YamlMap))
+          .toList();
+  List<Map<String, dynamic>> testingVideos =
+      (testMap["testingVideos"] as YamlList)
+          .map((e) => Map<String, dynamic>.from(e as YamlMap))
+          .toList();
+  List<String> testingAuthorPageIds =
+      (testMap["testingAuthorPageIds"] as YamlList).cast<String>();
 
-  // Create dump dirs
+  // Wipe and recreate the dump dir. Subdirectories are created on demand by
+  // dumpNetworkTraces / when writing result Maps
   Directory dumpDir = Directory("${Directory.current.path}/dumps");
   if (dumpDir.existsSync()) dumpDir.deleteSync(recursive: true);
   dumpDir.createSync(recursive: true);
-  Directory("${Directory.current.path}/dumps/init").createSync();
-  Directory("${Directory.current.path}/dumps/getSearchSuggestions")
-      .createSync();
-  Directory("${Directory.current.path}/dumps/getHomePage").createSync();
-  Directory("${Directory.current.path}/dumps/getSearchResults").createSync();
-  Directory("${Directory.current.path}/dumps/getVideoMetadata").createSync();
-  Directory("${Directory.current.path}/dumps/getVideoSuggestions").createSync();
-  Directory("${Directory.current.path}/dumps/getProgressThumbnails")
-      .createSync();
-  Directory("${Directory.current.path}/dumps/getComments").createSync();
-  Directory("${Directory.current.path}/dumps/getAuthorPage").createSync();
-  Directory("${Directory.current.path}/dumps/getAuthorVideos").createSync();
-  Directory("${Directory.current.path}/dumps/pluginCache").createSync();
-  logger.i("Dump dirs created at ${dumpDir.path}");
+  logger.i("Dump dir created at ${dumpDir.path}");
 
   // Create encoder with indent for nicer dumps
   JsonEncoder encoder = JsonEncoder.withIndent("  ");
@@ -88,11 +131,11 @@ void main() async {
       logger.i("Testing init");
 
       try {
-        await plugin.init(
-            Directory("${Directory.current.path}/dumps/pluginCache").path,
-            (body) =>
-                File("${dumpDir.path}/init/init.html").writeAsStringSync(body));
+        List<NetworkTrace> traces =
+            await plugin.init(Directory("${dumpDir.path}/pluginCache").path);
+        dumpNetworkTraces("${dumpDir.path}/init", traces);
       } catch (e) {
+        dumpNetworkTraces("${dumpDir.path}/init", e.networkTraces);
         fail("plugin.init threw: $e");
       }
     });
@@ -131,60 +174,58 @@ void main() async {
     */
 
     group("getSearchSuggestions", () {
-      List<String>? suggestions;
-      setUpAll(() async {
-        suggestions = await plugin.getSearchSuggestions(
-            "Compil",
-            (body) => File(
-                    "${dumpDir.path}/getSearchSuggestions/getSearchSuggestions.html")
-                .writeAsStringSync(body));
-      });
-      test("Make sure amount of returned result is greater than 0", () {
-        expect(suggestions!.length, greaterThan(0));
-      });
-      test("Check at least one of the suggestions is \"Compilation\"", () {
-        expect(suggestions!.contains("Compilation"), isTrue);
-      });
-      tearDownAll(() {
-        logger.i("Dumping suggestions Map to file");
-        File("${dumpDir.path}/getSearchSuggestions/getSearchSuggestions.json")
-            .writeAsStringSync(encoder.convert(suggestions));
-      });
-    });
+      for (final testCase in testingSearchSuggestions) {
+        final String query = testCase["query"];
+        final String expectedSuggestion = testCase["expectedSuggestion"];
 
-    timeout();
+        group("query \"$query\"", () {
+          List<String>? suggestions;
+          setUpAll(() async {
+            suggestions = await dumpingTraces(
+                "${dumpDir.path}/getSearchSuggestions/$query",
+                () => plugin.getSearchSuggestions(query));
+          });
+          test("Make sure amount of returned result is greater than 0", () {
+            expect(suggestions!.length, greaterThan(0));
+          });
+          test(
+              "Check at least one of the suggestions is \"$expectedSuggestion\"",
+              () {
+            expect(suggestions!.contains(expectedSuggestion), isTrue);
+          });
+          tearDownAll(() {
+            logger.i("Dumping suggestions Map to file");
+            File("${dumpDir.path}/getSearchSuggestions/$query/Map.json")
+                .writeAsStringSync(encoder.convert(suggestions));
+          });
+        });
+
+        timeout();
+      }
+    });
 
     group("getHomePage", () {
       List<UniversalVideoPreview> homepageResults = [];
       setUpAll(() async {
-        // Get 3 pages of homepage
-        homepageResults = [
-          ...await plugin.getHomePage(
-              plugin.initialHomePage,
-              (body) => File(
-                      "${dumpDir.path}/getHomePage/${plugin.initialHomePage}.html")
-                  .writeAsStringSync(body)),
-          ...await plugin.getHomePage(
-              plugin.initialHomePage + 1,
-              (body) => File(
-                      "${dumpDir.path}/getHomePage/${plugin.initialHomePage + 1}.html")
-                  .writeAsStringSync(body)),
-          ...await plugin.getHomePage(
-              plugin.initialHomePage + 2,
-              (body) => File(
-                      "${dumpDir.path}/getHomePage/${plugin.initialHomePage + 2}.html")
-                  .writeAsStringSync(body))
-        ];
+        // Get 3 pages of homepage. Fetched (and dumped) one page at a time,
+        // instead of merging with a spread, so each page's networkTraces
+        // (attached via an Expando keyed on that exact List instance) don't
+        // get lost when building the combined list
+        for (int page = plugin.initialHomePage;
+            page < plugin.initialHomePage + 3;
+            page++) {
+          List<UniversalVideoPreview> pageResults = await dumpingTraces(
+              "${dumpDir.path}/getHomePage/page_$page",
+              () => plugin.getHomePage(page));
+          homepageResults.addAll(pageResults);
+        }
       });
       test("Make sure amount of returned result is greater than 0", () {
         expect(homepageResults.length, greaterThan(0));
       });
       test("Check if all results were fully scraped", () {
         for (var result in homepageResults) {
-          expect(
-              result.verifyScrapedData(
-                  plugin.codeName, scrapedErrorsMap["homepage"]),
-              isTrue);
+          expect(result.verifyScrapedData(plugin.codeName), isTrue);
         }
       });
       tearDownAll(() {
@@ -199,523 +240,232 @@ void main() async {
     timeout();
 
     group("getSearchResults", () {
-      List<UniversalVideoPreview> searchResults = [];
-      setUpAll(() async {
-        // Getting 3 pages of search results for "Art"
-        searchResults = [
-          ...await plugin.getSearchResults(
-              UniversalSearchRequest(searchString: "Art"),
-              plugin.initialSearchResultsPage,
-              (body) => File(
-                      "${dumpDir.path}/getSearchResults/${plugin.initialSearchResultsPage}.html")
-                  .writeAsStringSync(body)),
-          ...await plugin.getSearchResults(
-              UniversalSearchRequest(searchString: "Art"),
-              plugin.initialSearchResultsPage + 1,
-              (body) => File(
-                      "${dumpDir.path}/getSearchResults/${plugin.initialSearchResultsPage + 1}.html")
-                  .writeAsStringSync(body)),
-          ...await plugin.getSearchResults(
-              UniversalSearchRequest(searchString: "Art"),
-              plugin.initialSearchResultsPage + 2,
-              (body) => File(
-                      "${dumpDir.path}/getSearchResults/${plugin.initialSearchResultsPage + 2}.html")
-                  .writeAsStringSync(body))
-        ];
-      });
-      test("Make sure amount of returned result is greater than 0", () {
-        expect(searchResults.length, greaterThan(0));
-      });
-      test("Check if all results were fully scraped", () {
-        for (var result in searchResults) {
-          expect(
-              result.verifyScrapedData(
-                  plugin.codeName, scrapedErrorsMap["searchResults"]),
-              isTrue);
-        }
-      });
-      tearDownAll(() {
-        logger.i("Dumping getSearchResults Map to file.");
-        List<Map<String, dynamic>> searchResultsAsMap =
-            searchResults.map((e) => e.toMap()).toList();
-        File("${dumpDir.path}/getSearchResults/Map.json")
-            .writeAsStringSync(encoder.convert(searchResultsAsMap));
-      });
+      for (final testCase in testingSearchResults) {
+        final String searchString = testCase["searchString"];
+
+        group("search \"$searchString\"", () {
+          List<UniversalVideoPreview> searchResults = [];
+          setUpAll(() async {
+            // Getting 3 pages of search results
+            for (int page = plugin.initialSearchResultsPage;
+                page < plugin.initialSearchResultsPage + 3;
+                page++) {
+              List<UniversalVideoPreview> pageResults = await dumpingTraces(
+                  "${dumpDir.path}/getSearchResults/${searchString}_page_$page",
+                  () => plugin.getSearchResults(
+                      UniversalSearchRequest(searchString: searchString),
+                      page));
+              searchResults.addAll(pageResults);
+            }
+          });
+          test("Make sure amount of returned result is greater than 0", () {
+            expect(searchResults.length, greaterThan(0));
+          });
+          test("Check if all results were fully scraped", () {
+            for (var result in searchResults) {
+              expect(result.verifyScrapedData(plugin.codeName), isTrue);
+            }
+          });
+          tearDownAll(() {
+            logger.i("Dumping getSearchResults Map to file.");
+            List<Map<String, dynamic>> searchResultsAsMap =
+                searchResults.map((e) => e.toMap()).toList();
+            File("${dumpDir.path}/getSearchResults/$searchString.json")
+                .writeAsStringSync(encoder.convert(searchResultsAsMap));
+          });
+        });
+
+        timeout();
+      }
     });
 
-    timeout();
-
-    // The tests all need VideoMetadata -> scrape once to increase testing speed
     group("VideoMetadata tests", () {
-      UniversalVideoMetadata? videoMetadataOne;
-      UniversalVideoMetadata? videoMetadataTwo;
-      setUpAll(() async {
-        // Pass skeletons, a the uvp is only needed in ui tests
-        videoMetadataOne = await plugin.getVideoMetadata(
-            videosMap[0]["videoID"],
-            UniversalVideoPreview.skeleton(),
-            (body) => File(
-                    "${dumpDir.path}/getVideoMetadata/${videosMap[0]["videoID"]}.html")
-                .writeAsStringSync(body));
-        videoMetadataTwo = await plugin.getVideoMetadata(
-            videosMap[1]["videoID"],
-            UniversalVideoPreview.skeleton(),
-            (body) => File(
-                    "${dumpDir.path}/getVideoMetadata/${videosMap[1]["videoID"]}.html")
-                .writeAsStringSync(body));
-      });
+      for (final videoMap in testingVideos) {
+        final String videoID = videoMap["videoID"];
+        final int expectedProgressThumbnails =
+            videoMap["progressThumbnailsAmount"];
 
-      group("getVideoMetadata", () {
-        test(
-            "Check if video metadata for ${videosMap[0]["videoID"]} was fully scraped",
-            () {
-          expect(
-              videoMetadataOne!.verifyScrapedData(
-                  plugin.codeName, scrapedErrorsMap["videoMetadata"]),
-              isTrue);
-        });
-        test(
-            "Check if video metadata for ${videosMap[1]["videoID"]} was fully scraped",
-            () {
-          expect(
-              videoMetadataTwo!.verifyScrapedData(
-                  plugin.codeName, scrapedErrorsMap["videoMetadata"]),
-              isTrue);
-        });
-        tearDownAll(() {
-          logger.i("Dumping getVideoMetadata Maps to files");
-          File("${dumpDir.path}/getVideoMetadata/${videosMap[0]["videoID"]}.json")
-              .writeAsStringSync(encoder.convert(videoMetadataOne!.toMap()));
-          File("${dumpDir.path}/getVideoMetadata/${videosMap[1]["videoID"]}.json")
-              .writeAsStringSync(encoder.convert(videoMetadataTwo!.toMap()));
-        });
-      });
+        group("video $videoID", () {
+          UniversalVideoMetadata? metadata;
+          setUpAll(() async {
+            // Pass a skeleton, the uvp is only needed in ui tests
+            metadata = await dumpingTraces(
+                "${dumpDir.path}/getVideoMetadata/$videoID",
+                () => plugin.getVideoMetadata(
+                    videoID, UniversalVideoPreview.skeleton()));
+          });
 
-      timeout();
+          group("getVideoMetadata", () {
+            test("Check if video metadata was fully scraped", () {
+              expect(metadata!.verifyScrapedData(plugin.codeName), isTrue);
+            });
+            tearDownAll(() {
+              logger.i("Dumping getVideoMetadata Map to file");
+              File("${dumpDir.path}/getVideoMetadata/$videoID/Map.json")
+                  .writeAsStringSync(encoder.convert(metadata!.toMap()));
+            });
+          });
 
-      group("getProgressThumbnails", () {
-        List<Uint8List>? thumbnailsOne;
-        List<Uint8List>? thumbnailsTwo;
-        setUpAll(() async {
-          thumbnailsOne = await plugin.getProgressThumbnails(
-              videoMetadataOne!.iD, videoMetadataOne!.rawHtml);
-          thumbnailsTwo = await plugin.getProgressThumbnails(
-              videoMetadataTwo!.iD, videoMetadataTwo!.rawHtml);
-        });
-        test(
-            "Check if ${videosMap[0]["progressThumbnailsAmount"]} progress thumbnails were scraped from ${videosMap[0]["videoID"]}",
-            () {
-          expect(
-              thumbnailsOne!.length, videosMap[0]["progressThumbnailsAmount"]);
-        });
-        test(
-            "Check if ${videosMap[1]["progressThumbnailsAmount"]} progress thumbnails were scraped from ${videosMap[1]["videoID"]}",
-            () {
-          expect(
-              thumbnailsTwo!.length, videosMap[1]["progressThumbnailsAmount"]);
-        });
-        tearDownAll(() {
-          logger.i(
-              "Dumping each getProgressThumbnails thumbnail to separate file");
-          // Create separate dir for each thumbnail list
-          Directory(
-                  "${dumpDir.path}/getProgressThumbnails/${videosMap[0]["videoID"]}")
-              .createSync();
-          Directory(
-                  "${dumpDir.path}/getProgressThumbnails/${videosMap[1]["videoID"]}")
-              .createSync();
-          for (int i = 0; i < thumbnailsOne!.length; i++) {
-            File("${dumpDir.path}/getProgressThumbnails/${videosMap[0]["videoID"]}/$i.jpeg")
-                .writeAsBytesSync(thumbnailsOne![i]);
-          }
-          for (int i = 0; i < thumbnailsTwo!.length; i++) {
-            File("${dumpDir.path}/getProgressThumbnails/${videosMap[1]["videoID"]}/$i.jpeg")
-                .writeAsBytesSync(thumbnailsTwo![i]);
-          }
-        });
-      });
+          timeout();
 
-      timeout();
+          group("getProgressThumbnails", () {
+            List<Uint8List>? thumbnails;
+            setUpAll(() async {
+              try {
+                thumbnails = await plugin.getProgressThumbnails(
+                    metadata!.iD, metadata!.rawHtml);
+                dumpNetworkTraces(
+                    "${dumpDir.path}/getProgressThumbnails/$videoID",
+                    thumbnails?.networkTraces ?? []);
+              } catch (e) {
+                dumpNetworkTraces(
+                    "${dumpDir.path}/getProgressThumbnails/$videoID",
+                    e.networkTraces);
+                rethrow;
+              }
+            });
+            test(
+                "Check if $expectedProgressThumbnails progress thumbnails were scraped",
+                () {
+              expect(thumbnails!.length, expectedProgressThumbnails);
+            });
+            tearDownAll(() {
+              logger
+                  .i("Dumping each getProgressThumbnails thumbnail to a file");
+              Directory("${dumpDir.path}/getProgressThumbnails/$videoID")
+                  .createSync(recursive: true);
+              for (int i = 0; i < thumbnails!.length; i++) {
+                File("${dumpDir.path}/getProgressThumbnails/$videoID/$i.jpeg")
+                    .writeAsBytesSync(thumbnails![i]);
+              }
+            });
+          });
 
-      group("getVideoSuggestions", () {
-        List<UniversalVideoPreview>? suggestionsOne;
-        List<UniversalVideoPreview>? suggestionsTwo;
-        setUpAll(() async {
-          // Get 3 pages of video suggestions
-          suggestionsOne = [
-            ...await plugin.getVideoSuggestions(
-                videoMetadataOne!.iD,
-                videoMetadataOne!.rawHtml,
-                plugin.initialVideoSuggestionsPage,
-                (body) => File(
-                        "${dumpDir.path}/getVideoSuggestions/${videosMap[0]["videoID"]}_${plugin.initialVideoSuggestionsPage}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getVideoSuggestions(
-                videoMetadataOne!.iD,
-                videoMetadataOne!.rawHtml,
-                plugin.initialVideoSuggestionsPage + 1,
-                (body) => File(
-                        "${dumpDir.path}/getVideoSuggestions/${videosMap[0]["videoID"]}_${plugin.initialVideoSuggestionsPage + 1}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getVideoSuggestions(
-                videoMetadataOne!.iD,
-                videoMetadataOne!.rawHtml,
-                plugin.initialVideoSuggestionsPage + 2,
-                (body) => File(
-                        "${dumpDir.path}/getVideoSuggestions/${videosMap[0]["videoID"]}_${plugin.initialVideoSuggestionsPage + 2}.html")
-                    .writeAsStringSync(body))
-          ];
+          timeout();
 
-          suggestionsTwo = [
-            ...await plugin.getVideoSuggestions(
-                videoMetadataTwo!.iD,
-                videoMetadataTwo!.rawHtml,
-                plugin.initialVideoSuggestionsPage,
-                (body) => File(
-                        "${dumpDir.path}/getVideoSuggestions/${videosMap[1]["videoID"]}_${plugin.initialVideoSuggestionsPage}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getVideoSuggestions(
-                videoMetadataTwo!.iD,
-                videoMetadataTwo!.rawHtml,
-                plugin.initialVideoSuggestionsPage + 1,
-                (body) => File(
-                        "${dumpDir.path}/getVideoSuggestions/${videosMap[1]["videoID"]}_${plugin.initialVideoSuggestionsPage + 1}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getVideoSuggestions(
-                videoMetadataTwo!.iD,
-                videoMetadataTwo!.rawHtml,
-                plugin.initialVideoSuggestionsPage + 2,
-                (body) => File(
-                        "${dumpDir.path}/getVideoSuggestions/${videosMap[1]["videoID"]}_${plugin.initialVideoSuggestionsPage + 2}.html")
-                    .writeAsStringSync(body))
-          ];
-        });
-        test(
-            "Make sure amount of returned result is greater than 0 for ${videosMap[0]["videoID"]}",
-            () {
-          expect(suggestionsOne!.length, greaterThan(0));
-        });
-        test(
-            "Make sure amount of returned result is greater than 0 for ${videosMap[1]["videoID"]}",
-            () {
-          expect(suggestionsTwo!.length, greaterThan(0));
-        });
-        test(
-            "Check if all video suggestions for ${videosMap[0]["videoID"]} were fully scraped",
-            () {
-          for (var suggestion in suggestionsOne!) {
-            expect(
-                suggestion.verifyScrapedData(
-                    plugin.codeName, scrapedErrorsMap["videoSuggestions"]),
-                isTrue);
-          }
-        });
-        test(
-            "Check if all video suggestions for ${videosMap[1]["videoID"]} were fully scraped",
-            () {
-          for (var suggestion in suggestionsTwo!) {
-            expect(
-                suggestion.verifyScrapedData(
-                    plugin.codeName, scrapedErrorsMap["videoSuggestions"]),
-                isTrue);
-          }
-        });
-        tearDownAll(() {
-          logger.i("Dumping getVideoSuggestions Maps to files");
-          File("${dumpDir.path}/getVideoSuggestions/${videosMap[0]["videoID"]}.json")
-              .writeAsStringSync(encoder
-                  .convert(suggestionsOne!.map((e) => e.toMap()).toList()));
-          File("${dumpDir.path}/getVideoSuggestions/${videosMap[1]["videoID"]}.json")
-              .writeAsStringSync(encoder
-                  .convert(suggestionsTwo!.map((e) => e.toMap()).toList()));
-        });
-      });
+          group("getVideoSuggestions", () {
+            List<UniversalVideoPreview> suggestions = [];
+            setUpAll(() async {
+              // Get 3 pages of video suggestions
+              for (int page = plugin.initialVideoSuggestionsPage;
+                  page < plugin.initialVideoSuggestionsPage + 3;
+                  page++) {
+                List<UniversalVideoPreview> pageResults = await dumpingTraces(
+                    "${dumpDir.path}/getVideoSuggestions/${videoID}_page_$page",
+                    () => plugin.getVideoSuggestions(
+                        metadata!.iD, metadata!.rawHtml, page));
+                suggestions.addAll(pageResults);
+              }
+            });
+            test("Make sure amount of returned result is greater than 0", () {
+              expect(suggestions.length, greaterThan(0));
+            });
+            test("Check if all video suggestions were fully scraped", () {
+              for (var suggestion in suggestions) {
+                expect(suggestion.verifyScrapedData(plugin.codeName), isTrue);
+              }
+            });
+            tearDownAll(() {
+              logger.i("Dumping getVideoSuggestions Map to file");
+              File("${dumpDir.path}/getVideoSuggestions/$videoID.json")
+                  .writeAsStringSync(encoder
+                      .convert(suggestions.map((e) => e.toMap()).toList()));
+            });
+          });
 
-      timeout();
+          timeout();
 
-      group("getComments", () {
-        List<UniversalComment>? commentsOne;
-        List<UniversalComment>? commentsTwo;
-        setUpAll(() async {
-          // Get 3 pages of comments
-          commentsOne = [
-            ...await plugin.getComments(
-                videoMetadataOne!.iD,
-                videoMetadataOne!.rawHtml,
-                plugin.initialCommentsPage,
-                (body) => File(
-                        "${dumpDir.path}/getComments/${videosMap[0]["videoID"]}_${plugin.initialCommentsPage}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getComments(
-                videoMetadataOne!.iD,
-                videoMetadataOne!.rawHtml,
-                plugin.initialCommentsPage + 1,
-                (body) => File(
-                        "${dumpDir.path}/getComments/${videosMap[0]["videoID"]}_${plugin.initialCommentsPage + 1}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getComments(
-                videoMetadataOne!.iD,
-                videoMetadataOne!.rawHtml,
-                plugin.initialCommentsPage + 2,
-                (body) => File(
-                        "${dumpDir.path}/getComments/${videosMap[0]["videoID"]}_${plugin.initialCommentsPage + 2}.html")
-                    .writeAsStringSync(body))
-          ];
+          group("getComments", () {
+            List<UniversalComment> comments = [];
+            setUpAll(() async {
+              // Get 3 pages of comments
+              for (int page = plugin.initialCommentsPage;
+                  page < plugin.initialCommentsPage + 3;
+                  page++) {
+                List<UniversalComment> pageResults = await dumpingTraces(
+                    "${dumpDir.path}/getComments/${videoID}_page_$page",
+                    () => plugin.getComments(
+                        metadata!.iD, metadata!.rawHtml, page));
+                comments.addAll(pageResults);
+              }
+            });
+            test("Make sure amount of returned comments is greater than 0", () {
+              expect(comments.length, greaterThan(0));
+            });
+            test("Check if all comments were fully scraped", () {
+              for (var comment in comments) {
+                expect(comment.verifyScrapedData(plugin.codeName), isTrue);
+              }
+            });
+            tearDownAll(() {
+              logger.i("Dumping getComments Map to file");
+              File("${dumpDir.path}/getComments/$videoID.json")
+                  .writeAsStringSync(
+                      encoder.convert(comments.map((e) => e.toMap()).toList()));
+            });
+          });
+        });
 
-          commentsTwo = [
-            ...await plugin.getComments(
-                videoMetadataTwo!.iD,
-                videoMetadataTwo!.rawHtml,
-                plugin.initialCommentsPage,
-                (body) => File(
-                        "${dumpDir.path}/getComments/${videosMap[1]["videoID"]}_${plugin.initialCommentsPage}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getComments(
-                videoMetadataTwo!.iD,
-                videoMetadataTwo!.rawHtml,
-                plugin.initialCommentsPage + 1,
-                (body) => File(
-                        "${dumpDir.path}/getComments/${videosMap[1]["videoID"]}_${plugin.initialCommentsPage + 1}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getComments(
-                videoMetadataTwo!.iD,
-                videoMetadataTwo!.rawHtml,
-                plugin.initialCommentsPage + 2,
-                (body) => File(
-                        "${dumpDir.path}/getComments/${videosMap[1]["videoID"]}_${plugin.initialCommentsPage + 2}.html")
-                    .writeAsStringSync(body))
-          ];
-        });
-        test(
-            "Make sure amount of returned comments is greater than 0 for ${videosMap[0]["videoID"]}",
-            () {
-          expect(commentsOne!.length, greaterThan(0));
-        });
-        test(
-            "Make sure amount of returned comments is greater than 0 for ${videosMap[1]["videoID"]}",
-            () {
-          expect(commentsTwo!.length, greaterThan(0));
-        });
-        test(
-            "Check if all comments for ${videosMap[0]["videoID"]} were fully scraped",
-            () {
-          for (var comment in commentsOne!) {
-            expect(
-                comment.verifyScrapedData(
-                    plugin.codeName, scrapedErrorsMap["comments"]),
-                isTrue);
-          }
-        });
-        test(
-            "Check if all comments for ${videosMap[1]["videoID"]} were fully scraped",
-            () {
-          for (var comment in commentsTwo!) {
-            expect(
-                comment.verifyScrapedData(
-                    plugin.codeName, scrapedErrorsMap["comments"]),
-                isTrue);
-          }
-        });
-        tearDownAll(() {
-          logger.i("Dumping getComments Maps to files");
-          File("${dumpDir.path}/getComments/${videosMap[0]["videoID"]}.json")
-              .writeAsStringSync(
-                  encoder.convert(commentsOne!.map((e) => e.toMap()).toList()));
-          File("${dumpDir.path}/getComments/${videosMap[1]["videoID"]}.json")
-              .writeAsStringSync(
-                  encoder.convert(commentsTwo!.map((e) => e.toMap()).toList()));
-        });
-      });
+        timeout();
+      }
     });
-
-    timeout();
 
     group("AuthorPage tests", () {
-      // Some websites have 3 different author pages
-      UniversalAuthorPage? authorPageOne;
-      UniversalAuthorPage? authorPageTwo;
-      UniversalAuthorPage? authorPageThree;
-      setUpAll(() async {
-        authorPageOne = await plugin.getAuthorPage(
-            authorPageIds[0],
-            (body) =>
-                File("${dumpDir.path}/getAuthorPage/${authorPageIds[0]}.html")
-                    .writeAsStringSync(body));
-        authorPageTwo = await plugin.getAuthorPage(
-            authorPageIds[1],
-            (body) =>
-                File("${dumpDir.path}/getAuthorPage/${authorPageIds[1]}.html")
-                    .writeAsStringSync(body));
-        authorPageThree = await plugin.getAuthorPage(
-            authorPageIds[2],
-            (body) =>
-                File("${dumpDir.path}/getAuthorPage/${authorPageIds[2]}.html")
-                    .writeAsStringSync(body));
-      });
+      for (final authorID in testingAuthorPageIds) {
+        group("author $authorID", () {
+          UniversalAuthorPage? authorPage;
+          setUpAll(() async {
+            authorPage = await dumpingTraces(
+                "${dumpDir.path}/getAuthorPage/$authorID",
+                () => plugin.getAuthorPage(authorID));
+          });
 
-      group("getAuthorPage", () {
-        test(
-            "Check if authorPage metadata for ${authorPageIds[0]} was fully scraped",
-            () {
-          expect(
-              authorPageOne!.verifyScrapedData(
-                  plugin.codeName, scrapedErrorsMap["authorPage"]),
-              isTrue);
-        });
-        test(
-            "Check if authorPage metadata for ${authorPageIds[1]} was fully scraped",
-            () {
-          expect(
-              authorPageTwo!.verifyScrapedData(
-                  plugin.codeName, scrapedErrorsMap["authorPage"]),
-              isTrue);
-        });
-        test(
-            "Check if authorPage metadata for ${authorPageIds[2]} was fully scraped",
-            () {
-          expect(
-              authorPageThree!.verifyScrapedData(
-                  plugin.codeName, scrapedErrorsMap["authorPage"]),
-              isTrue);
-        });
-        tearDownAll(() {
-          logger.i("Dumping getAuthorPage Maps to files");
-          File("${dumpDir.path}/getAuthorPage/${authorPageIds[0]}.json")
-              .writeAsStringSync(encoder.convert(authorPageOne!.toMap()));
-          File("${dumpDir.path}/getAuthorPage/${authorPageIds[1]}.json")
-              .writeAsStringSync(encoder.convert(authorPageTwo!.toMap()));
-          File("${dumpDir.path}/getAuthorPage/${authorPageIds[2]}.json")
-              .writeAsStringSync(encoder.convert(authorPageThree!.toMap()));
-        });
-      });
+          group("getAuthorPage", () {
+            test("Check if authorPage metadata was fully scraped", () {
+              expect(authorPage!.verifyScrapedData(plugin.codeName), isTrue);
+            });
+            tearDownAll(() {
+              logger.i("Dumping getAuthorPage Map to file");
+              File("${dumpDir.path}/getAuthorPage/$authorID/Map.json")
+                  .writeAsStringSync(encoder.convert(authorPage!.toMap()));
+            });
+          });
 
-      timeout();
+          timeout();
 
-      group("getAuthorVideos", () {
-        List<UniversalVideoPreview>? authorVideosOne;
-        List<UniversalVideoPreview>? authorVideosTwo;
-        List<UniversalVideoPreview>? authorVideosThree;
-        setUpAll(() async {
-          // Get 3 pages of video suggestions
-          authorVideosOne = [
-            ...await plugin.getAuthorVideos(
-                authorPageOne!.iD,
-                plugin.initialAuthorVideosPage,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[0]}_${plugin.initialAuthorVideosPage}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getAuthorVideos(
-                authorPageOne!.iD,
-                plugin.initialAuthorVideosPage + 1,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[0]}_${plugin.initialAuthorVideosPage + 1}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getAuthorVideos(
-                authorPageOne!.iD,
-                plugin.initialAuthorVideosPage + 2,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[0]}_${plugin.initialAuthorVideosPage + 2}.html")
-                    .writeAsStringSync(body))
-          ];
-          authorVideosTwo = [
-            ...await plugin.getAuthorVideos(
-                authorPageTwo!.iD,
-                plugin.initialAuthorVideosPage,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[1]}_${plugin.initialAuthorVideosPage}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getAuthorVideos(
-                authorPageTwo!.iD,
-                plugin.initialAuthorVideosPage + 1,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[1]}_${plugin.initialAuthorVideosPage + 1}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getAuthorVideos(
-                authorPageTwo!.iD,
-                plugin.initialAuthorVideosPage + 2,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[1]}_${plugin.initialAuthorVideosPage + 2}.html")
-                    .writeAsStringSync(body))
-          ];
-          authorVideosThree = [
-            ...await plugin.getAuthorVideos(
-                authorPageThree!.iD,
-                plugin.initialAuthorVideosPage,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[2]}_${plugin.initialAuthorVideosPage}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getAuthorVideos(
-                authorPageThree!.iD,
-                plugin.initialAuthorVideosPage + 1,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[2]}_${plugin.initialAuthorVideosPage + 1}.html")
-                    .writeAsStringSync(body)),
-            ...await plugin.getAuthorVideos(
-                authorPageThree!.iD,
-                plugin.initialAuthorVideosPage + 2,
-                (body) => File(
-                        "${dumpDir.path}/getAuthorVideos/${authorPageIds[2]}_${plugin.initialAuthorVideosPage + 2}.html")
-                    .writeAsStringSync(body))
-          ];
+          group("getAuthorVideos", () {
+            List<UniversalVideoPreview> authorVideos = [];
+            setUpAll(() async {
+              // Get 3 pages of author videos
+              for (int page = plugin.initialAuthorVideosPage;
+                  page < plugin.initialAuthorVideosPage + 3;
+                  page++) {
+                List<UniversalVideoPreview> pageResults = await dumpingTraces(
+                    "${dumpDir.path}/getAuthorVideos/${authorID}_page_$page",
+                    () => plugin.getAuthorVideos(
+                        authorPage!.iD, authorPage!.rawHtml, page));
+                authorVideos.addAll(pageResults);
+              }
+            });
+            test("Make sure amount of returned results is greater than 0", () {
+              expect(authorVideos.length, greaterThan(0));
+            });
+            test("Check if all author videos were fully scraped", () {
+              for (var video in authorVideos) {
+                expect(video.verifyScrapedData(plugin.codeName), isTrue);
+              }
+            });
+            tearDownAll(() {
+              logger.i("Dumping getAuthorVideos Map to file");
+              File("${dumpDir.path}/getAuthorVideos/$authorID.json")
+                  .writeAsStringSync(encoder
+                      .convert(authorVideos.map((e) => e.toMap()).toList()));
+            });
+          });
         });
-        test(
-            "Make sure amount of returned results is greater than 0 for ${authorPageIds[0]}",
-            () {
-          expect(authorVideosOne!.length, greaterThan(0));
-        });
-        test(
-            "Make sure amount of returned results is greater than 0 for ${authorPageIds[1]}",
-            () {
-          expect(authorVideosTwo!.length, greaterThan(0));
-        });
-        test(
-            "Make sure amount of returned results is greater than 0 for ${authorPageIds[2]}",
-            () {
-          expect(authorVideosThree!.length, greaterThan(0));
-        });
-        test(
-            "Check if all author videos for ${authorPageIds[0]} were fully scraped",
-            () {
-          for (var video in authorVideosOne!) {
-            expect(
-                video.verifyScrapedData(
-                    plugin.codeName, scrapedErrorsMap["authorVideos"]),
-                isTrue);
-          }
-        });
-        test(
-            "Check if all author videos for ${authorPageIds[1]} were fully scraped",
-            () {
-          for (var video in authorVideosTwo!) {
-            expect(
-                video.verifyScrapedData(
-                    plugin.codeName, scrapedErrorsMap["authorVideos"]),
-                isTrue);
-          }
-        });
-        test(
-            "Check if all author videos for ${authorPageIds[2]} were fully scraped",
-            () {
-          for (var video in authorVideosThree!) {
-            expect(
-                video.verifyScrapedData(
-                    plugin.codeName, scrapedErrorsMap["authorVideos"]),
-                isTrue);
-          }
-        });
-        tearDownAll(() {
-          logger.i("Dumping getAuthorVideos Maps to files");
-          File("${dumpDir.path}/getAuthorVideos/${authorPageIds[0]}.json")
-              .writeAsStringSync(encoder
-                  .convert(authorVideosOne!.map((e) => e.toMap()).toList()));
-          File("${dumpDir.path}/getAuthorVideos/${authorPageIds[1]}.json")
-              .writeAsStringSync(encoder
-                  .convert(authorVideosTwo!.map((e) => e.toMap()).toList()));
-          File("${dumpDir.path}/getAuthorVideos/${authorPageIds[2]}.json")
-              .writeAsStringSync(encoder
-                  .convert(authorVideosThree!.map((e) => e.toMap()).toList()));
-        });
-      });
+
+        timeout();
+      }
     });
   });
 }
