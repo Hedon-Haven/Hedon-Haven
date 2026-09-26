@@ -87,3 +87,35 @@ class PluginTimeoutException extends CustomException {
   @override
   String get title => "Plugin timed out";
 }
+
+/// Map String -> CustomException
+final List<CustomException Function(String)> _knownExceptionTypes = [
+  NoInternetConnectionException.new,
+  AgeGateException.new,
+  BannedCountryException.new,
+  UnreachableException.new,
+  NotFoundException.new,
+  PrivateAuthorProfileException.new,
+  VirtualRealityNotSupportedException.new,
+  PluginTimeoutException.new,
+];
+
+/// Converts any Exception (including special treatment for CustomExceptions) 
+/// to a serializable Map
+Map<String, dynamic> convertExceptionToMap(Object exception) {
+  return {
+    "type": exception.runtimeType.toString(),
+    "message": exception.toString()
+  };
+}
+
+/// Reconstructs whatever convertExceptionToMap produced: the real
+/// CustomException subtype if map["type"] matches one of the known types,
+/// or a plain Exception otherwise.
+Exception convertMapToException(Map<String, dynamic> map) {
+  for (final constructor in _knownExceptionTypes) {
+    final instance = constructor(map["message"]);
+    if (instance.runtimeType.toString() == map["type"]) return instance;
+  }
+  return Exception(map["message"]);
+}
