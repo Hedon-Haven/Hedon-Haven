@@ -95,7 +95,7 @@ void main() async {
   }
 
   File testMapFile = File("${Directory.current.path}/test/"
-      "bundled_plugins_test_maps/${plugin.codeName.split(".").last}.yaml");
+      "bundled_plugins_test_maps/${plugin.codeName}.yaml");
   if (!testMapFile.existsSync()) {
     logger.f("No test map found at ${testMapFile.path}");
     return;
