@@ -100,16 +100,17 @@ class LoadingHandler {
     Map<String, List<UniversalVideoPreview>> pluginResults = {};
     for (var plugin in plugins) {
       // Init resultsIssues if needed
-      if (resultsPageCounter[plugin] != -1) {
+      final pageCounter = resultsPageCounter[plugin];
+      if (pageCounter != -1) {
         List<UniversalVideoPreview>? results;
         try {
           if (searchRequest == null) {
             logger.i("Search request is null, getting homepage");
-            results = await plugin.getHomePage(resultsPageCounter[plugin]!);
+            results = await plugin.getHomePage(pageCounter!);
           } else {
             logger.i("Search request is not null, getting search results");
-            results = await plugin.getSearchResults(
-                searchRequest, resultsPageCounter[plugin]!);
+            results =
+                await plugin.getSearchResults(searchRequest, pageCounter!);
           }
         } catch (exception, stacktrace) {
           logger.e("Error getting search results from ${plugin.codeName}:"
@@ -126,9 +127,9 @@ class LoadingHandler {
         if (results != null) {
           pluginResults[plugin.codeName] = results;
           if (results.isNotEmpty) {
-            logger.i(
-                "Got results from ${plugin.codeName} for page ${resultsPageCounter[plugin]}");
-            resultsPageCounter[plugin] = resultsPageCounter[plugin]! + 1;
+            logger
+                .i("Got results from ${plugin.codeName} for page $pageCounter");
+            resultsPageCounter[plugin] = pageCounter! + 1;
           } else {
             if (previousResults == null) {
               logger.w("No results at all from ${plugin.codeName}");
@@ -152,21 +153,27 @@ class LoadingHandler {
         resultsRemaining = false;
         for (var plugin in plugins) {
           // Check if the plugin has results and if there is a result at the current index
-          if (pluginResults.containsKey(plugin.codeName) &&
-              pluginResults[plugin.codeName]!.length > currentIndex) {
-            if (pluginResults[plugin.codeName]![currentIndex]
-                    .scrapeFailException !=
-                null) {
+          final pluginResultsList = pluginResults[plugin.codeName];
+          if (pluginResultsList != null &&
+              pluginResultsList.length > currentIndex) {
+            final result = pluginResultsList[currentIndex];
+            final exception = result.scrapeFailException ??
+                throwOnMissedField(result.toMap(), result.unavailableFields);
+
+            if (exception != null) {
+              result.scrapeFailException = exception;
               resultsBugReports.add(PluginBugReport(
                   navigatorPath: navPath,
-                  exception: pluginResults[plugin.codeName]![currentIndex]
-                      .scrapeFailException!,
+                  exception: exception,
                   pluginCodeName: plugin.codeName,
                   isBundledPlugin: plugin.isBundledPlugin,
-                  debugObject:
-                      pluginResults[plugin.codeName]![currentIndex].toMap()));
+                  debugObject: result.toMap()));
             }
-            combinedResults.add(pluginResults[plugin.codeName]![currentIndex]);
+
+            // Do not render critical exceptions in the UI
+            if (exception?.isCritical != true) {
+              combinedResults.add(result);
+            }
             resultsRemaining = true;
           }
         }
@@ -327,14 +334,22 @@ class LoadingHandler {
         /// To show correct amount of comments that were filtered by the app
         int totalValidComments = newResults!.length;
         for (var comment in newResults) {
-          // Don't show to user
-          if (comment.scrapeFailException != null) {
+          final exception = comment.scrapeFailException ??
+              throwOnMissedField(comment.toMap(), comment.unavailableFields);
+
+          if (exception != null) {
+            comment.scrapeFailException = exception;
             commentsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: comment.scrapeFailException!,
+                exception: exception,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: comment.toMap()));
+          }
+
+          // Do not render critical exceptions in the UI
+          if (exception?.isCritical == true) {
+            continue;
           }
 
           if ((await sharedStorage.getBool("comments_hide_hidden"))!) {
@@ -438,15 +453,23 @@ class LoadingHandler {
       }
       if (newResults?.isNotEmpty ?? false) {
         for (var video in newResults!) {
-          if (video.scrapeFailException != null) {
+          final exception = video.scrapeFailException ??
+              throwOnMissedField(video.toMap(), video.unavailableFields);
+
+          if (exception != null) {
+            video.scrapeFailException = exception;
             videoSuggestionsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: video.scrapeFailException!,
+                exception: exception,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));
           }
-          combinedResults.add(video);
+
+          // Do not render critical exceptions in the UI
+          if (exception?.isCritical != true) {
+            combinedResults.add(video);
+          }
         }
         logger.i("Added ${newResults.length} video suggestions");
         videoSuggestionsPageCounter++;
@@ -512,15 +535,23 @@ class LoadingHandler {
       }
       if (newResults?.isNotEmpty ?? false) {
         for (var video in newResults!) {
-          if (video.scrapeFailException != null) {
+          final exception = video.scrapeFailException ??
+              throwOnMissedField(video.toMap(), video.unavailableFields);
+
+          if (exception != null) {
+            video.scrapeFailException = exception;
             authorVideosBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: video.scrapeFailException!,
+                exception: exception,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));
           }
-          combinedResults.add(video);
+
+          // Do not render critical exceptions in the UI
+          if (exception?.isCritical != true) {
+            combinedResults.add(video);
+          }
         }
         logger.i("Added ${newResults.length} author video");
         authorVideosPageCounter++;
