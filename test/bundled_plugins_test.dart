@@ -79,7 +79,7 @@ void main() async {
   await Rhttp.init();
 
   // Init global values
-  logger = Logger(printer: TestingPrinter());
+  logger = Logger(printer: TestingPrinter(), level: Level.debug);
   client = await getHttpClient(null);
   final mock = MockSharedPreferencesAsync();
   when(mock.getBool("general_enable_dev_options"))

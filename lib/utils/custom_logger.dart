@@ -172,6 +172,10 @@ class BetterSimplePrinter extends LogPrinter {
     // Make sure to wait for log to be written as otherwise most messages will be lost
     logFile?.writeAsStringSync('$logStr\n', mode: FileMode.append, flush: true);
 
+    // TODO: make the console log level configurable
+    // Trace logs only go to the log file
+    if (event.level < Level.debug) return [];
+
     return [levelColors[event.level]!(logStr)];
   }
 
