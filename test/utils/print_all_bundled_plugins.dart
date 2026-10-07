@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hedon_haven/utils/bundled_plugin.dart';
 import 'package:hedon_haven/utils/global_vars.dart';
 import 'package:hedon_haven/utils/plugin_interface/plugin_interface.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 // Keep in mind this import wont work until "flutter pub run build_runner build" is run
