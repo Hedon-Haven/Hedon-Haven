@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Updating release-stable.json
         run: |
@@ -31,7 +31,7 @@ jobs:
 
       # Commit and push changes
       - name: Committing changes to repo
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v11
         with:
           message: "Update latest changelog"
           default_author: github_actions
