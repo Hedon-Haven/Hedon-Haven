@@ -17,7 +17,6 @@ import '/ui/widgets/alert_dialog.dart';
 import '/ui/widgets/external_link_warning.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/convert.dart';
-import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
 
@@ -168,7 +167,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: ScrapingException(authorPage!.scrapeFailMessage!),
+              exception: authorPage!.scrapeFailException!,
               stackTrace: loadErrorStacktrace,
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
@@ -179,7 +178,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
       ),
     );
     // Clear scrape failure message to avoid further reports
-    setState(() => authorPage!.scrapeFailMessage = null);
+    setState(() => authorPage!.scrapeFailException = null);
   }
 
   void createFailureBugReport() {
@@ -238,7 +237,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             iconTheme:
                 IconThemeData(color: Theme.of(context).colorScheme.primary),
             actions: [
-              if (authorPage?.scrapeFailMessage != null &&
+              if (authorPage?.scrapeFailException != null &&
                   !isLoadingResults) ...[
                 IconButton(
                     icon: Icon(

@@ -5,7 +5,6 @@ import 'package:linkify/linkify.dart';
 import '/services/bug_report_manager.dart';
 import '/services/database_manager.dart';
 import '/services/plugin_manager.dart';
-import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/universal_formats.dart';
@@ -156,13 +155,12 @@ class LoadingHandler {
           if (pluginResults.containsKey(plugin.codeName) &&
               pluginResults[plugin.codeName]!.length > currentIndex) {
             if (pluginResults[plugin.codeName]![currentIndex]
-                    .scrapeFailMessage !=
+                    .scrapeFailException !=
                 null) {
               resultsBugReports.add(PluginBugReport(
                   navigatorPath: navPath,
-                  exception: ScrapingException(
-                      pluginResults[plugin.codeName]![currentIndex]
-                          .scrapeFailMessage!),
+                  exception: pluginResults[plugin.codeName]![currentIndex]
+                      .scrapeFailException!,
                   pluginCodeName: plugin.codeName,
                   isBundledPlugin: plugin.isBundledPlugin,
                   debugObject:
@@ -330,10 +328,10 @@ class LoadingHandler {
         int totalValidComments = newResults!.length;
         for (var comment in newResults) {
           // Don't show to user
-          if (comment.scrapeFailMessage != null) {
+          if (comment.scrapeFailException != null) {
             commentsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: ScrapingException(comment.scrapeFailMessage!),
+                exception: comment.scrapeFailException!,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: comment.toMap()));
@@ -440,10 +438,10 @@ class LoadingHandler {
       }
       if (newResults?.isNotEmpty ?? false) {
         for (var video in newResults!) {
-          if (video.scrapeFailMessage != null) {
+          if (video.scrapeFailException != null) {
             videoSuggestionsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: ScrapingException(video.scrapeFailMessage!),
+                exception: video.scrapeFailException!,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));
@@ -514,10 +512,10 @@ class LoadingHandler {
       }
       if (newResults?.isNotEmpty ?? false) {
         for (var video in newResults!) {
-          if (video.scrapeFailMessage != null) {
+          if (video.scrapeFailException != null) {
             authorVideosBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: ScrapingException(video.scrapeFailMessage!),
+                exception: video.scrapeFailException!,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));

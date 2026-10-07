@@ -167,7 +167,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
       UniversalVideoPreview uniResult = UniversalVideoPreview(
         // Don't enforce null safety here
-        // treat error below in scrapeFailMessage instead
+        // treat error below in scrapeFailException instead
         iD: iD ?? "null",
         title: title ?? "null",
         plugin: null,
@@ -191,14 +191,12 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           "thumbnailHttpHeaders",
           "previewVideoHttpHeaders",
         },
+        scrapeFailException: (iD == null || title == null)
+            ? ScrapingException("Error: Failed to scrape critical variable(s):"
+                "${iD == null ? " ID" : ""}"
+                "${title == null ? " title" : ""}")
+            : null,
       );
-
-      if (iD == null || title == null) {
-        uniResult.scrapeFailMessage =
-            "Error: Failed to scrape critical variable(s):"
-            "${iD == null ? " ID" : ""}"
-            "${title == null ? " title" : ""}";
-      }
 
       results.add(uniResult);
     }
@@ -705,7 +703,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
       UniversalComment uniComment = UniversalComment(
         // Don't enforce null safety here
-        // treat error below in scrapeFailMessage instead
+        // treat error below in scrapeFailException instead
         iD: iD ?? "null",
         videoID: videoID,
         author: author ?? "null",
@@ -728,15 +726,13 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           "ratingsPositiveTotal",
           "ratingsNegativeTotal",
         },
+        scrapeFailException: (iD == null || author == null || commentBody == null)
+            ? ScrapingException("Error: Failed to scrape critical variable(s):"
+                "${iD == null ? " iD" : ""}"
+                "${author == null ? " author" : ""}"
+                "${commentBody == null ? " commentBody" : ""}")
+            : null,
       );
-
-      if (iD == null || author == null || commentBody == null) {
-        uniComment.scrapeFailMessage =
-            "Error: Failed to scrape critical variable(s):"
-            "${iD == null ? " iD" : ""}"
-            "${author == null ? " author" : ""}"
-            "${commentBody == null ? " commentBody" : ""}";
-      }
 
       commentList.add(uniComment);
     }
@@ -782,7 +778,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
       UniversalVideoPreview relatedVideo = UniversalVideoPreview(
         // Don't enforce null safety here
-        // treat error below in scrapeFailMessage instead
+        // treat error below in scrapeFailException instead
         iD: tryParse(() => result["pageURL"].trim().split("/").last) ?? "null",
         title: title ?? "null",
         plugin: null,
@@ -807,12 +803,10 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           "thumbnailHttpHeaders",
           "previewVideoHttpHeaders",
         },
+        scrapeFailException: title == null
+            ? ScrapingException("Error: Failed to scrape critical variable: title")
+            : null,
       );
-
-      if (title == null) {
-        relatedVideo.scrapeFailMessage =
-            "Error: Failed to scrape critical variable: title";
-      }
 
       relatedVideos.add(relatedVideo);
     }

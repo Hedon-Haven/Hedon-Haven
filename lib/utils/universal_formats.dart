@@ -4,7 +4,7 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html;
 import 'package:skeletonizer/skeletonizer.dart';
 
-import '/utils/global_vars.dart';
+import '/utils/exceptions.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
 
@@ -91,6 +91,23 @@ extension NetworkTraces on Object {
 
   set networkTraces(List<NetworkTrace> value) =>
       _networkTracesExpando[this] = value;
+}
+
+/// Returns a [ScrapingException] when a field is null, but should have been
+/// scraped from the provider
+ScrapingException? throwOnMissedField(
+    Map<String, dynamic> map, Set<String> unavailableFields) {
+  // ignore fields that are not designed to be scraped
+  const ignore = {"scrapeFailException", "lastWatched", "addedOn"};
+  final nullKeys = [
+    for (final entry in map.entries)
+      if (!unavailableFields.contains(entry.key) &&
+          entry.value == null &&
+          !ignore.contains(entry.key))
+        entry.key
+  ];
+  if (nullKeys.isEmpty) return null;
+  return ScrapingException("Failed to scrape non-critical field(s): $nullKeys");
 }
 
 enum ContentType {
@@ -324,9 +341,8 @@ class UniversalVideoPreview {
   final Set<String> unavailableFields;
 
   /// If not null, indicates issue with the scrape
-  /// If starts with "Error", gets displayed differently in scraping_report
   /// The message itself is shown to the user in the scraping_report and is sent in bug reports
-  String? scrapeFailMessage;
+  ScrapingException? scrapeFailException;
 
   /// Mock constructor for skeleton
   UniversalVideoPreview.skeleton()
@@ -367,7 +383,7 @@ class UniversalVideoPreview {
     this.lastWatched,
     this.addedOn,
     required this.unavailableFields,
-    this.scrapeFailMessage,
+    this.scrapeFailException,
   })  : verifiedAuthor = verifiedAuthor ?? false,
         virtualReality = virtualReality ?? false,
         thumbnailBinary = thumbnailBinary ?? Uint8List(0);
@@ -395,63 +411,39 @@ class UniversalVideoPreview {
       "lastWatched": convertToUnixTime(lastWatched),
       "addedOn": convertToUnixTime(addedOn),
       "unavailableFields": unavailableFields.toList(),
-      "scrapeFailMessage": scrapeFailMessage
+      "scrapeFailException": scrapeFailException?.toMap()
     };
   }
 
   static UniversalVideoPreview fromMap(
       Map<String, dynamic> map, PluginInterface? plugin) {
     return UniversalVideoPreview(
-      iD: map["iD"],
-      title: map["title"],
-      plugin: plugin,
-      thumbnail: map["thumbnail"],
-      thumbnailHttpHeaders:
-          (map["thumbnailHttpHeaders"] as Map?)?.cast<String, String>(),
-      thumbnailBinary:
-          tryParse(() => Uint8List.fromList(map["thumbnailBinary"])),
-      previewVideo: tryParse(() => Uri.parse(map["previewVideo"])),
-      previewVideoHttpHeaders:
-          (map["previewVideoHttpHeaders"] as Map?)?.cast<String, String>(),
-      duration: tryParse(() => Duration(seconds: map["duration"])),
-      viewsTotal: map["viewsTotal"],
-      ratingsPositivePercent: map["ratingsPositivePercent"],
-      maxQuality: map["maxQuality"],
-      virtualReality: map["virtualReality"],
-      authorName: map["authorName"],
-      authorID: map["authorID"],
-      verifiedAuthor: map["verifiedAuthor"],
-      lastWatched: tryParseFromUnixTime(map["lastWatched"]),
-      addedOn: tryParseFromUnixTime(map["addedOn"]),
-      unavailableFields:
-          (map["unavailableFields"] as List?)?.cast<String>().toSet() ??
-              const {},
-      scrapeFailMessage: map["scrapeFailMessage"],
-    );
-  }
-
-  /// Print values that are null, but the plugin didn't expect to be null
-  /// Also returns a bool whether the data is valid
-  bool verifyScrapedData(String pluginCodeName) {
-    List<String> nullKeys = [];
-    // Check whether key is not a known-unavailable field and whether value is null
-    toMap().forEach((key, value) {
-      if (!unavailableFields.contains(key) &&
-          value == null &&
-          key != "scrapeFailMessage" &&
-          // Never sourced from the provider, only filled in later from watch history
-          key != "lastWatched" &&
-          key != "addedOn") {
-        nullKeys.add(key);
-      }
-    });
-    if (nullKeys.isNotEmpty) {
-      logger.w(
-          "$pluginCodeName: UniversalVideoPreview ($iD): Failed to scrape keys: $nullKeys");
-      scrapeFailMessage = "Failed to scrape keys: $nullKeys";
-      return false;
-    }
-    return true;
+        iD: map["iD"],
+        title: map["title"],
+        plugin: plugin,
+        thumbnail: map["thumbnail"],
+        thumbnailHttpHeaders:
+            (map["thumbnailHttpHeaders"] as Map?)?.cast<String, String>(),
+        thumbnailBinary:
+            tryParse(() => Uint8List.fromList(map["thumbnailBinary"])),
+        previewVideo: tryParse(() => Uri.parse(map["previewVideo"])),
+        previewVideoHttpHeaders:
+            (map["previewVideoHttpHeaders"] as Map?)?.cast<String, String>(),
+        duration: tryParse(() => Duration(seconds: map["duration"])),
+        viewsTotal: map["viewsTotal"],
+        ratingsPositivePercent: map["ratingsPositivePercent"],
+        maxQuality: map["maxQuality"],
+        virtualReality: map["virtualReality"],
+        authorName: map["authorName"],
+        authorID: map["authorID"],
+        verifiedAuthor: map["verifiedAuthor"],
+        lastWatched: tryParseFromUnixTime(map["lastWatched"]),
+        addedOn: tryParseFromUnixTime(map["addedOn"]),
+        unavailableFields:
+            (map["unavailableFields"] as List).cast<String>().toSet(),
+        scrapeFailException: tryParse(
+          () => ScrapingException.fromMap(map["scrapeFailException"]),
+        ));
   }
 }
 
@@ -492,9 +484,8 @@ class UniversalVideoMetadata {
   final Set<String> unavailableFields;
 
   /// If not null, indicates issue with the scrape
-  /// If starts with "Error", gets displayed differently in scraping_report
   /// The message itself is shown to the user in the scraping_report and is sent in bug reports
-  String? scrapeFailMessage;
+  ScrapingException? scrapeFailException;
 
   /// Mock constructor for skeleton
   /// Require ID as otherwise bug reports are useless
@@ -541,7 +532,7 @@ class UniversalVideoMetadata {
     this.chapters,
     required this.rawHtml,
     required this.unavailableFields,
-    this.scrapeFailMessage,
+    this.scrapeFailException,
   }) : virtualReality = virtualReality ?? false;
 
   Map<String, dynamic> toJson() => toMap();
@@ -577,7 +568,7 @@ class UniversalVideoMetadata {
       "chapters": chapters?.map((k, v) => MapEntry(k.inSeconds.toString(), v)),
       "rawHtml": rawHtml.outerHtml,
       "unavailableFields": unavailableFields.toList(),
-      "scrapeFailMessage": scrapeFailMessage
+      "scrapeFailException": scrapeFailException?.toMap()
     };
   }
 
@@ -617,32 +608,10 @@ class UniversalVideoMetadata {
           (k, v) => MapEntry(Duration(seconds: int.parse(k)), v as String)),
       rawHtml: html.parse(map["rawHtml"]),
       unavailableFields:
-          (map["unavailableFields"] as List?)?.cast<String>().toSet() ??
-              const {},
-      scrapeFailMessage: map["scrapeFailMessage"],
+          (map["unavailableFields"] as List).cast<String>().toSet(),
+      scrapeFailException:
+          tryParse(() => ScrapingException.fromMap(map["scrapeFailException"])),
     );
-  }
-
-  /// Print values that are null, but the plugin didn't expect to be null
-  /// Also returns a bool whether the data is valid
-  // TODO: Set up automatic/user prompted reporting
-  bool verifyScrapedData(String pluginCodeName) {
-    List<String> nullKeys = [];
-    // Check whether key is not a known-unavailable field and whether value is null
-    toMap().forEach((key, value) {
-      if (!unavailableFields.contains(key) &&
-          value == null &&
-          key != "scrapeFailMessage") {
-        nullKeys.add(key);
-      }
-    });
-    if (nullKeys.isNotEmpty) {
-      logger.w(
-          "$pluginCodeName: UniversalVideoMetadata ($iD): Failed to scrape keys: $nullKeys");
-      scrapeFailMessage = "Failed to scrape keys: $nullKeys";
-      return false;
-    }
-    return true;
   }
 }
 
@@ -672,9 +641,8 @@ class UniversalAuthorPage {
   final Set<String> unavailableFields;
 
   /// If not null, indicates issue with the scrape
-  /// If starts with "Error", gets displayed differently in scraping_report
   /// The message itself is shown to the user in the scraping_report and is sent in bug reports
-  String? scrapeFailMessage;
+  ScrapingException? scrapeFailException;
 
   /// Mock constructor for skeleton
   /// Require ID as otherwise bug reports are useless
@@ -709,7 +677,7 @@ class UniversalAuthorPage {
     this.rank,
     required this.rawHtml,
     required this.unavailableFields,
-    this.scrapeFailMessage,
+    this.scrapeFailException,
   });
 
   Map<String, dynamic> toJson() => toMap();
@@ -731,7 +699,7 @@ class UniversalAuthorPage {
       "rank": rank,
       "rawHtml": rawHtml.outerHtml,
       "unavailableFields": unavailableFields.toList(),
-      "scrapeFailMessage": scrapeFailMessage
+      "scrapeFailException": scrapeFailException?.toMap()
     };
   }
 
@@ -755,31 +723,10 @@ class UniversalAuthorPage {
       rank: map["rank"],
       rawHtml: html.parse(map["rawHtml"]),
       unavailableFields:
-          (map["unavailableFields"] as List?)?.cast<String>().toSet() ??
-              const {},
-      scrapeFailMessage: map["scrapeFailMessage"],
+          (map["unavailableFields"] as List).cast<String>().toSet(),
+      scrapeFailException:
+          tryParse(() => ScrapingException.fromMap(map["scrapeFailException"])),
     );
-  }
-
-  /// Print values that are null, but the plugin didn't expect to be null
-  /// Also returns a bool whether the data is valid
-  bool verifyScrapedData(String pluginCodeName) {
-    List<String> nullKeys = [];
-    // Check whether key is not a known-unavailable field and whether value is null
-    toMap().forEach((key, value) {
-      if (!unavailableFields.contains(key) &&
-          value == null &&
-          key != "scrapeFailMessage") {
-        nullKeys.add(key);
-      }
-    });
-    if (nullKeys.isNotEmpty) {
-      logger.w(
-          "$pluginCodeName: UniversalAuthorPage ($iD): Failed to scrape keys: $nullKeys");
-      scrapeFailMessage = "Failed to scrape keys: $nullKeys";
-      return false;
-    }
-    return true;
   }
 }
 
@@ -817,9 +764,8 @@ class UniversalComment {
   final Set<String> unavailableFields;
 
   /// If not null, indicates issue with the scrape
-  /// If starts with "Error", gets displayed differently in scraping_report
   /// The message itself is shown to the user in the scraping_report and is sent in bug reports
-  String? scrapeFailMessage;
+  ScrapingException? scrapeFailException;
 
   /// Mock constructor for skeleton
   UniversalComment.skeleton()
@@ -849,7 +795,7 @@ class UniversalComment {
     this.commentDate,
     this.replyComments,
     required this.unavailableFields,
-    this.scrapeFailMessage,
+    this.scrapeFailException,
   });
 
   Map<String, dynamic> toJson() => toMap();
@@ -873,7 +819,7 @@ class UniversalComment {
       "replyComments":
           replyComments?.map((comment) => comment.toMap()).toList(),
       "unavailableFields": unavailableFields.toList(),
-      "scrapeFailMessage": scrapeFailMessage,
+      "scrapeFailException": scrapeFailException?.toMap(),
     };
   }
 
@@ -898,31 +844,9 @@ class UniversalComment {
           ?.map((c) => UniversalComment.fromMap(c, plugin))
           .toList(),
       unavailableFields:
-          (map["unavailableFields"] as List?)?.cast<String>().toSet() ??
-              const {},
-      scrapeFailMessage: map["scrapeFailMessage"],
+          (map["unavailableFields"] as List).cast<String>().toSet(),
+      scrapeFailException:
+          tryParse(() => ScrapingException.fromMap(map["scrapeFailException"])),
     );
-  }
-
-  /// Print values that are null, but the plugin didn't expect to be null
-  /// Also returns a bool whether the data is valid
-  // TODO: Set up automatic/user prompted reporting
-  bool verifyScrapedData(String pluginCodeName) {
-    List<String> nullKeys = [];
-    // Check whether key is not a known-unavailable field and whether value is null
-    toMap().forEach((key, value) {
-      if (!unavailableFields.contains(key) &&
-          value == null &&
-          key != "scrapeFailMessage") {
-        nullKeys.add(key);
-      }
-    });
-    if (nullKeys.isNotEmpty) {
-      logger.d(
-          "$pluginCodeName: UniversalComment ($iD): Failed to scrape keys: $nullKeys");
-      scrapeFailMessage = "Failed to scrape keys: $nullKeys";
-      return false;
-    }
-    return true;
   }
 }

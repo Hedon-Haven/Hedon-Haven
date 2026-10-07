@@ -1,10 +1,19 @@
 class ScrapingException implements Exception {
   final String message;
 
-  ScrapingException([this.message = "unknown scraping exception"]);
+  final bool isCritical;
+
+  ScrapingException(
+      [this.message = "unknown scraping exception", this.isCritical = false]);
 
   @override
   String toString() => message;
+
+  Map<String, dynamic> toMap() =>
+      {"message": message, "isCritical": isCritical};
+
+  static ScrapingException fromMap(Map<String, dynamic> map) =>
+      ScrapingException(map["message"], map["isCritical"] == true);
 }
 
 abstract class CustomException implements Exception {

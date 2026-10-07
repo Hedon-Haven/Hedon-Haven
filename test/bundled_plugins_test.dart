@@ -68,6 +68,19 @@ Future<T> dumpingTraces<T extends Object>(
   }
 }
 
+/// Checks a scraped Universal* object's map for keys that are null despite
+/// not being declared in [unavailableFields], logging and returning false if
+/// any are found.
+bool verifyScrapedData(String pluginCodeName, String className, String iD,
+    Map<String, dynamic> map, Set<String> unavailableFields) {
+  final exception = throwOnMissedField(map, unavailableFields);
+  if (exception != null) {
+    logger.w("$pluginCodeName: $className ($iD): ${exception.message}");
+    return false;
+  }
+  return true;
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Rhttp.init();
@@ -225,7 +238,10 @@ void main() async {
       });
       test("Check if all results were fully scraped", () {
         for (var result in homepageResults) {
-          expect(result.verifyScrapedData(plugin.codeName), isTrue);
+          expect(
+              verifyScrapedData(plugin.codeName, "UniversalVideoPreview",
+                  result.iD, result.toMap(), result.unavailableFields),
+              isTrue);
         }
       });
       tearDownAll(() {
@@ -263,7 +279,10 @@ void main() async {
           });
           test("Check if all results were fully scraped", () {
             for (var result in searchResults) {
-              expect(result.verifyScrapedData(plugin.codeName), isTrue);
+              expect(
+                  verifyScrapedData(plugin.codeName, "UniversalVideoPreview",
+                      result.iD, result.toMap(), result.unavailableFields),
+                  isTrue);
             }
           });
           tearDownAll(() {
@@ -297,7 +316,14 @@ void main() async {
 
           group("getVideoMetadata", () {
             test("Check if video metadata was fully scraped", () {
-              expect(metadata!.verifyScrapedData(plugin.codeName), isTrue);
+              expect(
+                  verifyScrapedData(
+                      plugin.codeName,
+                      "UniversalVideoMetadata",
+                      metadata!.iD,
+                      metadata!.toMap(),
+                      metadata!.unavailableFields),
+                  isTrue);
             });
             tearDownAll(() {
               logger.i("Dumping getVideoMetadata Map to file");
@@ -362,7 +388,14 @@ void main() async {
             });
             test("Check if all video suggestions were fully scraped", () {
               for (var suggestion in suggestions) {
-                expect(suggestion.verifyScrapedData(plugin.codeName), isTrue);
+                expect(
+                    verifyScrapedData(
+                        plugin.codeName,
+                        "UniversalVideoPreview",
+                        suggestion.iD,
+                        suggestion.toMap(),
+                        suggestion.unavailableFields),
+                    isTrue);
               }
             });
             tearDownAll(() {
@@ -394,7 +427,10 @@ void main() async {
             });
             test("Check if all comments were fully scraped", () {
               for (var comment in comments) {
-                expect(comment.verifyScrapedData(plugin.codeName), isTrue);
+                expect(
+                    verifyScrapedData(plugin.codeName, "UniversalComment",
+                        comment.iD, comment.toMap(), comment.unavailableFields),
+                    isTrue);
               }
             });
             tearDownAll(() {
@@ -422,7 +458,14 @@ void main() async {
 
           group("getAuthorPage", () {
             test("Check if authorPage metadata was fully scraped", () {
-              expect(authorPage!.verifyScrapedData(plugin.codeName), isTrue);
+              expect(
+                  verifyScrapedData(
+                      plugin.codeName,
+                      "UniversalAuthorPage",
+                      authorPage!.iD,
+                      authorPage!.toMap(),
+                      authorPage!.unavailableFields),
+                  isTrue);
             });
             tearDownAll(() {
               logger.i("Dumping getAuthorPage Map to file");
@@ -452,7 +495,10 @@ void main() async {
             });
             test("Check if all author videos were fully scraped", () {
               for (var video in authorVideos) {
-                expect(video.verifyScrapedData(plugin.codeName), isTrue);
+                expect(
+                    verifyScrapedData(plugin.codeName, "UniversalVideoPreview",
+                        video.iD, video.toMap(), video.unavailableFields),
+                    isTrue);
               }
             });
             tearDownAll(() {

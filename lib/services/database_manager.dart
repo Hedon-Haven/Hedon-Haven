@@ -317,7 +317,7 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
   newEntryData.remove("previewVideoHttpHeaders");
   newEntryData.remove("viewsTotal");
   newEntryData.remove("ratingsPositivePercent");
-  newEntryData.remove("scrapeFailMessage");
+  newEntryData.remove("scrapeFailException");
 
   // update values
   newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
@@ -360,7 +360,7 @@ Future<void> addToFavorites(UniversalVideoPreview result) async {
   newEntryData.remove("previewVideoHttpHeaders");
   newEntryData.remove("viewsTotal");
   newEntryData.remove("ratingsPositivePercent");
-  newEntryData.remove("scrapeFailMessage");
+  newEntryData.remove("scrapeFailException");
   newEntryData.remove("lastWatched");
 
   // update values

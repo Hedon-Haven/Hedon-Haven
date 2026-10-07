@@ -195,7 +195,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
       UniversalVideoPreview uniResult = UniversalVideoPreview(
         // Don't enforce null safety here
-        // treat error below in scrapeFailMessage instead
+        // treat error below in scrapeFailException instead
         iD: iD ?? "null",
         title: title ?? "null",
         plugin: null,
@@ -223,14 +223,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
           if (authorPageMode) "authorName",
           if (authorPageMode) "authorID",
         },
+        scrapeFailException: (iD == null || title == null)
+            ? ScrapingException("Error: Failed to scrape critical variable(s):"
+                "${iD == null ? " ID" : ""}"
+                "${title == null ? " title" : ""}")
+            : null,
       );
-
-      if (iD == null || title == null) {
-        uniResult.scrapeFailMessage =
-            "Error: Failed to scrape critical variable(s):"
-            "${iD == null ? " ID" : ""}"
-            "${title == null ? " title" : ""}";
-      }
 
       results.add(uniResult);
     }
@@ -901,7 +899,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
       UniversalComment parsedComment = UniversalComment(
         // Don't enforce null safety here
-        // treat error below in scrapeFailMessage instead
+        // treat error below in scrapeFailException instead
         iD: iD ?? "null",
         videoID: videoID,
         author: author ?? "null",
@@ -928,15 +926,15 @@ class _PornhubIsolate extends BundledPluginIsolate {
           "ratingsPositiveTotal",
           "ratingsNegativeTotal"
         },
+        scrapeFailException: (iD == null ||
+                author == null ||
+                commentBody == null)
+            ? ScrapingException("Error: Failed to scrape critical variable(s):"
+                "${iD == null ? " iD" : ""}"
+                "${author == null ? " author" : ""}"
+                "${commentBody == null ? " commentBody" : ""}")
+            : null,
       );
-
-      if (iD == null || author == null || commentBody == null) {
-        parsedComment.scrapeFailMessage =
-            "Error: Failed to scrape critical variable(s):"
-            "${iD == null ? " iD" : ""}"
-            "${author == null ? " author" : ""}"
-            "${commentBody == null ? " commentBody" : ""}";
-      }
 
       return parsedComment;
     }
@@ -989,8 +987,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
           } catch (e, stacktrace) {
             logWarning("Error parsing reply comments: $e\n$stacktrace");
             parsedComments.last.replyComments = null;
-            parsedComments.last.scrapeFailMessage =
-                "Failed to scrape: replyComments";
+            parsedComments.last.scrapeFailException =
+                ScrapingException("Failed to scrape: replyComments");
           }
           // Add replyComments to previous top-level comment
           parsedComments.last.replyComments = tempReplies;

@@ -6,6 +6,7 @@ import 'package:html/dom.dart';
 import 'package:image/image.dart';
 
 import '/utils/bundled_plugin.dart';
+import '/utils/exceptions.dart';
 import '/utils/plugin_interface/isolate_bundled_runtime.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
@@ -169,7 +170,9 @@ class _TesterIsolate extends BundledPluginIsolate {
         authorID: "Tester-author $index",
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        scrapeFailException: index % 4 != 0
+            ? ScrapingException("Test fail scrape message")
+            : null,
         unavailableFields: const {},
       ),
     );
@@ -231,7 +234,9 @@ class _TesterIsolate extends BundledPluginIsolate {
         authorID: "Tester-author $index",
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        scrapeFailException: index % 4 != 0
+            ? ScrapingException("Test fail scrape message")
+            : null,
         unavailableFields: const {},
       ),
     );
@@ -261,7 +266,7 @@ class _TesterIsolate extends BundledPluginIsolate {
       plugin: null,
       universalVideoPreview: uvp,
       // Uncomment to test partial metadata scrape fail
-      //scrapeFailMessage: "Test fail scrape message",
+      //scrapeFailException: ScrapingException("Test fail scrape message"),
       authorID: "tester-author-$videoId",
       authorName: "Tester-author",
       authorSubscriberCount: 335433,
@@ -373,14 +378,17 @@ class _TesterIsolate extends BundledPluginIsolate {
                   commentDate: DateTime.now().subtract(Duration(days: index)),
                   replyComments: [],
                   // Make every 4th comment a fail
-                  scrapeFailMessage:
-                      index % 4 != 0 ? "Test fail scrape message" : null,
+                  scrapeFailException: index % 4 != 0
+                      ? ScrapingException("Test fail scrape message")
+                      : null,
                   unavailableFields: const {},
                 ),
               )
             : [],
         // Make every 4th comment a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        scrapeFailException: index % 4 != 0
+            ? ScrapingException("Test fail scrape message")
+            : null,
         unavailableFields: const {},
       ),
     );
@@ -415,7 +423,9 @@ class _TesterIsolate extends BundledPluginIsolate {
         authorID: "Tester-suggestion-author $index",
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        scrapeFailException: index % 4 != 0
+            ? ScrapingException("Test fail scrape message")
+            : null,
         unavailableFields: const {},
       ),
     );
@@ -483,7 +493,9 @@ class _TesterIsolate extends BundledPluginIsolate {
         authorID: "Tester-author-same $index",
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        scrapeFailMessage: index % 4 != 0 ? "Test fail scrape message" : null,
+        scrapeFailException: index % 4 != 0
+            ? ScrapingException("Test fail scrape message")
+            : null,
         unavailableFields: const {},
       ),
     );
