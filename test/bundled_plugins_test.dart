@@ -26,11 +26,7 @@ void timeout() {
   });
 }
 
-/// Dumps every network request/reply that produced a result to [dirPath], so
-/// a failed scrape can be inspected (e.g. opening the .html directly to
-/// check why a css selector stopped matching). One call can involve several
-/// requests (retries, pagination helpers, ...), so all of them get dumped,
-/// not just "the" page body like the old callback-based dumping did.
+/// Dumps every network trace to a json
 void dumpNetworkTraces(String dirPath, List<NetworkTrace> traces) {
   Directory(dirPath).createSync(recursive: true);
   final entries = <Map<String, dynamic>>[];
@@ -56,12 +52,6 @@ void dumpNetworkTraces(String dirPath, List<NetworkTrace> traces) {
       .writeAsStringSync(JsonEncoder.withIndent("  ").convert(entries));
 }
 
-/// Runs [call], dumping whatever network traces it produced to [dirPath]
-/// before returning/rethrowing. A thrown exception carries the traces
-/// gathered up to the point of failure the same way a successful result
-/// does (see PluginInterface._callFunction) -> dump those too instead of
-/// losing them, since they're exactly what you'd want to inspect a failure
-/// with.
 Future<T> dumpingTraces<T extends Object>(
     String dirPath, Future<T> Function() call) async {
   try {
@@ -74,9 +64,6 @@ Future<T> dumpingTraces<T extends Object>(
   }
 }
 
-/// Checks a scraped Universal* object's map for keys that are null despite
-/// not being declared in [unavailableFields], logging and returning false if
-/// any are found.
 bool verifyScrapedData(String pluginCodeName, String className, String iD,
     Map<String, dynamic> map, Set<String> unavailableFields) {
   final exception = throwOnMissedField(map, unavailableFields);
