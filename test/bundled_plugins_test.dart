@@ -33,6 +33,7 @@ void timeout() {
 /// not just "the" page body like the old callback-based dumping did.
 void dumpNetworkTraces(String dirPath, List<NetworkTrace> traces) {
   Directory(dirPath).createSync(recursive: true);
+  final entries = <Map<String, dynamic>>[];
   for (int i = 0; i < traces.length; i++) {
     final contentType = traces[i].replyHeaders["content-type"] ?? "";
     final extension = contentType.contains("json")
@@ -43,11 +44,16 @@ void dumpNetworkTraces(String dirPath, List<NetworkTrace> traces) {
                 ? "js"
                 : "bin";
     File("$dirPath/$i.$extension").writeAsBytesSync(traces[i].bodyBytes);
+    entries.add({
+      "file": "$i.$extension",
+      "requestUrl": traces[i].requestUrl,
+      "requestHeaders": traces[i].requestHeaders,
+      "statusCode": traces[i].statusCode,
+      "replyHeaders": traces[i].replyHeaders,
+    });
   }
-  File("$dirPath/manifest.json").writeAsStringSync(JsonEncoder.withIndent("  ")
-      .convert(traces
-          .map((t) => {"requestUrl": t.requestUrl, "statusCode": t.statusCode})
-          .toList()));
+  File("$dirPath/network_traces.json")
+      .writeAsStringSync(JsonEncoder.withIndent("  ").convert(entries));
 }
 
 /// Runs [call], dumping whatever network traces it produced to [dirPath]
