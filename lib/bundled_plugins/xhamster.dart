@@ -660,21 +660,21 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         .toString();
     logDebug("Video comment entity ID: $entityID");
 
-    String commentUri = 'https://xhamster.com/x-api?r='
-        '[{"name":"entityCommentCollectionFetch",'
-        '"requestData":{"page":$page,"entity":{"entityModel":"videoModel","entityID":$entityID}}}]';
+    String commentUri = "https://xhamster.com/api/front/comment/list"
+        "?entityModel=videoModel&entityId=$entityID&page=$page";
     logDebug("Comment URI (page: $page): $commentUri");
     final response = await httpRequest(
       commentUri,
-      // For some reason this header is required, otherwise the request 404s.
+      // Same csrf header and cookie as the web client sends
       headers: {
-        "X-Requested-With": "XMLHttpRequest",
+        "x-csrf-token": "1",
+        "Cookie": "x_csrf_token=1",
       },
     );
     if (response.statusCode != 200) {
       throw Exception("Error downloading json: ${response.statusCode}");
     }
-    final commentsJson = jsonDecode(response.body)[0]["responseData"];
+    final commentsJson = jsonDecode(response.body)["items"];
     if (commentsJson == null) {
       logWarning("No comments found for $videoID");
       return [];
