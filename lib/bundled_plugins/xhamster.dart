@@ -553,38 +553,19 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       int duration = jscriptMap["xplayerSettings"]["duration"];
 
       // Extract the width of the individual preview image from the baseUrl
-      String imageWidthString = imageBuildUrl.split("/").last.split(".")[0];
-      // New format has the width only, old format has width x height
-      int imageWidth = int.parse(imageWidthString.contains("x")
-          ? imageWidthString.split("x").first
-          : imageWidthString);
+      int imageWidth = int.parse(imageBuildUrl.split("/").last.split(".")[0]);
 
-      // Assume old format
-      String suffix = "";
-      String baseUrl = imageBuildUrl;
-      // Old format has 50 preview thumbnails for the entire video
-      int samplingFrequency = (duration / 50).floor();
-      // only one combined image in old format
-      int lastImageIndex = 0;
-      bool isOldFormat = true;
-
-      // determine kind of preview images
-      logDebug("Checking whether video uses new preview format");
-      if (imageBuildUrl.endsWith("%d.webp")) {
-        isOldFormat = false;
-        suffix = ".${imageBuildUrl.split(".").last}";
-        logDebug("suffix $suffix");
-        baseUrl = imageBuildUrl.split("%d").first;
-        logDebug("baseUrl: $baseUrl");
-        // from limited testing it seems as if the sampling frequency is always 4 in the new format, but have this just in case
-        // Although usually the sampling frequency is not 4.0, but rather something like 4.003
-        // For some reason xhamster just ignores that and uses a whole number resulting in drift at the end in long videos.
-        samplingFrequency =
-            int.parse(imageBuildUrl.split("/").last.split(".")[1]);
-        // Each combined image contains 50 images
-        lastImageIndex = duration ~/ samplingFrequency ~/ 50;
-      }
-      logDebug("Is old format: $isOldFormat");
+      String suffix = ".${imageBuildUrl.split(".").last}";
+      logDebug("suffix $suffix");
+      String baseUrl = imageBuildUrl.split("%d").first;
+      logDebug("baseUrl: $baseUrl");
+      // from limited testing it seems as if the sampling frequency is always 4, but have this just in case
+      // Although usually the sampling frequency is not 4.0, but rather something like 4.003
+      // For some reason xhamster just ignores that and uses a whole number resulting in drift at the end in long videos.
+      int samplingFrequency =
+          int.parse(imageBuildUrl.split("/").last.split(".")[1]);
+      // Each combined image contains 50 images
+      int lastImageIndex = duration ~/ samplingFrequency ~/ 50;
       logDebug("Sampling frequency: $samplingFrequency");
       logDebug("lastImageIndex: $lastImageIndex");
 
@@ -596,7 +577,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       for (int i = 0; i <= lastImageIndex; i++) {
         // Create a future for downloading and processing
         imageFutures.add(Future(() async {
-          String url = isOldFormat ? baseUrl : "$baseUrl$i$suffix";
+          String url = "$baseUrl$i$suffix";
           logDebug("Requesting download for $url");
 
           final response = await httpRequest(url);
