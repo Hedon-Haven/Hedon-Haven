@@ -756,12 +756,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
       authorAvatar:
           rawHtml.querySelector('img[class="userAvatar"]')?.attributes["src"],
       actors: actors,
-      description: rawHtml
-          .querySelector(
-              'div[class="categoryRow targetContainer displayNone clearfix"]')
-          ?.querySelector("span")
-          ?.text
-          .trim(),
       viewsTotal: viewsTotal,
       tags: tags,
       categories: categories,
@@ -774,8 +768,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
       rawHtml: rawHtml,
       unavailableFields: {
         "chapters",
-        // Pornhub removed dislikes site-wide
-        "ratingsNegativeTotal"
+        // Pornhub removed dislikes and descriptions site-wide
+        "ratingsNegativeTotal",
+        "description",
       },
     );
   }
