@@ -163,8 +163,8 @@ class ExternalLinkParsed {
     return ExternalLinkParsed(
         type: ContentType.fromString(map["type"]),
         iD: map["iD"],
-        searchRequest: tryParse(() =>
-            UniversalSearchRequest.fromMap(map["universalSearchRequest"])),
+        searchRequest: tryParse(
+            () => UniversalSearchRequest.fromMap(map["searchRequest"])),
         pageCount: map["pageCount"]);
   }
 }
