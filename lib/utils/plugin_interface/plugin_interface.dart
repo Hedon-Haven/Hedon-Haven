@@ -364,7 +364,7 @@ class PluginInterface {
 
   Future<Uri?> getVideoUriFromID(String videoID) async {
     final call = await _callFunction("getVideoUriFromID", [videoID]);
-    final uri = Uri.tryParse(call.result);
+    final uri = tryParse(() => Uri.parse(call.result));
     uri?.networkTraces = call.networkTraces;
     return uri;
   }
@@ -402,7 +402,7 @@ class PluginInterface {
   Future<Uri?> getCommentUriFromID(String commentID, String videoID) async {
     final call =
         await _callFunction("getCommentUriFromID", [commentID, videoID]);
-    final uri = Uri.tryParse(call.result);
+    final uri = tryParse(() => Uri.parse(call.result));
     uri?.networkTraces = call.networkTraces;
     return uri;
   }
@@ -433,7 +433,7 @@ class PluginInterface {
 
   Future<Uri?> getAuthorUriFromID(String authorID) async {
     final call = await _callFunction("getAuthorUriFromID", [authorID]);
-    final uri = Uri.tryParse(call.result);
+    final uri = tryParse(() => Uri.parse(call.result));
     uri?.networkTraces = call.networkTraces;
     return uri;
   }
