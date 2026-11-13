@@ -1237,6 +1237,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
         unavailableFields: {
           // Pornhub doesn't have aliases
           "aliases",
+          // Channels don't have advanced descriptions
+          if (authorPageLink.startsWith(_channelEndpoint))
+            "advancedDescription",
         });
   }
 
