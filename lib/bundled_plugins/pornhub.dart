@@ -136,7 +136,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
   };
 
   Future<List<UniversalVideoPreview>> _parseVideoList(List<Element> resultsList,
-      [bool authorPageMode = false]) async {
+      {String? authorNamePassed, String? authorIDPassed}) async {
     logDebug(
         "Parsing ${resultsList.length} video elements (some might be ads!)");
     // convert the divs into UniversalVideoPreviews
@@ -211,17 +211,15 @@ class _PornhubIsolate extends BundledPluginIsolate {
             resultDiv
                 .querySelector('span[class="hd-thumbnail vr-thumbnail"]') !=
             null),
-        authorName: authorDiv?.text.trim(),
-        authorID: authorDiv?.attributes["href"]?.split("/").last,
+        authorName: authorDiv?.text.trim() ?? authorNamePassed,
+        authorID:
+            authorDiv?.attributes["href"]?.split("/").last ?? authorIDPassed,
         // All authors on pornhub are verified
         verifiedAuthor: true,
         unavailableFields: {
           // Not shown on any video listing page
           "ratingsPositivePercent",
           "maxQuality",
-          // The author's own video listing doesn't repeat their name/id per item
-          if (authorPageMode) "authorName",
-          if (authorPageMode) "authorID",
         },
         scrapeFailException: (iD == null || title == null)
             ? ScrapingException("Error: Failed to scrape critical variable(s):"
@@ -1347,8 +1345,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
       return [];
     }
 
+    // The author's own video list doesn't repeat the author per item
+    // manually re-add it to have it store correctly in the history db
     return await _parseVideoList(
         resultHtml.querySelectorAll('ul[class*="videoList"]').last.children,
-        true);
+        authorNamePassed:
+            parse(rawHtmlString).querySelector("h1")!.nodes.first.text!.trim(),
+        authorIDPassed: authorID);
   }
 }
