@@ -1084,22 +1084,14 @@ class _PornhubIsolate extends BundledPluginIsolate {
     String authorPageLink = "$_channelEndpoint$authorID";
     logDebug("Requesting channel page: $authorPageLink");
     var response = await _performGetRequest(authorPageLink,
-        // Mobile video image previews are higher quality
-        headers: {
-          "Cookie":
-              "accessAgeDisclaimerPH=2; platform=mobile; platform_forced=1"
-        });
+        headers: {"Cookie": "accessAgeDisclaimerPH=2"});
     if (response.statusCode != 200) {
       // Try again for model author type
       authorPageLink = "$_modelEndpoint$authorID";
       logDebug(
           "Received non 200 status code -> Requesting model page: $authorPageLink");
       response = await _performGetRequest(authorPageLink,
-          // Mobile video image previews are higher quality
-          headers: {
-            "Cookie":
-                "accessAgeDisclaimerPH=2; platform=mobile; platform_forced=1"
-          });
+          headers: {"Cookie": "accessAgeDisclaimerPH=2"});
 
       if (response.statusCode != 200) {
         logError(
@@ -1113,28 +1105,17 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     Map<String, String>? advancedDescription;
     try {
-      List<Element>? descriptionElements = pageHtml
-          .querySelector('div[class="readMoreDrawerContentTable"]')
-          ?.children;
       // Channels don't have advanced descriptions
-      if (descriptionElements != null) {
-        advancedDescription = {};
-        for (Element element in descriptionElements) {
-          String key = element.text.split(":").first.trim();
-          // This element needs special parsing if it has a "to Present" at the end
-          if (key == "Career Start and End") {
-            advancedDescription[key] = element.text
-                .split(":")
-                .last
-                .trim()
-                .replaceAll("\n", "")
-                .replaceAll(
-                    "to                                                Present",
-                    "to Present");
-          } else {
-            advancedDescription[key] = element.text.split(":").last.trim();
-          }
-        }
+      for (Element piece in pageHtml.querySelectorAll("div.infoPiece")) {
+        String text = piece.text.replaceAll(RegExp(r"\s+"), " ").trim();
+        advancedDescription ??= {};
+        advancedDescription[text.substring(0, text.indexOf(":"))] =
+            text.substring(text.indexOf(":") + 1).trim();
+      }
+      for (Element link in pageHtml.querySelectorAll("div.featuredIn a")) {
+        advancedDescription ??= {};
+        advancedDescription["Featured in ${link.text.trim()}"] =
+            "https://www.pornhub.com${link.attributes["href"]!}";
       }
     } catch (e, stacktrace) {
       logWarning("Error parsing advanced description: $e\n$stacktrace");
@@ -1143,52 +1124,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
     String? authorName;
     String? description;
     try {
-      if (pageHtml.querySelector('div[class="readMoreDrawerContentInner"]') !=
-          null) {
-        logDebug("Pornstar or model page detected");
-        authorName = pageHtml
-            .querySelector('span[class="title js-profile-header-title"]')!
-            .text
-            .trim();
-        // If description is a "Featured in" block, add it to advanced description instead
-        if (pageHtml
-                .querySelector('span[class="readMoreDrawerContentTitle"]')
-                ?.text
-                .trim()
-                .startsWith("Featured in") ??
-            false) {
-          logInfo("Detected \"Featured in\" block. "
-              "Adding to advanced description instead of normal");
-          advancedDescription ??= {};
-          for (Element element in pageHtml
-              .querySelector('div[class="readMoreDrawerContentText"]')!
-              .children) {
-            advancedDescription["Featured in ${element.text.trim()}"] =
-                element.attributes["href"] != null
-                    ? "https://www.pornhub.com${element.attributes["href"]!}"
-                    : "";
-          }
-          // Normal "About" description
-        } else {
-          description = pageHtml
-              .querySelector('div[class="readMoreDrawerContentText"]')
-              ?.text
-              .trim();
-        }
-      } else {
-        authorName = pageHtml
-            .querySelector('div[class="channelName"]')!
-            .text
-            .trim()
-            .split("\n")
-            .first
-            .trim();
-        description = pageHtml
-            .querySelector('div[class="wrapper"]')
-            ?.text
-            .replaceAll("About:", "")
-            .trim();
-      }
+      authorName = pageHtml.querySelector("h1")!.nodes.first.text!.trim();
+      // Channels have a description list, models and pornstars an about section
+      description = (pageHtml.querySelector("div.cdescriptions p") ??
+              pageHtml.querySelector("section.aboutMeSection div:not(.title)"))
+          ?.text
+          .trim();
       if (description != null) {
         description = HtmlUnescape().convert(description);
       }
@@ -1204,24 +1145,22 @@ class _PornhubIsolate extends BundledPluginIsolate {
     Map<String, String>? externalLinks;
 
     try {
-      List<Element>? links =
-          pageHtml.querySelector('ul[class="socialList"]')?.children;
-      if (links != null) {
-        externalLinks = {};
-        for (Element link in links) {
-          externalLinks[link.children.first.text.trim()] =
-              link.children.first.attributes["href"]!;
-        }
-      } else {
-        List<Element>? links =
-            pageHtml.querySelectorAll('a[class="descriptionLink"]');
-        if (links.isNotEmpty) {
-          externalLinks = {};
-          externalLinks[links.first.text.trim()] =
-              links.first.attributes["href"]!;
-          externalLinks["Channel owner page"] =
-              "https://www.pornhub.com${links.last.attributes["href"]!}";
-        }
+      List<Element> socialLinks = pageHtml.querySelectorAll("ul.socialList a");
+      List<Element> channelLinks =
+          pageHtml.querySelectorAll("div.cdescriptions p.joined a");
+      if (socialLinks.isNotEmpty) {
+        externalLinks = {
+          for (Element link in socialLinks)
+            link.querySelector("span.socialText")!.text.trim():
+                link.attributes["href"]!
+        };
+      } else if (channelLinks.isNotEmpty) {
+        externalLinks = {
+          channelLinks.first.text.trim():
+              channelLinks.first.attributes["href"]!,
+          "Channel owner page":
+              "https://www.pornhub.com${channelLinks.last.attributes["href"]!}"
+        };
       }
     } catch (e, stacktrace) {
       logWarning("Error parsing external links: $e\n$stacktrace");
@@ -1232,33 +1171,44 @@ class _PornhubIsolate extends BundledPluginIsolate {
     int? rank;
     int? videosTotal;
     try {
-      String? ranks = pageHtml
-          .querySelector('button[class*="mobileRanksButton"]')
-          ?.text
-          .trim();
-      if (ranks != null) {
-        List<String> ranksFirst = ranks.split("Model Rank");
-        rank = _convertHumanReadableStringToInt(ranksFirst.first.trim());
-        List<String> ranksSecond = ranksFirst.last.split("Views");
-        viewsTotal = _convertHumanReadableStringToInt(ranksSecond.first.trim());
-        subscribers = _convertHumanReadableStringToInt(
-            ranksSecond.last.split("Subscribers").first.trim());
-      } else {
-        List<Element>? stats = pageHtml
-            .querySelector('div[class="channelStats clearfix"]')
-            ?.children
-            .first
-            .children;
-
-        if (stats != null) {
-          rank = _convertHumanReadableStringToInt(
-              stats[0].text.replaceAll("Rank", "").trim());
-          subscribers = _convertHumanReadableStringToInt(
-              stats[1].text.replaceAll("Subscribers", "").trim());
-          videosTotal = _convertHumanReadableStringToInt(
-              stats[2].text.replaceAll("Videos", "").trim());
-          viewsTotal = _convertHumanReadableStringToInt(
-              stats[3].text.replaceAll("Views", "").trim());
+      // Channels
+      for (Element stat in pageHtml.querySelectorAll("#stats div.info")) {
+        String label = stat.querySelector("span")!.text.trim();
+        int? value = int.tryParse(
+            stat.text.replaceAll(label, "").replaceAll(",", "").trim());
+        switch (label) {
+          case "VIDEO VIEWS":
+            viewsTotal = value;
+          case "SUBSCRIBERS":
+            subscribers = value;
+          case "VIDEOS":
+            videosTotal = value;
+          case "RANK":
+            rank = value;
+        }
+      }
+      // Models and pornstars
+      rank ??= int.tryParse(
+          pageHtml.querySelector("div.rankingInfo span.big")?.text.trim() ??
+              "");
+      for (Element box
+          in pageHtml.querySelectorAll("div.infoBox[data-title]")) {
+        List<String> parts = box.attributes["data-title"]!.split(": ");
+        int? value = int.tryParse(parts.last.replaceAll(",", ""));
+        if (parts.first == "Video views") viewsTotal = value;
+        if (parts.first == "Subscribers") subscribers = value;
+      }
+      // Models have one uploaded video counter, pornstars can have an additional "tagged" counter
+      if (videosTotal == null) {
+        for (Element counter in pageHtml
+            .querySelectorAll("div.showingInfo, div.showingCounter")) {
+          int? total = int.tryParse(counter.text
+              .replaceAll("videos", "")
+              .trim()
+              .split(" ")
+              .last
+              .replaceAll(",", ""));
+          if (total != null) videosTotal = (videosTotal ?? 0) + total;
         }
       }
     } catch (e, stacktrace) {
@@ -1266,30 +1216,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
           "subscribers / currentRating: $e\n$stacktrace");
     }
 
-    String? thumbnail;
-    try {
-      thumbnail = pageHtml.querySelector("#getAvatar")?.attributes["src"];
-      // If still null, try again for channel pages
-      thumbnail ??= pageHtml
-          .querySelector('div[class="avatar"]')
-          ?.children
-          .first
-          .attributes["src"];
-    } catch (e, stacktrace) {
-      logWarning("Error parsing thumbnail: $e\n$stacktrace");
-    }
-
-    String? banner;
-    try {
-      // imageWrapper for models, cover for channels
-      banner = pageHtml
-          .querySelector(".imageWrapper, .cover")
-          ?.children
-          .first
-          .attributes["src"];
-    } catch (e, stacktrace) {
-      logWarning("Error parsing banner: $e\n$stacktrace");
-    }
+    String? thumbnail = pageHtml.querySelector("#getAvatar")?.attributes["src"];
+    String? banner =
+        pageHtml.querySelector("#coverPictureDefault")?.attributes["src"];
 
     return UniversalAuthorPage(
         iD: authorID,
