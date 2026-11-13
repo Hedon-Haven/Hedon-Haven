@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:path/path.dart' as p;
 
+import '/utils/exceptions.dart';
 import '/utils/universal_formats.dart';
 
 late JavascriptRuntime _runtime;
@@ -164,7 +165,8 @@ void _callFunction(Map<String, dynamic> message) async {
 
     replyPort.send({"result": _normalizeJsResult(rawResult)});
   } catch (e, st) {
-    replyPort.send({"error": e.toString(), "stackTrace": st.toString()});
+    replyPort
+        .send({"error": convertExceptionToMap(e), "stackTrace": st.toString()});
   }
 }
 
