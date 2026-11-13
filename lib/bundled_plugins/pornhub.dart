@@ -304,7 +304,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
             1000000;
       } else if (intAsString.endsWith("B")) {
         if (intAsString.contains(".")) {
-          views = int.parse(intAsString.split(".")[1][0]) * 1000000000;
+          views = int.parse(intAsString.split(".")[1][0]) * 100000000;
           // this is so that the normal step still works
           // ignore: prefer_interpolation_to_compose_strings
           intAsString = intAsString.split(".")[0] + " ";
