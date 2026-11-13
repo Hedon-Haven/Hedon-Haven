@@ -996,7 +996,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       name =
           jscriptMap["layoutPage"]["pageTitle"].split(" Porn Videos: ").first;
     } else {
-      name = jscriptMap["displayUserModel"]?["modelName"];
+      name = jscriptMap["displayUserModel"]?["name"];
     }
 
     String? thumbnail;
