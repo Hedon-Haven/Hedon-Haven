@@ -718,7 +718,9 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           "countryID",
           "orientation",
         },
-        scrapeFailException: (iD == null || author == null || commentBody == null)
+        scrapeFailException: (iD == null ||
+                author == null ||
+                commentBody == null)
             ? ScrapingException("Error: Failed to scrape critical variable(s):"
                 "${iD == null ? " iD" : ""}"
                 "${author == null ? " author" : ""}"
@@ -798,7 +800,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           if (result["landing"] == null) "authorID",
         },
         scrapeFailException: title == null
-            ? ScrapingException("Error: Failed to scrape critical variable: title")
+            ? ScrapingException(
+                "Error: Failed to scrape critical variable: title")
             : null,
       );
 
