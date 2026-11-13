@@ -712,6 +712,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           // xhamster doesn't expose a positive/negative rating split for comments
           "ratingsPositiveTotal",
           "ratingsNegativeTotal",
+          // Some users have no profile picture
+          "profilePicture",
+          // Some users have no personal info
+          "countryID",
+          "orientation",
         },
         scrapeFailException: (iD == null || author == null || commentBody == null)
             ? ScrapingException("Error: Failed to scrape critical variable(s):"
