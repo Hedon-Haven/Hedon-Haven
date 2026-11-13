@@ -6,9 +6,9 @@ testingSearchResults:
   - searchString: "Art"
 
 testingVideos:
-  # This is an old video that uses the old progress thumbnail format
-  - videoID: "13942649"
-    progressThumbnailsAmount: 105
+  # This is an older video
+  - videoID: "3260845"
+    progressThumbnailsAmount: 679
   # This is a more recent video from the homepage
   - videoID: "xhZiTRT"
     progressThumbnailsAmount: 779
