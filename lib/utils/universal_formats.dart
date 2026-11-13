@@ -152,9 +152,9 @@ class ExternalLinkParsed {
 
   Map<String, dynamic> toMap() {
     return {
-      "type": type,
+      "type": type.toJson(),
       "iD": iD,
-      "searchRequest": searchRequest,
+      "searchRequest": searchRequest?.toMap(),
       "pageCount": pageCount,
     };
   }
