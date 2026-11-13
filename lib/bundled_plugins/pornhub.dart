@@ -657,9 +657,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
     // ratings
     int? ratingsPositive;
     for (var interaction in JSONLD["interactionStatistic"]) {
-      if (interaction["interactionType"] == "http://schema.org/LikeAction") {
+      if (interaction["interactionType"].endsWith("/LikeAction")) {
         ratingsPositive = int.tryParse(
-            interaction["userInteractionCount"].replaceAll(",", ""));
+            interaction["userInteractionCount"].toString().replaceAll(",", ""));
         break;
       }
     }
@@ -668,9 +668,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
     // For some reason on mobile the full exact view amount is always shown
     int? viewsTotal;
     for (var interaction in JSONLD["interactionStatistic"]) {
-      if (interaction["interactionType"] == "http://schema.org/WatchAction") {
+      if (interaction["interactionType"].endsWith("/WatchAction")) {
         viewsTotal = int.tryParse(
-            interaction["userInteractionCount"].replaceAll(",", ""));
+            interaction["userInteractionCount"].toString().replaceAll(",", ""));
         break;
       }
     }
