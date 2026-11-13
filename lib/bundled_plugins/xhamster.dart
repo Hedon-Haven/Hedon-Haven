@@ -1133,13 +1133,19 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       }
     }
 
-    if (authorPageLink.toString().contains("user")) {
-      String authorName = jscriptMap["displayUserModel"]?["name"] ??
-          authorPageLink.toString().split("/").last;
-      return _parseVideoList(videoThumbProps!,
-          authorNamePassed: authorName, authorIDPassed: authorID);
-    } else {
-      return _parseVideoList(videoThumbProps!);
-    }
+    // The video list has no author info -> take it from the author page
+    String authorJscript =
+        parse(rawHtmlString).querySelector("#initials-script")!.text;
+    Map<String, dynamic> authorJscriptMap = jsonDecode(authorJscript.substring(
+        authorJscript.indexOf("{"), authorJscript.indexOf("};") + 1));
+
+    String? authorName = authorJscriptMap["infoComponent"]?["pageTitle"] ??
+        authorJscriptMap["layoutPage"]?["pageTitle"]
+            ?.split(" Porn Videos: ")
+            .first ??
+        authorJscriptMap["displayUserModel"]?["name"];
+
+    return _parseVideoList(videoThumbProps!,
+        authorNamePassed: authorName, authorIDPassed: authorID);
   }
 }
