@@ -194,6 +194,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           // Never provided on listing pages
           "thumbnailHttpHeaders",
           "previewVideoHttpHeaders",
+          // Amateur uploads have no author
+          if (element["landing"] == null) "authorID",
         },
         scrapeFailException: (iD == null || title == null)
             ? ScrapingException("Error: Failed to scrape critical variable(s):"
@@ -806,6 +808,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           // Never provided on the suggestions endpoint
           "thumbnailHttpHeaders",
           "previewVideoHttpHeaders",
+          // Amateur uploads have no author
+          if (result["landing"] == null) "authorID",
         },
         scrapeFailException: title == null
             ? ScrapingException("Error: Failed to scrape critical variable: title")
