@@ -159,6 +159,10 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     // convert the divs into UniversalSearchResults
     List<UniversalVideoPreview> results = [];
     for (Map<String, dynamic> element in resultsList) {
+      // Exclude private/friends-only videos
+      // TODO: Add toggle to display private videos in UI
+      if (["friends", "lock"].contains(element["icon"])) continue;
+
       String? iD = element["pageURL"]?.split("-").last;
       String? title = element["title"];
 
