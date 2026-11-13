@@ -1032,33 +1032,20 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       videosTotal = infoMap?["videoCount"];
       rank = infoMap?["rating"];
     } else {
-      logDebug(
-          "Trying to scrape views, videosTotal, subscribers and rank from html");
+      videosTotal = jscriptMap["counters"]?["videos"];
+      logDebug("Trying to scrape subscribers from html");
       // some users don't have this info in the jsonmap -> scrape from html
       try {
-        videosTotal = int.tryParse(pageHtml
-            .querySelector('a[class="followable videos"]')!
-            .children
-            .first
-            .text);
-        viewsTotal = int.tryParse(pageHtml
-            .querySelector('div[class="user-details"]')!
-            .children[3]
-            .querySelector("span")!
-            .attributes["data-tooltip"]!
-            .replaceAll(",", "")
-            .trim());
         subscribers = int.tryParse(pageHtml
-            .querySelector('div[class="user-details"]')!
-            .children[4]
-            .querySelector("span")!
+            .querySelectorAll('div[class="user-details"] .details-row')
+            .firstWhere((row) => row.querySelector("use#user-group") != null)
+            .querySelector(".details-counter")!
             .attributes["data-tooltip"]!
             .replaceAll(",", "")
             .trim());
         // users don't have ranks
       } catch (e, stacktrace) {
-        logWarning(
-            "Error parsing views/videosTotal/subscribers/rank: $e\n$stacktrace");
+        logWarning("Error parsing subscribers: $e\n$stacktrace");
       }
     }
 
@@ -1079,6 +1066,17 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       unavailableFields: {
         // xhamster doesn't have banners
         "banner",
+        // Not provided by all author types or set by all authors
+        "aliases",
+        "description",
+        "advancedDescription",
+        "externalLinks",
+        // Users have no integer rank
+        if (authorPageLink.startsWith(_userEndpoint)) "rank",
+        // Not all users have an avatar
+        if (authorPageLink.startsWith(_userEndpoint)) "avatar",
+        // FIXME: Users only have profile views, which are not video views
+        if (authorPageLink.startsWith(_userEndpoint)) "viewsTotal",
       },
     );
   }
