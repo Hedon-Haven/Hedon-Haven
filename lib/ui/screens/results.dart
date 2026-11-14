@@ -70,14 +70,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   void createResultsBugReport() async {
     List<BugReport> reportedBugs = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
-        builder: (context) => BugReportsListScreen(
-            scrapingReportMode: true,
-            bugReportsList: widget.loadingHandler.resultsBugReports),
-      ),
-    );
+          context,
+          MaterialPageRoute(
+            settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+            builder: (context) => BugReportsListScreen(
+                scrapingReportMode: true,
+                bugReportsList: widget.loadingHandler.resultsBugReports),
+          ),
+        ) ??
+        [];
 
     // Remove all reported bugs
     widget.loadingHandler.resultsBugReports

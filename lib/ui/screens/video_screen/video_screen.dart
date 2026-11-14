@@ -139,14 +139,15 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   /// To report all suggestionVideoBugReports
   void createSuggestionVideosBugReport() async {
     List<BugReport> reportedBugs = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
-        builder: (context) => BugReportsListScreen(
-            scrapingReportMode: true,
-            bugReportsList: loadingHandler.videoSuggestionsBugReports),
-      ),
-    );
+          context,
+          MaterialPageRoute(
+            settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+            builder: (context) => BugReportsListScreen(
+                scrapingReportMode: true,
+                bugReportsList: loadingHandler.videoSuggestionsBugReports),
+          ),
+        ) ??
+        [];
 
     // Remove all reported bugs
     loadingHandler.videoSuggestionsBugReports
@@ -435,14 +436,15 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   void openCommentsScrapingReport() async {
     List<BugReport> reportedBugs = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
-        builder: (context) => BugReportsListScreen(
-            scrapingReportMode: true,
-            bugReportsList: loadingHandler.commentsBugReports),
-      ),
-    );
+          context,
+          MaterialPageRoute(
+            settings: RouteSettings(name: "/bug-reports-list-scraping-mode"),
+            builder: (context) => BugReportsListScreen(
+                scrapingReportMode: true,
+                bugReportsList: loadingHandler.commentsBugReports),
+          ),
+        ) ??
+        [];
 
     // Remove all reported bugs
     loadingHandler.commentsBugReports
