@@ -81,7 +81,7 @@ void setupErrorHandling() {
   bool bugReportOpen = false;
 
   // Push BugReportScreen, guarded against opening more than once at a time
-  void openBugReportScreen(String error, String stack) {
+  void openBugReportScreen(Object error, String stack) {
     final context = ViewerApp.navigatorKey.currentContext;
     if (context != null && !bugReportOpen) {
       bugReportOpen = true;
@@ -95,7 +95,7 @@ void setupErrorHandling() {
               bugReportsList: [
                 BugReport(
                     navigatorPath: navigatorPathObserver.currentPath,
-                    exception: Exception(error),
+                    error: error,
                     stackTrace: stack)
               ],
               submissionType: SubmissionType.userApproved,
@@ -118,13 +118,13 @@ void setupErrorHandling() {
     FlutterError.presentError(details);
     // Skip non-fatal render/layout warnings (e.g. overflow) — don't crash-report these
     if (details.library == "rendering library" && !kDebugMode) return;
-    openBugReportScreen(details.exception.toString(), details.stack.toString());
+    openBugReportScreen(details.exception, details.stack.toString());
   };
 
   // Catch async errors not caught by FlutterError (e.g. inside Futures)
   PlatformDispatcher.instance.onError = (error, stack) {
     logger.f("Uncaught error: $error\n$stack");
-    openBugReportScreen(error.toString(), stack.toString());
+    openBugReportScreen(error, stack.toString());
     return true;
   };
 }

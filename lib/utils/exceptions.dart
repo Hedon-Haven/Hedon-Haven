@@ -109,22 +109,25 @@ final List<CustomException Function(String)> _knownExceptionTypes = [
   PluginTimeoutException.new,
 ];
 
-/// Converts any Exception (including special treatment for CustomExceptions)
-/// to a serializable Map
-Map<String, dynamic> convertExceptionToMap(Object exception) {
+/// Converts any thrown object (Exception, Error, ...) to a serializable Map
+Map<String, dynamic> convertErrorToMap(Object error) {
   return {
-    "type": exception.runtimeType.toString(),
-    "message": exception.toString()
+    "type": error.runtimeType.toString(),
+    // Strip the "...Exception: " / "...Error: " prefix, since the type is
+    // prepended again in convertMapToException
+    "message":
+        error.toString().replaceFirst(RegExp(r"^\w*(Exception|Error): "), "")
   };
 }
 
-/// Reconstructs whatever convertExceptionToMap produced: the real
+/// Reconstructs whatever convertErrorToMap produced: the real
 /// CustomException subtype if map["type"] matches one of the known types,
-/// or a plain Exception otherwise.
+/// or a plain Exception otherwise, with the original runtime type prepended
+/// to the message
 Exception convertMapToException(Map<String, dynamic> map) {
   for (final constructor in _knownExceptionTypes) {
     final instance = constructor(map["message"]);
     if (instance.runtimeType.toString() == map["type"]) return instance;
   }
-  return Exception(map["message"]);
+  return Exception("${map["type"]}: ${map["message"]}");
 }

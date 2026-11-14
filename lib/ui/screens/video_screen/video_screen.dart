@@ -50,7 +50,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   List<Uint8List>? progressThumbnails;
   Timer? hideControlsTimer;
   bool isFullScreen = false;
-  Exception? loadingException;
+  Object? loadingError;
   String? loadErrorStacktrace;
   bool firstPlay = true;
   bool isLoadingMetadata = true;
@@ -117,7 +117,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     } catch (e, stacktrace) {
       logger.e("Error getting video metadata: $e\n$stacktrace");
       setState(() {
-        loadingException = e as Exception;
+        loadingError = e;
         loadErrorStacktrace = stacktrace.toString();
       });
     }
@@ -295,7 +295,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: Exception("Video action button manual bug report"),
+              error: "Video action button manual bug report",
               pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
               isBundledPlugin: videoMetadata.plugin?.isBundledPlugin ?? false,
               debugObject: videoMetadata.toMap(),
@@ -362,7 +362,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             bugReportsList: [
               PluginBugReport(
                 navigatorPath: navigatorPathObserver.currentPath,
-                exception: Exception("Comment modal menu manual bug report"),
+                error: "Comment modal menu manual bug report",
                 pluginCodeName: comment.plugin?.codeName ?? "Unknown",
                 isBundledPlugin: comment.plugin?.isBundledPlugin ?? false,
                 debugObject: comment.toMap(),
@@ -488,7 +488,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: loadingException!,
+              error: loadingError!,
               stackTrace: loadErrorStacktrace,
               pluginCodeName: videoMetadata.plugin?.codeName ?? "Unknown",
               isBundledPlugin: videoMetadata.plugin?.isBundledPlugin ?? false,
@@ -517,7 +517,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 onPopInvokedWithResult: (_, __) => handlePop(),
                 // Use a stack to add a back button overlay (see below)
                 child: Stack(children: [
-                  loadingException != null
+                  loadingError != null
                       ? buildFailedToLoadWidget(context, this)
                       : Skeletonizer(
                           enabled: isLoadingMetadata,
@@ -529,7 +529,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   // Using an appbar is not an option, since it would push the
                   // entire content down (the video player needs to start at
                   // the very literal top left)
-                  if (isLoadingMetadata || loadingException != null)
+                  if (isLoadingMetadata || loadingError != null)
                     Positioned(
                         top: 0,
                         left: 0,

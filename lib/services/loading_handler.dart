@@ -117,7 +117,7 @@ class LoadingHandler {
               " $exception\n$stacktrace");
           resultsBugReports.add(PluginBugReport(
               navigatorPath: navPath,
-              exception: exception as Exception,
+              error: exception,
               stackTrace: stacktrace.toString(),
               pluginCodeName: plugin.codeName,
               isBundledPlugin: plugin.isBundledPlugin,
@@ -164,7 +164,7 @@ class LoadingHandler {
               result.scrapeFailException = exception;
               resultsBugReports.add(PluginBugReport(
                   navigatorPath: navPath,
-                  exception: exception,
+                  error: exception,
                   pluginCodeName: plugin.codeName,
                   isBundledPlugin: plugin.isBundledPlugin,
                   debugObject: result.toMap()));
@@ -322,7 +322,7 @@ class LoadingHandler {
             " $exception\n$stacktrace");
         commentsBugReports.add(PluginBugReport(
             navigatorPath: navPath,
-            exception: exception as Exception,
+            error: exception,
             stackTrace: stacktrace.toString(),
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
@@ -341,7 +341,7 @@ class LoadingHandler {
             comment.scrapeFailException = exception;
             commentsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: exception,
+                error: exception,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: comment.toMap()));
@@ -445,7 +445,7 @@ class LoadingHandler {
             " $exception\n$stacktrace");
         videoSuggestionsBugReports.add(PluginBugReport(
             navigatorPath: navPath,
-            exception: exception as Exception,
+            error: exception,
             stackTrace: stacktrace.toString(),
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
@@ -460,7 +460,7 @@ class LoadingHandler {
             video.scrapeFailException = exception;
             videoSuggestionsBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: exception,
+                error: exception,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));
@@ -527,7 +527,7 @@ class LoadingHandler {
             " $exception\n$stacktrace");
         authorVideosBugReports.add(PluginBugReport(
             navigatorPath: navPath,
-            exception: exception as Exception,
+            error: exception,
             stackTrace: stacktrace.toString(),
             pluginCodeName: plugin.codeName,
             isBundledPlugin: plugin.isBundledPlugin,
@@ -542,7 +542,7 @@ class LoadingHandler {
             video.scrapeFailException = exception;
             authorVideosBugReports.add(PluginBugReport(
                 navigatorPath: navPath,
-                exception: exception,
+                error: exception,
                 pluginCodeName: plugin.codeName,
                 isBundledPlugin: plugin.isBundledPlugin,
                 debugObject: video.toMap()));

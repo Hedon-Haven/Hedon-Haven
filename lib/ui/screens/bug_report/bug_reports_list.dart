@@ -41,7 +41,7 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
     if (widget.scrapingReportMode) {
       // Enable report button only if non-CustomExceptions are in the list
       enableReportButton =
-          widget.bugReportsList.any((r) => r.exception is! CustomException);
+          widget.bugReportsList.any((r) => r.error is! CustomException);
       logger.i("Bug report button enabled: $enableReportButton");
     }
   }
@@ -114,15 +114,15 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
         builder: (context, snapshot) {
           // Simplify display for CustomExceptions
           if (bugReportGroup.value.length == 1 &&
-              bugReportGroup.value.first.exception is CustomException) {
+              bugReportGroup.value.first.error is CustomException) {
             String titleText =
                 "${snapshot.data?.prettyName ?? bugReportGroup.key}"
                 ": "
-                "${(bugReportGroup.value.first.exception as CustomException).title}";
+                "${(bugReportGroup.value.first.error as CustomException).title}";
 
             return ListTile(
               title: Text(titleText),
-              subtitle: Text(bugReportGroup.value.first.exception.toString()),
+              subtitle: Text(bugReportGroup.value.first.error.toString()),
               // Remove white lines
               shape: RoundedRectangleBorder(),
               contentPadding: const EdgeInsets.only(left: 16, right: 8),
@@ -147,7 +147,7 @@ class _BugReportsListScreenState extends State<BugReportsListScreen> {
 
   Widget buildReportTile(BugReport report) {
     return ExpansionTile(
-        title: Text(report.exception.toString()),
+        title: Text(report.error.toString()),
         controlAffinity: ListTileControlAffinity.trailing,
         // Remove white lines
         collapsedShape: RoundedRectangleBorder(),

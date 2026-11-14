@@ -66,7 +66,7 @@ void _callFunction(Map<String, dynamic> message,
     });
   } catch (e, st) {
     replyPort.send({
-      "error": convertExceptionToMap(e),
+      "error": convertErrorToMap(e),
       "stackTrace": st.toString(),
       "networkTraces": _serialize(networkTraces),
     });

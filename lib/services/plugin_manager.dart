@@ -43,7 +43,7 @@ class PluginManager {
   static final Set<PluginInterface> _enabledPlugins = {};
 
   /// All the plugins that failed to initiate with the message to be displayed to the user
-  static final Map<PluginInterface, (Exception, String)> _failedPlugins = {};
+  static final Map<PluginInterface, (Object, String)> _failedPlugins = {};
 
   /// All the plugins that failed to initiate with the message to be displayed to the user
   static final Map<PluginInterface, UpdateInfo> _updatablePlugins = {};
@@ -237,7 +237,7 @@ class PluginManager {
       await plugin.init(pluginCacheDir.path);
     } catch (e, st) {
       logger.e("Failed to initiate ${plugin.codeName} plugin: $e\n$st");
-      _failedPlugins[plugin] = (e as Exception, st.toString());
+      _failedPlugins[plugin] = (e, st.toString());
       rethrow;
     }
     // Directly replace old plugin instance (if present) with new one
@@ -646,7 +646,7 @@ class PluginManager {
     return _lock.synchronized(() => _failedPlugins.keys.toList());
   }
 
-  static Future<(Exception, String)?> getPluginError(PluginInterface plugin) {
+  static Future<(Object, String)?> getPluginError(PluginInterface plugin) {
     return _lock.synchronized(() => _failedPlugins[plugin]);
   }
 

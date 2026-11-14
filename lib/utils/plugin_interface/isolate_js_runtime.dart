@@ -166,7 +166,7 @@ void _callFunction(Map<String, dynamic> message) async {
     replyPort.send({"result": _normalizeJsResult(rawResult)});
   } catch (e, st) {
     replyPort
-        .send({"error": convertExceptionToMap(e), "stackTrace": st.toString()});
+        .send({"error": convertErrorToMap(e), "stackTrace": st.toString()});
   }
 }
 

@@ -354,7 +354,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: videoPlayerException!,
+              error: videoPlayerException!,
               pluginCodeName: widget.videoMetadata.plugin!.codeName,
               isBundledPlugin: widget.videoMetadata.plugin!.isBundledPlugin,
               debugObject: widget.videoMetadata.toMap(),

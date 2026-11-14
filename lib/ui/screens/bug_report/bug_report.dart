@@ -55,7 +55,7 @@ class _BugReportScreenState extends State<BugReportScreen>
 
     // Remove all CustomException BugReports
     bugReportsList = widget.bugReportsList
-        .where((report) => report.exception is! CustomException)
+        .where((report) => report.error is! CustomException)
         .toList();
     groupedBugReports = groupBugReports(bugReportsList);
     if (bugReportsList.isEmpty) {

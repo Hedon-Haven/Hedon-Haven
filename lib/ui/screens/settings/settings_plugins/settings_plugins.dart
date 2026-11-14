@@ -189,7 +189,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
                         bugReportsList: [
                           PluginBugReport(
                               navigatorPath: navigatorPathObserver.currentPath,
-                              exception: data!.$1,
+                              error: data!.$1,
                               stackTrace: data.$2.toString(),
                               pluginCodeName: plugin.codeName,
                               isBundledPlugin: plugin.isBundledPlugin,

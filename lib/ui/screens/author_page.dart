@@ -42,7 +42,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
 
   bool isLoadingResults = true;
   bool isMobile = true;
-  Exception? loadingException;
+  Object? loadingError;
   String? loadErrorStacktrace;
 
   late UniversalAuthorPage? authorPage =
@@ -69,7 +69,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
         loadingHandler.authorVideosBugReports = [
           PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: e as Exception,
+              error: e,
               stackTrace: stacktrace.toString(),
               pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown plugin",
               isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
@@ -89,7 +89,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
     } catch (e, stacktrace) {
       logger.e("Error getting author page: $e\n$stacktrace");
       setState(() {
-        loadingException = e as Exception;
+        loadingError = e;
         loadErrorStacktrace = stacktrace.toString();
       });
     }
@@ -167,7 +167,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: authorPage!.scrapeFailException!,
+              error: authorPage!.scrapeFailException!,
               stackTrace: loadErrorStacktrace,
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
@@ -192,7 +192,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception: loadingException!,
+              error: loadingError!,
               stackTrace: loadErrorStacktrace,
               pluginCodeName: authorPage?.plugin?.codeName ?? "Unknown",
               isBundledPlugin: authorPage?.plugin?.isBundledPlugin ?? false,
@@ -215,8 +215,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
           bugReportsList: [
             PluginBugReport(
               navigatorPath: navigatorPathObserver.currentPath,
-              exception:
-                  Exception("Author page action button manual bug report"),
+              error: "Author page action button manual bug report",
               pluginCodeName: authorPage!.plugin!.codeName,
               isBundledPlugin: authorPage!.plugin!.isBundledPlugin,
               debugObject: authorPage!.toMap(),
@@ -247,7 +246,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
               ]
             ]),
         body: SafeArea(
-            child: loadingException != null
+            child: loadingError != null
                 ? Center(
                     child: Padding(
                         padding: EdgeInsets.only(

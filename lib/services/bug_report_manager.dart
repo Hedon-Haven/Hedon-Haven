@@ -73,19 +73,19 @@ class BugReport {
   /// Full navigator path including the screen where the bug occurred
   final String navigatorPath;
 
-  /// The exception object with the error message string
-  final Exception exception;
+  /// The thrown object (Exception, Error or any other Object)
+  final Object error;
 
   /// Full stack trace of the error
   final String? stackTrace;
 
   BugReport(
-      {required this.navigatorPath, required this.exception, this.stackTrace});
+      {required this.navigatorPath, required this.error, this.stackTrace});
 
   Map<String, dynamic> toMap() => {
         "navigatorPath": navigatorPath,
-        "exception": exception.toString(),
-        "isCustomException": exception is CustomException,
+        "error": error.toString(),
+        "isCustomException": error is CustomException,
         "stackTrace": stackTrace,
       };
 
@@ -111,7 +111,7 @@ class PluginBugReport extends BugReport {
 
   PluginBugReport(
       {required super.navigatorPath,
-      required super.exception,
+      required super.error,
       super.stackTrace,
       required this.pluginCodeName,
       required this.isBundledPlugin,
