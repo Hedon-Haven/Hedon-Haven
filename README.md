@@ -1,3 +1,5 @@
+![Daily users](https://raw.githubusercontent.com/Hedon-Haven/.github/main/badges/daily-users.svg)
+
 # [Hedon Haven (project website)](https://hedon-haven.top/)
 
 An adult content aggregator app.
