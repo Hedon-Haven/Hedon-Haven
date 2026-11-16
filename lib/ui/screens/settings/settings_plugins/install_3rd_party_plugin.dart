@@ -142,6 +142,7 @@ class _Install3rdPartyPluginScreenState
           "\nVersion: ${pluginConfigMap!["metadata"]["version"]}"
           "\nDeveloper: ${pluginConfigMap!["metadata"]["developer"]}"
           "\nContact email: ${pluginConfigMap!["metadata"]["contactEmail"] ?? "Not provided"}"
+          "\nIssue tracker: ${pluginConfigMap!["metadata"]["issueTrackerUrl"] ?? "Not provided"}"
           "\nDescription: ${pluginConfigMap!["metadata"]["description"]}"
           "\nUpdate URL: ${pluginConfigMap!["metadata"]["updateUrl"] ?? "Updates unsupported"}";
       setState(() => fileName = selectedFile.first.name);
