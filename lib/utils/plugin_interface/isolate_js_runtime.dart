@@ -33,27 +33,35 @@ void initJSRuntimeIsolate(SendPort mainSendPort) async {
 }
 
 void _setup(Map<String, dynamic> initMessage) async {
-  final rootToken = initMessage["rootToken"] as RootIsolateToken;
-  final SendPort logPort = initMessage["logPort"] as SendPort;
-  final SendPort fetchPort = initMessage["fetchPort"] as SendPort;
   final SendPort readyPort = initMessage["readyPort"] as SendPort;
-  final String cachePath = initMessage["cachePath"] as String;
-  BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
+  try {
+    final rootToken = initMessage["rootToken"] as RootIsolateToken;
+    final SendPort logPort = initMessage["logPort"] as SendPort;
+    final SendPort fetchPort = initMessage["fetchPort"] as SendPort;
+    final String cachePath = initMessage["cachePath"] as String;
+    BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
 
-  // Start javascript runtime and load plugin code
-  _runtime = getJavascriptRuntime(xhr: false);
-  final jsCode = File("${initMessage["pluginPath"] as String}/bundle.js")
-      .readAsStringSync();
-  _runtime.evaluate(jsCode);
+    // Start javascript runtime and load plugin code
+    _runtime = getJavascriptRuntime(xhr: false);
+    final jsCode = File("${initMessage["pluginPath"] as String}/bundle.js")
+        .readAsStringSync();
+    _runtime.evaluate(jsCode);
 
-  // Register "external" functions
-  _runtime.onMessage("consoleLog", (args) => _consoleLog(logPort, args));
-  _runtime.onMessage("httpRequest",
-      (args) async => jsonEncode(await _httpRequest(fetchPort, args)));
-  _runtime.onMessage("readCacheFile",
-      (msg) async => jsonEncode(_readCacheFile(logPort, cachePath, msg)));
-  _runtime.onMessage("writeCacheFile",
-      (msg) async => jsonEncode(_writeCacheFile(logPort, cachePath, msg)));
+    // Register "external" functions
+    _runtime.onMessage("consoleLog", (args) => _consoleLog(logPort, args));
+    _runtime.onMessage("httpRequest",
+        (args) async => jsonEncode(await _httpRequest(fetchPort, args)));
+    _runtime.onMessage("readCacheFile",
+        (msg) async => jsonEncode(_readCacheFile(logPort, cachePath, msg)));
+    _runtime.onMessage("writeCacheFile",
+        (msg) async => jsonEncode(_writeCacheFile(logPort, cachePath, msg)));
+  } catch (e, st) {
+    // Report to init() instead of leaving it waiting for readyPort forever
+    readyPort
+        .send({"error": convertErrorToMap(e), "stackTrace": st.toString()});
+    Isolate.current.kill();
+    return;
+  }
 
   _initialized = true;
   readyPort.send(true);

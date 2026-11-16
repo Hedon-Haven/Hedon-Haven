@@ -257,8 +257,14 @@ class PluginInterface {
     });
 
     // Wait for runtime init in isolate
-    await readyPort.first;
+    final readyReply = await readyPort.first;
     readyPort.close();
+    if (readyReply is Map) {
+      logger.e("$codeName failed to init isolate with: ${readyReply["error"]}"
+          "\n\n${readyReply["stackTrace"]}");
+      throw convertMapToException(
+          Map<String, dynamic>.from(readyReply["error"] as Map));
+    }
     _isolateReady.complete();
 
     // Some plugins might need to be prepared before they can be used (e.g. fetch cookies)

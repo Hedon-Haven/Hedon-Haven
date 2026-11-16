@@ -20,13 +20,21 @@ void runBundledPluginIsolate(
 
   await for (final message in receivePort) {
     if (!initialized) {
-      final rootToken = message["rootToken"] as RootIsolateToken;
       final SendPort readyPort = message["readyPort"] as SendPort;
-      BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
+      try {
+        final rootToken = message["rootToken"] as RootIsolateToken;
+        BackgroundIsolateBinaryMessenger.ensureInitialized(rootToken);
 
-      instance.attachPorts(
-          message["logPort"] as SendPort, message["fetchPort"] as SendPort);
-      handlers = instance.buildFunctionsMap();
+        instance.attachPorts(
+            message["logPort"] as SendPort, message["fetchPort"] as SendPort);
+        handlers = instance.buildFunctionsMap();
+      } catch (e, st) {
+        // Report to init() instead of leaving it waiting for readyPort forever
+        readyPort
+            .send({"error": convertErrorToMap(e), "stackTrace": st.toString()});
+        Isolate.current.kill();
+        return;
+      }
 
       initialized = true;
       readyPort.send(true);
