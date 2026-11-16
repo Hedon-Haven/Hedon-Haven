@@ -311,9 +311,21 @@ class _BugReportScreenState extends State<BugReportScreen>
               const SizedBox(height: 10),
               ListTile(
                 title: Text("Submit via email"),
-                subtitle: Text(plugin.contactEmail),
+                subtitle: Text(plugin.contactEmail ?? "No email provided"),
                 leading: Icon(Icons.email),
                 onTap: () async {
+                  if (plugin.contactEmail == null) {
+                    await showDialog(
+                        context: context,
+                        builder: (BuildContext context) => ThemedDialog(
+                            title: "No contact email",
+                            primaryText: "Ok",
+                            onPrimary: () => Navigator.pop(context),
+                            content: Text("The developer of "
+                                "${plugin.prettyName} did not provide a contact "
+                                "email.${plugin.issueTrackerUrl == null ? "" : " Please submit the bug report via the issue tracker instead."}")));
+                    return;
+                  }
                   _appResumedCompleter = Completer<void>();
                   bool submittedReport = await launchUrl(Uri(
                       scheme: "mailto",
@@ -333,13 +345,25 @@ class _BugReportScreenState extends State<BugReportScreen>
               ),
               ListTile(
                 title: Text("Create issue in third party tracker"),
-                subtitle: Text(plugin.issueTrackerUrl),
+                subtitle: Text(plugin.issueTrackerUrl ?? "No URL provided"),
                 leading: Icon(Icons.bug_report),
                 onTap: () async {
+                  if (plugin.issueTrackerUrl == null) {
+                    await showDialog(
+                        context: context,
+                        builder: (BuildContext context) => ThemedDialog(
+                            title: "No issue tracker",
+                            primaryText: "Ok",
+                            onPrimary: () => Navigator.pop(context),
+                            content: Text("The developer of "
+                                "${plugin.prettyName} did not provide an issue "
+                                "tracker URL.${plugin.contactEmail == null ? "" : " Please submit the bug report via email instead."}")));
+                    return;
+                  }
                   await copyCombinedReport();
                   _appResumedCompleter = Completer<void>();
                   bool submittedReport =
-                      await launchUrl(Uri.parse(plugin.issueTrackerUrl));
+                      await launchUrl(Uri.parse(plugin.issueTrackerUrl!));
                   if (submittedReport) {
                     // wait for user to return
                     await _appResumedCompleter!.future;

@@ -281,7 +281,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
         "Handle URLs: ${plugin.handleUrls.join(", ")}\n"
         "Version: ${plugin.version}\n"
         "Developer: ${plugin.developer}\n"
-        "Contact email: ${plugin.contactEmail}\n"
+        "Contact email: ${plugin.contactEmail ?? "Not provided"}\n"
         "Description: ${plugin.description}\n"
         "Update URL: ${plugin.updateUrl ?? (plugin.isBundledPlugin ? "Bundled plugins are updated with the app" : "Updates unsupported")}";
     await showDialog(

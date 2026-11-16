@@ -31,11 +31,11 @@ class PluginInterface {
   /// Plugin developer name
   late String developer;
 
-  /// Contact email (e.g. for bug reports)
-  late String contactEmail;
+  /// Optional contact email (e.g. for bug reports)
+  late String? contactEmail;
 
-  /// Contact email (e.g. for bug reports)
-  late String issueTrackerUrl;
+  /// Optional issue tracker URL (e.g. for bug reports)
+  late String? issueTrackerUrl;
 
   /// Short description (e.g. to mention functionality limitations)
   late String description;
