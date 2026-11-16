@@ -31,18 +31,18 @@ start or end with an underscore. The `com.hedon_haven` namespace is reserved for
 
 ## handleUrls
 
-Links that the plugin can open when users share or drag-and-drop them into the app. Entries are
+Links that the plugin can handle when users share or drag-and-drop them into the app. Entries are
 matched as plain prefixes of the full link, scheme included. For example `https://example.com/video`
 matches `https://example.com/video/123`, but not `https://www.example.com/video/123`. Every variant
 of the host that the plugin supports needs its own entry. The order does not matter.
 
 ## initialPageCounts
 
-`initialPageCounts` sets the counter of the first page that the app requests for each list:
+`initialPageCounts` sets the first page number that the app requests for each list:
 
 | Key                           | List                |
 |-------------------------------|---------------------|
-| `initialHomePage`             | Home page result    |
+| `initialHomePage`             | Home page results   |
 | `initialSearchResultsPage`    | Search results      |
 | `initialCommentsPage`         | Comments of a video |
 | `initialVideoSuggestionsPage` | Video suggestions   |
