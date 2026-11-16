@@ -208,8 +208,7 @@ class PluginInterface {
     if (response.containsKey("error")) {
       logger.e("$codeName: ${response["error"]}"
           "\n\n${response["stackTrace"].toString()}");
-      final Exception exception = convertMapToException(
-          Map<String, dynamic>.from(response["error"] as Map));
+      final Exception exception = convertMapToException(response["error"]);
       exception.networkTraces = networkTraces;
       throw exception;
     }
@@ -262,8 +261,7 @@ class PluginInterface {
     if (readyReply is Map) {
       logger.e("$codeName failed to init isolate with: ${readyReply["error"]}"
           "\n\n${readyReply["stackTrace"]}");
-      throw convertMapToException(
-          Map<String, dynamic>.from(readyReply["error"] as Map));
+      throw convertMapToException(readyReply["error"]);
     }
     _isolateReady.complete();
 
