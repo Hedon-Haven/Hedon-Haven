@@ -2,7 +2,7 @@ name: Test bundled plugins
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *' # Every day at midnight UTC
+    - cron: "15 23 * * *" # Every day at 23:15 UTC
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
