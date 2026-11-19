@@ -77,18 +77,26 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y openvpn
 
+          # Make separate group for vpn to have main runner user still be able to communicate with github servers 
+          sudo groupadd vpn
+          sudo usermod -aG vpn "$(id -un)"
+          sudo ip rule add fwmark 1 table 100
+          sudo iptables -t mangle -A OUTPUT -m owner --gid-owner vpn -j MARK --set-mark 1
+          sudo iptables -t nat -A POSTROUTING -o tun0 -j MASQUERADE
+
           REAL_IP=$(curl ifconfig.me)
           echo "Real IP: $REAL_IP"
 
           SERVER_IDS=(187 197 233)
           for ID in "${SERVER_IDS[@]}"; do
             echo "Trying VPN server $ID"
-            sudo openvpn --daemon --log /dev/stdout --data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC:CHACHA20-POLY1305 --config ".github/vpn_configs/vpngate_openvpn_$ID.ovpn"
+            sudo openvpn --daemon --log /dev/stdout --route-nopull --pull-filter ignore dhcp-option --data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC:CHACHA20-POLY1305 --config ".github/vpn_configs/vpngate_openvpn_$ID.ovpn"
             echo "Waiting for VPN to connect for 60 seconds"
             sleep 60
+            sudo ip route replace default dev tun0 table 100 || true
 
-            CURRENT_IP=$(curl ifconfig.me)
-            if [ "$REAL_IP" != "$CURRENT_IP" ]; then
+            CURRENT_IP=$(sg vpn -c "curl --max-time 10 ifconfig.me" || true)
+            if [ -n "$CURRENT_IP" ] && [ "$REAL_IP" != "$CURRENT_IP" ]; then
               echo "Connected to server $ID"
               break
             fi
@@ -98,9 +106,9 @@ jobs:
             sleep 5
           done
 
-          NEW_IP=$(curl ifconfig.me)
+          NEW_IP=$(sg vpn -c "curl --max-time 10 ifconfig.me" || true)
           echo "New IP: $NEW_IP"
-          if [ "$REAL_IP" == "$NEW_IP" ]; then
+          if [ -z "$NEW_IP" ] || [ "$REAL_IP" == "$NEW_IP" ]; then
             echo "Couldn't connect to any VPN server!"
             exit 1
           fi
@@ -109,12 +117,9 @@ jobs:
         run: |
           # add native libs to LD_LIBRARY_PATH
           export LD_LIBRARY_PATH="$(pwd)/build/linux/x64/release/bundle/lib:$(pwd)/build/linux/x64/release/plugins/flutter_js/bundle/lib:${LD_LIBRARY_PATH}"
-          
-          PLUGIN=${{ matrix.plugin }} flutter test --no-pub test/bundled_plugins_test.dart
 
-      # Disconnect before uploading dumps
-      - name: Disconnect from openVPN
-        run: sudo killall openvpn
+          # sg is setuid and drops LD_LIBRARY_PATH, so pass it via env
+          sg vpn -c "env LD_LIBRARY_PATH=$LD_LIBRARY_PATH PLUGIN=${{ matrix.plugin }} flutter test --no-pub test/bundled_plugins_test.dart"
 
       - name: Upload dumps
         # This ensures the dumps are uploaded even if the testing step will cause the job itself to fail
