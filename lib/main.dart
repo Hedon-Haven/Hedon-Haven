@@ -52,8 +52,8 @@ void main() async {
   // Icons are not critical to startup -> don't await
   downloadPluginIcons();
   await processArgs();
-  logger.i("Starting flutter process");
-  setupErrorHandling();
+  if (!kDebugMode) setupErrorHandling();
+  logger.i("Starting flutter app process");
   runApp(const ViewerApp());
 }
 
