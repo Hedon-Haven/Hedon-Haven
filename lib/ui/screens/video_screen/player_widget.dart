@@ -401,7 +401,8 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     setState(() => dragOffsetY = 0.0);
                     if (triggered) widget.toggleFullScreen.call();
                   },
-            child: Stack(children: [
+            child: Center(
+                child: Stack(children: [
               ClipRect(
                   child: Transform.scale(
                       scale: widget.isFullScreen
@@ -543,7 +544,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   videoPlayerException != null)
                 Positioned(
                     top: 0, left: 0, child: BackButton(color: Colors.white)),
-            ])));
+            ]))));
   }
 
   Widget buildErrorScreen() {
