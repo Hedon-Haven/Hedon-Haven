@@ -506,6 +506,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     isMobile = MediaQuery.of(context).size.width < 1100;
     if (!isMobile) openCommentSection();
     return Scaffold(
+        backgroundColor: isFullScreen
+            ? Colors.black
+            : Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
             top: !isFullScreen,
             bottom: !isFullScreen,
