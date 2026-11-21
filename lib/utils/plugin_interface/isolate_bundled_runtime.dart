@@ -46,12 +46,14 @@ void runBundledPluginIsolate(
       return;
     }
 
-    _callFunction(message, handlers!);
+    _callFunction(message, handlers!, instance);
   }
 }
 
-void _callFunction(Map<String, dynamic> message,
-    Map<String, Future<dynamic> Function(List args)> handlers) async {
+void _callFunction(
+    Map<String, dynamic> message,
+    Map<String, Future<dynamic> Function(List args)> handlers,
+    BundledPluginIsolate instance) async {
   final SendPort replyPort = message["replyPort"] as SendPort;
   // Created before the handler runs and sent back on both success and
   // failure, so a call that throws partway through still surfaces whatever
@@ -64,9 +66,22 @@ void _callFunction(Map<String, dynamic> message,
     final handler = handlers[functionName];
     if (handler == null) throw Exception("Unknown function: $functionName");
 
-    final result = await runZoned(() => handler(args), zoneValues: {
+    // Fail the call on uncaught async errors instead of killing the isolate
+    final done = Completer<dynamic>();
+    runZonedGuarded(() async {
+      final value = await handler(args);
+      if (!done.isCompleted) done.complete(value);
+    }, (e, st) {
+      if (done.isCompleted) {
+        instance
+            .logError("Uncaught async error after call finished: $e\n\n$st");
+      } else {
+        done.completeError(e, st);
+      }
+    }, zoneValues: {
       BundledPluginIsolate.networkTraceZoneKey: networkTraces,
     });
+    final result = await done.future;
 
     replyPort.send({
       "result": _serialize(result),
