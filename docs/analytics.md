@@ -67,10 +67,17 @@ Third party plugin errors are never automatically submitted.
 - [App info](#app-info)
 - A `distinct_id`: completely random per report, with no relation to the device, the
   usage-ping ID, or any other report.
-- A stack trace pointing to where the crash happened in the app's code
-- The error message produced by the crash
-- The screen the crash occurred on
+- How the report was submitted: automatically, after user approval, or manually
 - An optional user-written message
+- One entry per error. Each entry contains:
+  - The screen the error occurred on
+  - The error message
+  - Whether it is an expected failure, e.g. a timeout or no internet connection
+  - A stack trace pointing to where the error happened in the app's code
+- Errors caused by a bundled plugin additionally contain:
+  - The name of the plugin
+  - The data the plugin had loaded when the error occurred, e.g. the details of the video, comment
+    or author page it was processing (title, description, etc.)
 
 #### This is what a real bug report event looks like on the analytics side:
 
@@ -97,10 +104,10 @@ Third party plugin errors are never automatically submitted.
       "bugReports": {
         "appReports": [
           {
-            "codeTrace": "#0      State.setState (package:flutter/src/widgets/framework.dart:1221)\n#1      _HomeScreenState.initState.<anonymous closure>.<anonymous closure> (package:hedon_haven/ui/screens/home.dart:77)\n#2      _RootZone.run (dart:async/zone.dart:1028)\n#3      _FutureListener.handleWhenComplete (dart:async/future_impl.dart:272)\n#4      Future._propagateToListeners.handleWhenCompleteCallback (dart:async/future_impl.dart:909)\n#5      Future._propagateToListeners (dart:async/future_impl.dart:974)\n#6      Future._completeWithValue (dart:async/future_impl.dart:720)\n<asynchronous suspension>\n",
-            "errorMessage": "Null check operator used on a null value",
-            "isCustomException": null,
-            "navigatorPath": "/home/bug-report-emergency"
+            "navigatorPath": "/home/bug-report-emergency",
+            "error": "Null check operator used on a null value",
+            "isCustomException": false,
+            "stackTrace": "#0      State.setState (package:flutter/src/widgets/framework.dart:1221)\n#1      _HomeScreenState.initState.<anonymous closure>.<anonymous closure> (package:hedon_haven/ui/screens/home.dart:77)\n#2      _RootZone.run (dart:async/zone.dart:1028)\n#3      _FutureListener.handleWhenComplete (dart:async/future_impl.dart:272)\n#4      Future._propagateToListeners.handleWhenCompleteCallback (dart:async/future_impl.dart:909)\n#5      Future._propagateToListeners (dart:async/future_impl.dart:974)\n#6      Future._completeWithValue (dart:async/future_impl.dart:720)\n<asynchronous suspension>\n"
           }
         ]
       },
