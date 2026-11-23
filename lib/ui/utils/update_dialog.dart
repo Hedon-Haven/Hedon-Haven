@@ -20,7 +20,9 @@ void showUpdateDialog(UpdateManager updateManager, BuildContext parentContext) {
                   onPopInvoked: (_) {},
                   child: ThemedDialog(
                     title: failReason != null ? "Update failed" : "App update",
-                    content: Column(mainAxisSize: MainAxisSize.min, children: [
+                    content: SingleChildScrollView(
+                        child:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
                       Padding(
                           padding: failReason == null
                               ? const EdgeInsets.only(bottom: 20)
@@ -65,7 +67,7 @@ void showUpdateDialog(UpdateManager updateManager, BuildContext parentContext) {
                         LinearProgressIndicator(
                             value: updateManager.downloadProgress)
                       ]
-                    ]),
+                    ])),
                     // Only show buttons if update is not downloading
                     primaryText: isDownloadingUpdate
                         ? null
