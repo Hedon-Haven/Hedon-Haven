@@ -8,6 +8,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '/services/plugin_manager.dart';
 import '/utils/global_vars.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
+import '/utils/try_parse.dart';
 import '/utils/universal_formats.dart';
 
 late Database _database;
@@ -116,8 +117,8 @@ Future<void> createDefaultTables() async {
           authorName TEXT,
           authorID TEXT,
           verifiedAuthor INTEGER,
-          lastWatched TEXT,
-          addedOn Text
+          lastWatched INTEGER,
+          addedOn INTEGER
         )
         ''');
   // Reimplementation of UniversalSearchRequest
@@ -164,7 +165,7 @@ Future<void> createDefaultTables() async {
           authorName TEXT,
           authorID TEXT,
           verifiedAuthor INTEGER,
-          addedOn Text
+          addedOn INTEGER
         )
         ''');
 }
@@ -328,8 +329,8 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
   newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
           Uri.parse(result.thumbnail ?? ""), result.thumbnailHttpHeaders) ??
       Uint8List(0);
-  newEntryData["lastWatched"] = DateTime.now().toUtc().toString();
-  newEntryData["addedOn"] = DateTime.now().toUtc().toString();
+  newEntryData["lastWatched"] = convertToUnixTime(DateTime.now());
+  newEntryData["addedOn"] = convertToUnixTime(DateTime.now());
 
   // convert bool to int
   newEntryData["virtualReality"] = result.virtualReality == true ? 1 : 0;
@@ -373,7 +374,7 @@ Future<void> addToFavorites(UniversalVideoPreview result) async {
   newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
           Uri.parse(result.thumbnail ?? ""), result.thumbnailHttpHeaders) ??
       Uint8List(0);
-  newEntryData["addedOn"] = DateTime.now().toUtc().toString();
+  newEntryData["addedOn"] = convertToUnixTime(DateTime.now());
 
   // convert bool to int
   newEntryData["virtualReality"] = result.virtualReality == true ? 1 : 0;
