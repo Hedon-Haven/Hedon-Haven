@@ -147,7 +147,7 @@ void main() async {
   JsonEncoder encoder = JsonEncoder.withIndent("  ");
 
   group("Testing ${plugin.codeName}", () {
-    test("init", () async {
+    setUpAll(() async {
       logger.i("Testing init");
 
       try {
