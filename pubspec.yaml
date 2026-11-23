@@ -34,7 +34,7 @@ dependencies:
   yaml: ^3.1.4
   logger: ^2.8.0
   archive: ^4.7.1
-  file_picker: ^13.4.0
+  file_picker: ^13.4.1
   image: ^4.13.1
   crypto: ^3.0.8
   share_plus: ^13.3.1
