@@ -73,6 +73,10 @@ Future<bool> startUpgrade(String currentVersion) async {
         // analytics onboarding screen
         await forceReset();
         break;
+      case "0.6.7":
+        // The date columns in the db are unix time (int) instead of text now
+        await purgeDatabase();
+        break;
       default:
         logger.e("Unknown version: $currentVersion. Not changing anything");
     }
