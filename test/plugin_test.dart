@@ -110,20 +110,31 @@ void main() async {
     logger.f("No bundled plugin matches the test map name ${testMapFile.path}");
     return;
   }
+  // A missing key skips the related tests
+  for (final key in [
+    "testingSearchSuggestions",
+    "testingSearchResults",
+    "testingVideos",
+    "testingAuthorPageIds"
+  ]) {
+    if (testMap[key] == null) {
+      logger.w("Test map has no $key, skipping the related tests");
+    }
+  }
   List<Map<String, dynamic>> testingSearchSuggestions =
-      (testMap["testingSearchSuggestions"] as YamlList)
+      ((testMap["testingSearchSuggestions"] as List?) ?? [])
           .map((e) => Map<String, dynamic>.from(e as YamlMap))
           .toList();
   List<Map<String, dynamic>> testingSearchResults =
-      (testMap["testingSearchResults"] as YamlList)
+      ((testMap["testingSearchResults"] as List?) ?? [])
           .map((e) => Map<String, dynamic>.from(e as YamlMap))
           .toList();
   List<Map<String, dynamic>> testingVideos =
-      (testMap["testingVideos"] as YamlList)
+      ((testMap["testingVideos"] as List?) ?? [])
           .map((e) => Map<String, dynamic>.from(e as YamlMap))
           .toList();
   List<String> testingAuthorPageIds =
-      (testMap["testingAuthorPageIds"] as YamlList).cast<String>();
+      ((testMap["testingAuthorPageIds"] as List?) ?? []).cast<String>();
 
   // Wipe and recreate the dump dir. Subdirectories are created on demand by
   // dumpNetworkTraces / when writing result Maps
