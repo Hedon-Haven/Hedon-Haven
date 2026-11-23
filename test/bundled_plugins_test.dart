@@ -86,27 +86,30 @@ void main() async {
       .thenAnswer((_) async => false);
   sharedStorage = mock;
 
-  // Read plugin name that should be tested from env
-  String? pluginFromEnv = Platform.environment["PLUGIN"];
+  // PLUGIN_TEST_MAP (required): absolute path to the test map yaml.
+  // PLUGIN_PATH (optional): absolute path to an unpacked, compiled 3rd party plugin
+  String? testMapPath = Platform.environment["PLUGIN_TEST_MAP"];
+  String? pluginPath = Platform.environment["PLUGIN_PATH"];
 
-  if (pluginFromEnv == null) {
-    logger.f("Couldn't read PLUGIN environment variable value");
+  if (testMapPath == null) {
+    logger.f("Couldn't read PLUGIN_TEST_MAP environment variable value");
     return;
   }
-
-  PluginInterface? plugin = await getBundledPluginByName(pluginFromEnv);
-  if (plugin == null) {
-    logger.f("Plugin with name $pluginFromEnv not found");
-    return;
-  }
-
-  File testMapFile = File("${Directory.current.path}/test/"
-      "bundled_plugins_test_maps/${plugin.codeName}.yaml");
+  File testMapFile = File(testMapPath);
   if (!testMapFile.existsSync()) {
     logger.f("No test map found at ${testMapFile.path}");
     return;
   }
   YamlMap testMap = loadYaml(testMapFile.readAsStringSync());
+
+  PluginInterface? plugin = pluginPath != null
+      ? PluginInterface(pluginPath)
+      : await getBundledPluginByName(
+          testMapFile.uri.pathSegments.last.replaceFirst(".yaml", ""));
+  if (plugin == null) {
+    logger.f("No bundled plugin matches the test map name ${testMapFile.path}");
+    return;
+  }
   List<Map<String, dynamic>> testingSearchSuggestions =
       (testMap["testingSearchSuggestions"] as YamlList)
           .map((e) => Map<String, dynamic>.from(e as YamlMap))

@@ -119,7 +119,7 @@ jobs:
           export LD_LIBRARY_PATH="$(pwd)/build/linux/x64/release/bundle/lib:$(pwd)/build/linux/x64/release/plugins/flutter_js/bundle/lib:${LD_LIBRARY_PATH}"
 
           # sg is setuid and drops LD_LIBRARY_PATH, so pass it via env
-          sg vpn -c "env LD_LIBRARY_PATH=$LD_LIBRARY_PATH PLUGIN=${{ matrix.plugin }} flutter test --no-pub test/bundled_plugins_test.dart"
+          sg vpn -c "env LD_LIBRARY_PATH=$LD_LIBRARY_PATH PLUGIN_TEST_MAP=$(pwd)/test/bundled_plugins_test_maps/${{ matrix.plugin }}.yaml flutter test --no-pub test/bundled_plugins_test.dart"
 
       - name: Upload dumps
         # This ensures the dumps are uploaded even if the testing step will cause the job itself to fail
