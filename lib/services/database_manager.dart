@@ -228,6 +228,8 @@ Future<List<UniversalVideoPreview>> getWatchHistory() async {
       // Convert int back into bool
       historyItem["virtualReality"] = historyItem["virtualReality"] as int == 1;
       historyItem["verifiedAuthor"] = historyItem["verifiedAuthor"] as int == 1;
+      // No scraping report is displayed on the history screen anyway
+      historyItem["unavailableFields"] = <String>[];
       resultsList.add(UniversalVideoPreview.fromMap(
           historyItem,
           await PluginManager.getPluginByCodeName(
@@ -250,6 +252,8 @@ Future<List<UniversalVideoPreview>> getFavorites() async {
       // Convert int back into bool
       favorite["virtualReality"] = favorite["virtualReality"] as int == 1;
       favorite["verifiedAuthor"] = favorite["verifiedAuthor"] as int == 1;
+      // No scraping report is displayed on the history screen anyway
+      favorite["unavailableFields"] = <String>[];
       resultsList.add(UniversalVideoPreview.fromMap(
           favorite,
           await PluginManager.getPluginByCodeName(
@@ -318,6 +322,7 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
   newEntryData.remove("viewsTotal");
   newEntryData.remove("ratingsPositivePercent");
   newEntryData.remove("scrapeFailException");
+  newEntryData.remove("unavailableFields");
 
   // update values
   newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
@@ -361,6 +366,7 @@ Future<void> addToFavorites(UniversalVideoPreview result) async {
   newEntryData.remove("viewsTotal");
   newEntryData.remove("ratingsPositivePercent");
   newEntryData.remove("scrapeFailException");
+  newEntryData.remove("unavailableFields");
   newEntryData.remove("lastWatched");
 
   // update values
