@@ -1,0 +1,37 @@
+- Fully rewrote bundled plugins to run in isolates
+- Added timeouts to all plugin calls
+- Bundled plugin calls now record their network requests (not yet included in bug reports)
+- Plugins now report isolate setup errors instead of hanging at init, and fail at once on uncaught async errors
+
+- Added `unavailableFields` so plugins can list fields they cannot scrape
+- Replaced `scrapeFailMessage` with `scrapeFailException`
+- Plugins now receive HTTP response headers through a new `requestHttp` function
+- Plugin email and bug report URLs are now optional
+- Reserved the bundled plugins namespace
+- Plugin update links now require HTTPS, and non-HTTPS icon links trigger a warning
+- Added testing for third-party plugins and initial third-party plugin docs
+
+- Made all onboarding screens scrollable, with bottom buttons always visible
+- Reduced the default padding in video lists
+- Preview images now preserve aspect ratio (instead of being stretched)
+- Comment sections now only render when they are shown
+- Plugin descriptions now show the issue tracker URL
+- The update failure message now links to the download page
+
+- All history dates are now stored as integers
+- Fields listed in `unavailableFields` are no longer stored in history
+
+- Fixed both xhamster and pornhub bundled plugins
+
+- Fixed the update check always reporting a new version
+- Fixed the bug report screen opening on rendering errors in release mode
+- Fixed a null exception when bug reports are not submitted
+- Fixed the video player not being centered on square displays
+- Fixed the wrong background color in fullscreen mode
+- Fixed `RangeError` when a video has exactly one quality
+- Fixed the "no search providers enabled" warning showing when providers were enabled
+
+- Added a separate x86_64 testing artifact to releases
+- Updated the Android toolchain (Gradle 9.5.0, AGP 9.3.1, Kotlin 2.4.20)
+
+**Full Changelog**: https://github.com/Hedon-Haven/Hedon-Haven/compare/v0.6.7...v0.6.8
