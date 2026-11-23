@@ -43,7 +43,7 @@ An adult content aggregator app.
 5. Generate mocks: `flutter pub run build_runner build`
 6. Run the tests: `flutter test`
     - To test a bundled plugin, set `PLUGIN_TEST_MAP` to the absolute path of its test map:
-      `PLUGIN_TEST_MAP=$(pwd)/test/bundled_plugins_test_maps/com.hedon_haven.tester_internal.yaml flutter test test/bundled_plugins_test.dart`
+      `PLUGIN_TEST_MAP=$(pwd)/test/bundled_plugins_test_maps/com.hedon_haven.tester_internal.yaml flutter test test/plugin_test.dart`
     - To test a 3rd party plugin, additionally set `PLUGIN_PATH` to the absolute path of the
       unpacked plugin zip
 
