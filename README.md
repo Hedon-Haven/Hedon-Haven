@@ -46,6 +46,10 @@ An adult content aggregator app.
       `PLUGIN_TEST_MAP=$(pwd)/test/bundled_plugins_test_maps/com.hedon_haven.tester_internal.yaml flutter test test/plugin_test.dart`
     - To test a 3rd party plugin, additionally set `PLUGIN_PATH` to the absolute path of the
       unpacked plugin zip
+    - To run only some tests, add `--name <regex>` matching the test names, e.g.
+      `flutter test --name "getComments|getHomePage"`
+    - The tests wait 20 seconds between test groups to avoid rate limiting and should take about
+      5min per plugin
 
 ## Generate icons
 
