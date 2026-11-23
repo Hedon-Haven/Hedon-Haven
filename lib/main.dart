@@ -117,7 +117,7 @@ void setupErrorHandling() {
     logger.f("FlutterError: ${details.exceptionAsString()}");
     FlutterError.presentError(details);
     // Skip non-fatal render/layout warnings (e.g. overflow) — don't crash-report these
-    if (details.library == "rendering library" && !kDebugMode) return;
+    if (details.library == "rendering library") return;
     openBugReportScreen(details.exception, details.stack.toString());
   };
 
