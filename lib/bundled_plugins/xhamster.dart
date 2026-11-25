@@ -395,8 +395,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoId, UniversalVideoPreview uvp) async {
+  Future<UniversalVideoMetadata> getVideoMetadata(String videoId,
+      UniversalVideoPreview uvp) async {
     logDebug("Requesting ${_videoEndpoint + videoId}");
     var response = await httpRequest("$_videoEndpoint$videoId");
     if (response.statusCode != 200) {
@@ -411,9 +411,9 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
     // ratings
     int? ratingsPositive =
-        jscriptMap["ratingComponent"]?["ratingModel"]?["likes"];
+    jscriptMap["ratingComponent"]?["ratingModel"]?["likes"];
     int? ratingsNegative =
-        jscriptMap["ratingComponent"]?["ratingModel"]?["dislikes"];
+    jscriptMap["ratingComponent"]?["ratingModel"]?["dislikes"];
     int? ratingsTotal;
     if (ratingsPositive != null && ratingsNegative != null) {
       ratingsTotal = ratingsPositive + ratingsNegative;
@@ -425,16 +425,16 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     List<({String name, String authorID, String? avatar})>? actors;
     try {
       for (Map<String, dynamic> element
-          in jscriptMap["videoTagsComponent"]!["tags"]!) {
+      in jscriptMap["videoTagsComponent"]!["tags"]!) {
         if (element["isCategory"]!) {
           categories.add(element["name"]!);
         } else if (element["isPornstar"]!) {
           try {
             actors ??= [];
             actors.add((
-              name: element["name"],
-              authorID: element["slug"],
-              avatar: element["thumbUrl"]
+            name: element["name"],
+            authorID: element["slug"],
+            avatar: element["thumbUrl"]
             ));
           } catch (e, st) {
             logWarning("Failed to parse actor: $e\n$st");
@@ -454,7 +454,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     DateTime? date;
     String? dateString = rawHtml
         .querySelector(
-            'div[class="entity-info-container__date tooltip-nocache"]')
+        'div[class="entity-info-container__date tooltip-nocache"]')
         ?.attributes["data-tooltip"]!;
     // 2022-05-06 12:33:41 UTC
     if (dateString != null) {
@@ -485,7 +485,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           .last;
       authorName = jscriptMap["xplayerPluginSettings"]?["subscribe"]?["title"];
       authorSubscriberCount =
-          jscriptMap["xplayerPluginSettings"]?["subscribe"]?["subscribers"];
+      jscriptMap["xplayerPluginSettings"]?["subscribe"]?["subscribers"];
       authorAvatar = jscriptMap["xplayerPluginSettings"]?["subscribe"]?["logo"];
     } else {
       authorID = jscriptMap["videoModel"]?["author"]?["pageURL"]
@@ -494,7 +494,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           .last;
       authorName = jscriptMap["videoModel"]?["author"]?["name"];
       authorSubscriberCount = jscriptMap["videoTagsComponent"]
-          ?["subscriptionModel"]?["subscribers"];
+      ?["subscriptionModel"]?["subscribers"];
       authorAvatar = jscriptMap["videoTagsComponent"]?["tags"]?[0]?["thumbUrl"];
     }
 
@@ -534,8 +534,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Uint8List>?> getProgressThumbnails(
-      String videoID, String rawHtmlString) async {
+  Future<List<Uint8List>?> getProgressThumbnails(String videoID,
+      String rawHtmlString) async {
     final rawHtml = parse(rawHtmlString);
 
     try {
@@ -545,7 +545,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
 
       String imageBuildUrl =
-          jscriptMap["xplayerPluginSettings"]["spriteLoader"]["template"];
+      jscriptMap["xplayerPluginSettings"]["spriteLoader"]["template"];
 
       logDebug(imageBuildUrl);
 
@@ -553,17 +553,27 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       int duration = jscriptMap["xplayerSettings"]["duration"];
 
       // Extract the width of the individual preview image from the baseUrl
-      int imageWidth = int.parse(imageBuildUrl.split("/").last.split(".")[0]);
+      int imageWidth = int.parse(imageBuildUrl
+          .split("/")
+          .last
+          .split(".")[0]);
 
-      String suffix = ".${imageBuildUrl.split(".").last}";
+      String suffix = ".${imageBuildUrl
+          .split(".")
+          .last}";
       logDebug("suffix $suffix");
-      String baseUrl = imageBuildUrl.split("%d").first;
+      String baseUrl = imageBuildUrl
+          .split("%d")
+          .first;
       logDebug("baseUrl: $baseUrl");
       // from limited testing it seems as if the sampling frequency is always 4, but have this just in case
       // Although usually the sampling frequency is not 4.0, but rather something like 4.003
       // For some reason xhamster just ignores that and uses a whole number resulting in drift at the end in long videos.
       int samplingFrequency =
-          int.parse(imageBuildUrl.split("/").last.split(".")[1]);
+      int.parse(imageBuildUrl
+          .split("/")
+          .last
+          .split(".")[1]);
       // Each combined image contains 50 images
       int lastImageIndex = duration ~/ samplingFrequency ~/ 50;
       logDebug("Sampling frequency: $samplingFrequency");
@@ -571,7 +581,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
       logInfo("Downloading and processing progress images");
       List<List<Uint8List>> allThumbnails =
-          List.generate(lastImageIndex + 1, (_) => []);
+      List.generate(lastImageIndex + 1, (_) => []);
       List<Future<void>> imageFutures = [];
 
       for (int i = 0; i <= lastImageIndex; i++) {
@@ -614,7 +624,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
       // Combine all results into single, chronological list
       List<Uint8List> completedProcessedImages =
-          allThumbnails.expand((x) => x).toList();
+      allThumbnails.expand((x) => x).toList();
 
       // Add 55 seconds more of the last thumbnail
       // This is done as the sampling frequency is floored. 0.99*50 = 49.5, means in theory we could be off by 50 seconds
@@ -625,10 +635,13 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
       logInfo("Completed processing all images");
       logDebug(
-          "Total memory consumption apprx: ${completedProcessedImages[0].lengthInBytes * completedProcessedImages.length / 1024 / 1024} mb");
+          "Total memory consumption apprx: ${completedProcessedImages[0]
+              .lengthInBytes * completedProcessedImages.length / 1024 /
+              1024} mb");
       // return the completed processed images through the separate resultsPort
       logDebug(
-          "Sending ${completedProcessedImages.length} progress images to main process");
+          "Sending ${completedProcessedImages
+              .length} progress images to main process");
       return completedProcessedImages;
     } catch (e, stackTrace) {
       logError("Error in getProgressThumbnails: $e\n$stackTrace");
@@ -643,8 +656,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalComment>> getComments(
-      String videoID, String rawHtmlString, int page) async {
+  Future<List<UniversalComment>> getComments(String videoID,
+      String rawHtmlString, int page) async {
     Document rawHtml = parse(rawHtmlString);
     List<UniversalComment> commentList = [];
 
@@ -656,7 +669,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     // use the entity id from the comment section specifically
     // Its usually an integer -> convert it to a string, just in case
     String entityID = jscriptMap["commentsComponent"]["commentsList"]["target"]
-            ["id"]
+    ["id"]
         .toString();
     logDebug("Video comment entity ID: $entityID");
 
@@ -701,7 +714,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         authorID: comment["userId"]?.toString(),
         countryID: comment["author"]?["personalInfo"]?["geo"]?["countryCode"],
         orientation: comment["author"]?["personalInfo"]?["orientation"]
-            ?["name"],
+        ?["name"],
         profilePicture: comment["author"]?["thumbUrl"],
         // null in the json means 0
         ratingsTotal: comment["likes"] ?? 0,
@@ -719,12 +732,12 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           "orientation",
         },
         scrapeFailException: (iD == null ||
-                author == null ||
-                commentBody == null)
+            author == null ||
+            commentBody == null)
             ? ScrapingException("Error: Failed to scrape critical variable(s):"
-                "${iD == null ? " iD" : ""}"
-                "${author == null ? " author" : ""}"
-                "${commentBody == null ? " commentBody" : ""}")
+            "${iD == null ? " iD" : ""}"
+            "${author == null ? " author" : ""}"
+            "${commentBody == null ? " commentBody" : ""}")
             : null,
       );
 
@@ -733,7 +746,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
     if (commentList.length != commentsJson.length) {
       logWarning(
-          "${commentsJson.length - commentList.length} comments failed to parse.");
+          "${commentsJson.length -
+              commentList.length} comments failed to parse.");
       if (commentList.length < commentsJson.length * 0.5) {
         throw Exception("More than 50% of the results failed to parse.");
       }
@@ -743,8 +757,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, String rawHtmlString, int page) async {
+  Future<List<UniversalVideoPreview>> getVideoSuggestions(String videoID,
+      String rawHtmlString, int page) async {
     Document rawHtml = parse(rawHtmlString);
 
     // find the video's relatedID in the json inside the html
@@ -773,7 +787,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       UniversalVideoPreview relatedVideo = UniversalVideoPreview(
         // Don't enforce null safety here
         // treat error below in scrapeFailException instead
-        iD: tryParse(() => result["pageURL"].trim().split("/").last) ?? "null",
+        iD: tryParse(() =>
+        result["pageURL"]
+            .trim()
+            .split("/")
+            .last) ?? "null",
         title: title ?? "null",
         plugin: null,
         thumbnail: result["thumbURL"],
@@ -801,7 +819,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         },
         scrapeFailException: title == null
             ? ScrapingException(
-                "Error: Failed to scrape critical variable: title")
+            "Error: Failed to scrape critical variable: title")
             : null,
       );
 
@@ -836,9 +854,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         response = await httpRequest(authorPageLink);
         if (response.statusCode != 200) {
           logError(
-              "Error downloading html (tried channel, creator, user): ${response.statusCode}");
+              "Error downloading html (tried channel, creator, user): ${response
+                  .statusCode}");
           throw Exception(
-              "Error downloading html (tried channel, creator, user): ${response.statusCode}");
+              "Error downloading html (tried channel, creator, user): ${response
+                  .statusCode}");
         }
       }
     }
@@ -867,9 +887,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
         if (response.statusCode != 200) {
           logError(
-              "Error downloading html (tried channel, creator, user): ${response.statusCode}");
+              "Error downloading html (tried channel, creator, user): ${response
+                  .statusCode}");
           throw Exception(
-              "Error downloading html (tried channel, creator, user): ${response.statusCode}");
+              "Error downloading html (tried channel, creator, user): ${response
+                  .statusCode}");
         }
       }
     }
@@ -880,7 +902,9 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
 
     // Check if the profile is private
-    if ((pageHtml.querySelector(".status-text")?.text ?? "") ==
+    if ((pageHtml
+        .querySelector(".status-text")
+        ?.text ?? "") ==
         "This profile is visible to friends only") {
       throw PrivateAuthorProfileException();
     }
@@ -899,7 +923,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     Map<String, String>? advancedDescription;
     try {
       Map<dynamic, dynamic>? infoMap = jscriptMap["infoComponent"]
-              ?["displayUserModel"]?["personalInfo"] ??
+      ?["displayUserModel"]?["personalInfo"] ??
           jscriptMap["displayUserModel"]?["personalInfo"];
       if (infoMap != null) {
         advancedDescription = {};
@@ -932,7 +956,9 @@ class _XHamsterIsolate extends BundledPluginIsolate {
               break;
             case "height":
               advancedDescription![key] =
-                  "${item["cm"]}cm (${item["feet"]}ft ${item["in"] == null ? "" : "${item["in"]}in"})";
+              "${item["cm"]}cm (${item["feet"]}ft ${item["in"] == null
+                  ? ""
+                  : "${item["in"]}in"})";
               break;
             case "social":
               externalLinks ??= {};
@@ -954,9 +980,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             case "geo":
               advancedDescription ??= {};
               advancedDescription!["country"] = "${item["countryName"]}"
-                  "${item?["region"]?["label"] != null ? ", ${item["region"]["label"]}" : ""}";
+                  "${item?["region"]?["label"] != null
+                  ? ", ${item["region"]["label"]}"
+                  : ""}";
               break;
-            // These are not shown in the xhamster UI or are irrelevant/obsolete
+          // These are not shown in the xhamster UI or are irrelevant/obsolete
             case "birthday":
             case "score":
             case "modelName":
@@ -976,14 +1004,14 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       if (jscriptMap["aboutMeComponent"]?["personalInfoList"] != null) {
         advancedDescription ??= {};
         advancedDescription!["Interests and fetishes"] =
-            jscriptMap["aboutMeComponent"]["personalInfoList"][2]["value"];
+        jscriptMap["aboutMeComponent"]["personalInfoList"][2]["value"];
       }
       if (jscriptMap["layoutPage"]?["channelLandingInfoProps"]
-              ?["showJoinButton"] !=
+      ?["showJoinButton"] !=
           null) {
         externalLinks ??= {};
         externalLinks!["Official site"] = Uri.parse(jscriptMap["layoutPage"]
-            ["channelLandingInfoProps"]["showJoinButton"]["url"]);
+        ["channelLandingInfoProps"]["showJoinButton"]["url"]);
       }
     } catch (e, stacktrace) {
       logWarning(
@@ -997,7 +1025,9 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       // For some reason xhamster adds a " Porn Videos: website.com" to all
       // channel titles (even in the official UI)
       name =
-          jscriptMap["layoutPage"]["pageTitle"].split(" Porn Videos: ").first;
+          jscriptMap["layoutPage"]["pageTitle"]
+              .split(" Porn Videos: ")
+              .first;
     } else {
       name = jscriptMap["displayUserModel"]?["name"];
     }
@@ -1006,10 +1036,10 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     if (jscriptMap["infoComponent"]?["pornstarTop"]?["thumbUrl"] != null) {
       thumbnail = jscriptMap["infoComponent"]["pornstarTop"]["thumbUrl"];
     } else if (jscriptMap["layoutPage"]?["channelLandingInfoProps"]
-            ?["sponsorChannel"]?["siteLogoURL"] !=
+    ?["sponsorChannel"]?["siteLogoURL"] !=
         null) {
       thumbnail = jscriptMap["layoutPage"]?["channelLandingInfoProps"]
-          ?["sponsorChannel"]?["siteLogoURL"];
+      ?["sponsorChannel"]?["siteLogoURL"];
     } else {
       thumbnail = jscriptMap["displayUserModel"]?["thumbURL"];
     }
@@ -1022,15 +1052,15 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     if (jscriptMap["infoComponent"] != null) {
       infoMap = jscriptMap["infoComponent"]?["pornstarTop"];
       subscribers = jscriptMap["infoComponent"]?["subscribeButtonsProps"]
-          ?["subscribeButtonProps"]?["subscribers"];
+      ?["subscribeButtonProps"]?["subscribers"];
       viewsTotal = infoMap?["viewsCount"];
       videosTotal = infoMap?["videoCount"];
       rank = infoMap?["rating"];
     } else if (jscriptMap["layoutPage"]?["channelLandingInfoProps"] != null) {
       infoMap = jscriptMap["layoutPage"]?["channelLandingInfoProps"]
-          ?["sponsorChannel"];
+      ?["sponsorChannel"];
       subscribers = jscriptMap["layoutPage"]?["channelLandingInfoProps"]
-          ?["subscribeButtonsProps"]?["subscribeButtonProps"]?["subscribers"];
+      ?["subscribeButtonsProps"]?["subscribeButtonProps"]?["subscribers"];
       viewsTotal = infoMap?["viewsCount"];
       videosTotal = infoMap?["videoCount"];
       rank = infoMap?["rating"];
@@ -1085,8 +1115,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getAuthorVideos(
-      String authorID, String rawHtmlString, int page) async {
+  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID,
+      String rawHtmlString, int page) async {
     // First get the author page URI
     String authorPageLink = (await getAuthorUriFromID(authorID))!;
 
@@ -1107,7 +1137,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       // -> return empty list instead of throwing exception
       if (response.statusCode == 404) {
         logWarning(
-            "Error downloading html: ${response.statusCode}; Treating as no more videos found");
+            "Error downloading html: ${response
+                .statusCode}; Treating as no more videos found");
         return [];
       }
       logError("Error downloading html: ${response.statusCode}");

@@ -626,8 +626,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoId, UniversalVideoPreview uvp) async {
+  Future<UniversalVideoMetadata> getVideoMetadata(String videoId,
+      UniversalVideoPreview uvp) async {
     String videoMetadata = _videoEndpoint + videoId;
     logDebug("Requesting $videoMetadata");
     var response = await _performGetRequest(
@@ -677,7 +677,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     // author
     Element? authorRaw =
-        rawHtml.querySelector(".userInfoContainer")?.querySelector("a");
+    rawHtml.querySelector(".userInfoContainer")?.querySelector("a");
 
     String? authorString = authorRaw?.text.trim();
     String authorId = authorRaw!.attributes["href"]!.split("/").last;
@@ -692,9 +692,9 @@ class _PornhubIsolate extends BundledPluginIsolate {
         try {
           actors ??= [];
           actors.add((
-            name: element.text.trim(),
-            authorID: element.attributes["href"]!.split("/").last,
-            avatar: element.children.first.attributes["src"]
+          name: element.text.trim(),
+          authorID: element.attributes["href"]!.split("/").last,
+          avatar: element.children.first.attributes["src"]
           ));
         } catch (e, st) {
           logWarning("Failed to parse actor: $e\n$st");
@@ -726,7 +726,10 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     // Pornhub doesn't provide exact timestamps -> convert it
     DateTime? uploadDate = _convertStringToDateTime(
-        rawHtml.querySelector('li[class="added"]')?.text.trim());
+        rawHtml
+            .querySelector('li[class="added"]')
+            ?.text
+            .trim());
 
     Map<int, Uri> m3u8Map = {};
     for (Map<String, dynamic> video in jscriptMap["mediaDefinitions"]) {
@@ -749,12 +752,14 @@ class _PornhubIsolate extends BundledPluginIsolate {
       authorID: authorId,
       authorName: authorString,
       authorSubscriberCount: _convertHumanReadableStringToInt(rawHtml
-              .querySelector('span[class="subscribersCount"]')
-              ?.text
-              .replaceAll(" Subscribers", "") ??
+          .querySelector('span[class="subscribersCount"]')
+          ?.text
+          .replaceAll(" Subscribers", "") ??
           "0"),
       authorAvatar:
-          rawHtml.querySelector('img[class="userAvatar"]')?.attributes["src"],
+      rawHtml
+          .querySelector('img[class="userAvatar"]')
+          ?.attributes["src"],
       actors: actors,
       viewsTotal: viewsTotal,
       tags: tags,
@@ -776,8 +781,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<Uint8List>?> getProgressThumbnails(
-      String videoID, String rawHtmlString) async {
+  Future<List<Uint8List>?> getProgressThumbnails(String videoID,
+      String rawHtmlString) async {
     final rawHtml = parse(rawHtmlString);
 
     try {
@@ -789,7 +794,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
       // Extract the progressImage url from jscript
       List<String> imageUrls =
-          jscriptMap["thumbs"]["spritePatterns"].cast<String>();
+      jscriptMap["thumbs"]["spritePatterns"].cast<String>();
       logDebug("Image urls: $imageUrls");
 
       // Extract the sampling frequency
@@ -807,7 +812,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
       logDebug("Width: $width, Height: $height");
       logInfo("Downloading and processing progress images");
       List<List<Uint8List>> allThumbnails =
-          List.generate(imageUrls.length, (_) => []);
+      List.generate(imageUrls.length, (_) => []);
       List<Future<void>> imageFutures = [];
 
       for (int i = 0; i <= allThumbnails.length - 1; i++) {
@@ -849,11 +854,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
       // Combine all results into single, chronological list
       logDebug("Combining all results into single, chronological list");
       List<Uint8List> completedProcessedImages =
-          allThumbnails.expand((x) => x).toList();
+      allThumbnails.expand((x) => x).toList();
 
       logInfo("Completed processing all images");
       logDebug(
-          "Sending ${completedProcessedImages.length} progress images to main process");
+          "Sending ${completedProcessedImages
+              .length} progress images to main process");
       return completedProcessedImages;
     } catch (e, stackTrace) {
       logError("Error in getProgressThumbnails: $e\n$stackTrace");
@@ -868,13 +874,13 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalComment>> getComments(
-      String videoID, String rawHtmlString, int page) async {
+  Future<List<UniversalComment>> getComments(String videoID,
+      String rawHtmlString, int page) async {
     Document rawHtml = parse(rawHtmlString);
 
     // Private functions
-    UniversalComment parseComment(
-        Element comment, String videoID, bool hidden) {
+    UniversalComment parseComment(Element comment, String videoID,
+        bool hidden) {
       Element tempComment = comment.children.first;
 
       String? author = tempComment
@@ -888,7 +894,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
           .trim();
 
       String? iD = tryParse(
-          () => comment.className.split(" ")[2].replaceAll("commentTag", ""));
+              () =>
+              comment.className.split(" ")[2].replaceAll("commentTag", ""));
 
       UniversalComment parsedComment = UniversalComment(
         // Don't enforce null safety here
@@ -906,10 +913,14 @@ class _PornhubIsolate extends BundledPluginIsolate {
         profilePicture: tempComment
             .querySelector('img[class="commentAvatarImg avatarTrigger"]')
             ?.attributes["src"],
-        ratingsTotal: tryParse(() => int.parse(
-            tempComment.querySelector('span[class*="voteTotal"]')!.text)),
+        ratingsTotal: tryParse(() =>
+            int.parse(
+                tempComment.querySelector('span[class*="voteTotal"]')!.text)),
         commentDate: _convertStringToDateTime(
-            tempComment.querySelector('div[class="date"]')?.text.trim()),
+            tempComment
+                .querySelector('div[class="date"]')
+                ?.text
+                .trim()),
         replyComments: [],
         unavailableFields: {
           // Pornhub doesn't expose commenter country/orientation
@@ -920,12 +931,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
           "ratingsNegativeTotal"
         },
         scrapeFailException: (iD == null ||
-                author == null ||
-                commentBody == null)
+            author == null ||
+            commentBody == null)
             ? ScrapingException("Error: Failed to scrape critical variable(s):"
-                "${iD == null ? " iD" : ""}"
-                "${author == null ? " author" : ""}"
-                "${commentBody == null ? " commentBody" : ""}")
+            "${iD == null ? " iD" : ""}"
+            "${author == null ? " author" : ""}"
+            "${commentBody == null ? " commentBody" : ""}")
             : null,
       );
 
@@ -934,8 +945,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     /// Recursive function
     // TODO: Parallelize, but keep in mind that reply comments need to be able to be added to the prev top-level comment
-    Future<List<UniversalComment>> parseCommentList(
-        Element parent, String videoID, bool hidden) async {
+    Future<List<UniversalComment>> parseCommentList(Element parent,
+        String videoID, bool hidden) async {
       List<UniversalComment> parsedComments = [];
       for (Element child in parent.children) {
         // normal / top-level comment
@@ -966,7 +977,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
                   "commentBtn showMore viewRepliesBtn upperCase") {
                 // the url is included in the button
                 final repliesResponse = await _performGetRequest(
-                    "https://www.pornhub.com${subChild.attributes["data-ajax-url"]!}",
+                    "https://www.pornhub.com${subChild
+                        .attributes["data-ajax-url"]!}",
                     headers: {"Cookie": "KEY=${_sessionCookies["KEY"]}"});
                 Document rawReplyComments = parse(repliesResponse.body);
 
@@ -1006,15 +1018,15 @@ class _PornhubIsolate extends BundledPluginIsolate {
         jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
     // While the id is usually a number, to make sure, convert it to String
     String internalCommentsID =
-        jscriptMap["playbackTracking"]["video_id"].toString();
+    jscriptMap["playbackTracking"]["video_id"].toString();
 
     String commentsUri = "https://www.pornhub.com/comment/show"
         "?id=$internalCommentsID"
-        // not sure what exactly the upper limit is, but pornhub doesn't seem to throw an error
+    // not sure what exactly the upper limit is, but pornhub doesn't seem to throw an error
         "&limit=9999"
-        // TODO: Implement comment sorting types
+    // TODO: Implement comment sorting types
         "&popular=1"
-        // This is required
+    // This is required
         "&what=video"
         "&token=${_sessionCookies["token"]}";
     logDebug("Requesting comments URI: $commentsUri");
@@ -1034,8 +1046,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, String rawHtmlString, int page) async {
+  Future<List<UniversalVideoPreview>> getVideoSuggestions(String videoID,
+      String rawHtmlString, int page) async {
     // Pornhub doesn't allow loading more suggestions
     if (page > 1) {
       return Future.value([]);
@@ -1070,9 +1082,11 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
       if (response.statusCode != 200) {
         logError(
-            "Error downloading html (tried channel, model): ${response.statusCode}");
+            "Error downloading html (tried channel, model): ${response
+                .statusCode}");
         throw Exception(
-            "Error downloading html (tried channel, model): ${response.statusCode}");
+            "Error downloading html (tried channel, model): ${response
+                .statusCode}");
       }
     }
     return authorPageLink;
@@ -1095,9 +1109,11 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
       if (response.statusCode != 200) {
         logError(
-            "Error downloading html (tried channel, model): ${response.statusCode}");
+            "Error downloading html (tried channel, model): ${response
+                .statusCode}");
         throw Exception(
-            "Error downloading html (tried channel, model): ${response.statusCode}");
+            "Error downloading html (tried channel, model): ${response
+                .statusCode}");
       }
     }
 
@@ -1115,7 +1131,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
       for (Element link in pageHtml.querySelectorAll("div.featuredIn a")) {
         advancedDescription ??= {};
         advancedDescription["Featured in ${link.text.trim()}"] =
-            "https://www.pornhub.com${link.attributes["href"]!}";
+        "https://www.pornhub.com${link.attributes["href"]!}";
       }
     } catch (e, stacktrace) {
       logWarning("Error parsing advanced description: $e\n$stacktrace");
@@ -1124,10 +1140,15 @@ class _PornhubIsolate extends BundledPluginIsolate {
     String? authorName;
     String? description;
     try {
-      authorName = pageHtml.querySelector("h1")!.nodes.first.text!.trim();
+      authorName = pageHtml
+          .querySelector("h1")!
+          .nodes
+          .first
+          .text!
+          .trim();
       // Channels have a description list, models and pornstars an about section
       description = (pageHtml.querySelector("div.cdescriptions p") ??
-              pageHtml.querySelector("section.aboutMeSection div:not(.title)"))
+          pageHtml.querySelector("section.aboutMeSection div:not(.title)"))
           ?.text
           .trim();
       if (description != null) {
@@ -1147,19 +1168,19 @@ class _PornhubIsolate extends BundledPluginIsolate {
     try {
       List<Element> socialLinks = pageHtml.querySelectorAll("ul.socialList a");
       List<Element> channelLinks =
-          pageHtml.querySelectorAll("div.cdescriptions p.joined a");
+      pageHtml.querySelectorAll("div.cdescriptions p.joined a");
       if (socialLinks.isNotEmpty) {
         externalLinks = {
           for (Element link in socialLinks)
             link.querySelector("span.socialText")!.text.trim():
-                link.attributes["href"]!
+            link.attributes["href"]!
         };
       } else if (channelLinks.isNotEmpty) {
         externalLinks = {
           channelLinks.first.text.trim():
-              channelLinks.first.attributes["href"]!,
+          channelLinks.first.attributes["href"]!,
           "Channel owner page":
-              "https://www.pornhub.com${channelLinks.last.attributes["href"]!}"
+          "https://www.pornhub.com${channelLinks.last.attributes["href"]!}"
         };
       }
     } catch (e, stacktrace) {
@@ -1189,10 +1210,13 @@ class _PornhubIsolate extends BundledPluginIsolate {
       }
       // Models and pornstars
       rank ??= int.tryParse(
-          pageHtml.querySelector("div.rankingInfo span.big")?.text.trim() ??
+          pageHtml
+              .querySelector("div.rankingInfo span.big")
+              ?.text
+              .trim() ??
               "");
       for (Element box
-          in pageHtml.querySelectorAll("div.infoBox[data-title]")) {
+      in pageHtml.querySelectorAll("div.infoBox[data-title]")) {
         List<String> parts = box.attributes["data-title"]!.split(": ");
         int? value = int.tryParse(parts.last.replaceAll(",", ""));
         if (parts.first == "Video views") viewsTotal = value;
@@ -1216,9 +1240,13 @@ class _PornhubIsolate extends BundledPluginIsolate {
           "subscribers / currentRating: $e\n$stacktrace");
     }
 
-    String? thumbnail = pageHtml.querySelector("#getAvatar")?.attributes["src"];
+    String? thumbnail = pageHtml
+        .querySelector("#getAvatar")
+        ?.attributes["src"];
     String? banner =
-        pageHtml.querySelector("#coverPictureDefault")?.attributes["src"];
+    pageHtml
+        .querySelector("#coverPictureDefault")
+        ?.attributes["src"];
 
     return UniversalAuthorPage(
         iD: authorID,
@@ -1244,8 +1272,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<List<UniversalVideoPreview>> getAuthorVideos(
-      String authorID, String rawHtmlString, int page) async {
+  Future<List<UniversalVideoPreview>> getAuthorVideos(String authorID,
+      String rawHtmlString, int page) async {
     // First get the author page URI
     String authorPageLink = (await getAuthorUriFromID(authorID))!;
 
@@ -1259,7 +1287,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
       // -> return empty list instead of throwing exception
       if (response.statusCode == 404) {
         logWarning(
-            "Error downloading html: ${response.statusCode}; Treating as no more videos found");
+            "Error downloading html: ${response
+                .statusCode}; Treating as no more videos found");
         return [];
       }
       logError("Error downloading html: ${response.statusCode}");
@@ -1275,9 +1304,17 @@ class _PornhubIsolate extends BundledPluginIsolate {
     // The author's own video list doesn't repeat the author per item
     // manually re-add it to have it store correctly in the history db
     return await _parseVideoList(
-        resultHtml.querySelectorAll('ul[class*="videoList"]').last.children,
+        resultHtml
+            .querySelectorAll('ul[class*="videoList"]')
+            .last
+            .children,
         authorNamePassed:
-            parse(rawHtmlString).querySelector("h1")!.nodes.first.text!.trim(),
+        parse(rawHtmlString)
+            .querySelector("h1")!
+            .nodes
+            .first
+            .text!
+            .trim(),
         authorIDPassed: authorID);
   }
 }

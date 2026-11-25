@@ -155,7 +155,10 @@ Widget buildMetadataSection(BuildContext context, VideoPlayerScreenState vps) {
           Skeleton.shade(
               child: Icon(
                   size: 16,
-                  color: Theme.of(context).colorScheme.secondary,
+                  color: Theme
+                      .of(context)
+                      .colorScheme
+                      .secondary,
                   Icons.thumb_down))
         ])
       ]);
@@ -165,7 +168,10 @@ Widget buildActorsList(BuildContext context, VideoPlayerScreenState vps) {
   return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
+        color: Theme
+            .of(context)
+            .colorScheme
+            .surfaceVariant,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -173,35 +179,42 @@ Widget buildActorsList(BuildContext context, VideoPlayerScreenState vps) {
           child: vps.videoMetadata.actors == null
               ? Center(child: Text("No actors available"))
               : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    spacing: 10,
-                    children: vps.videoMetadata.actors!
-                            .map((actor) => OpenContainer(
-                                closedElevation: 0,
-                                openElevation: 0,
-                                closedColor: Colors.transparent,
-                                openColor:
-                                    Theme.of(context).colorScheme.surface,
-                                transitionDuration:
-                                    const Duration(milliseconds: 400),
-                                routeSettings:
-                                    RouteSettings(name: "/author_page"),
-                                openBuilder: (_, __) =>
-                                    vps.openAuthorPage(actor.authorID),
-                                closedBuilder: (context, openContainer) =>
-                                    buildActorWidget(
-                                        context, openContainer, actor)))
-                            .toList() ??
-                        [],
-                  ))));
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                spacing: 10,
+                children: vps.videoMetadata.actors!
+                    .map((actor) =>
+                    OpenContainer(
+                        closedElevation: 0,
+                        openElevation: 0,
+                        closedColor: Colors.transparent,
+                        openColor:
+                        Theme
+                            .of(context)
+                            .colorScheme
+                            .surface,
+                        transitionDuration:
+                        const Duration(milliseconds: 400),
+                        routeSettings:
+                        RouteSettings(name: "/author_page"),
+                        openBuilder: (_, __) =>
+                            vps.openAuthorPage(actor.authorID),
+                        closedBuilder: (context, openContainer) =>
+                            buildActorWidget(
+                                context, openContainer, actor)))
+                    .toList() ??
+                    [],
+              ))));
 }
 
 Widget buildActorWidget(BuildContext context, void Function() openContainer,
     ({String name, String authorID, String? avatar}) actor) {
   return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
+        color: Theme
+            .of(context)
+            .colorScheme
+            .surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
       child: TextButton(
@@ -225,7 +238,10 @@ Widget buildActorWidget(BuildContext context, void Function() openContainer,
                   return FittedBox(
                       fit: BoxFit.cover,
                       child: Icon(Icons.person,
-                          color: Theme.of(context).colorScheme.onTertiary));
+                          color: Theme
+                              .of(context)
+                              .colorScheme
+                              .onTertiary));
                 },
               ),
             ),
@@ -238,108 +254,134 @@ Widget buildAuthorWidget(BuildContext context, VideoPlayerScreenState vps) {
       closedElevation: 0,
       openElevation: 0,
       closedColor: Colors.transparent,
-      openColor: Theme.of(context).colorScheme.surface,
+      openColor: Theme
+          .of(context)
+          .colorScheme
+          .surface,
       transitionDuration: const Duration(milliseconds: 400),
       routeSettings: RouteSettings(name: "/author_page"),
       openBuilder: (_, __) => vps.openAuthorPage(vps.videoMetadata.authorID),
-      closedBuilder: (context, openContainer) => Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-              style: ButtonStyle(
-                  alignment: Alignment.centerLeft,
-                  padding: WidgetStateProperty.all(EdgeInsets.all(5))),
-              onPressed: () => openContainer(),
-              child: Row(
-                  mainAxisSize:
+      closedBuilder: (context, openContainer) =>
+          Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                  style: ButtonStyle(
+                      alignment: Alignment.centerLeft,
+                      padding: WidgetStateProperty.all(EdgeInsets.all(5))),
+                  onPressed: () => openContainer(),
+                  child: Row(
+                      mainAxisSize:
                       vps.isMobile ? MainAxisSize.max : MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Skeleton.replace(
-                      width: 50,
-                      height: 50,
-                      replacement: ClipRRect(
-                        borderRadius: BorderRadius.circular(255),
-                        child: ColoredBox(
-                            color: Theme.of(context).colorScheme.surface),
-                      ),
-                      child: ClipOval(
-                          child: Container(
-                        width: 50,
-                        height: 50,
-                        color: Theme.of(context).colorScheme.tertiary,
-                        child: Image.network(
-                          vps.videoMetadata.authorAvatar ??
-                              "Avatar url is null",
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, e, st) {
-                            if (!e.toString().contains("mockAvatar")) {
-                              logger
-                                  .e("Failed to load network avatar: $e\n$st");
-                            }
-                            return FittedBox(
-                                fit: BoxFit.cover,
-                                child: Icon(Icons.person,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onTertiary));
-                          },
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Skeleton.replace(
+                          width: 50,
+                          height: 50,
+                          replacement: ClipRRect(
+                            borderRadius: BorderRadius.circular(255),
+                            child: ColoredBox(
+                                color: Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .surface),
+                          ),
+                          child: ClipOval(
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                color: Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .tertiary,
+                                child: Image.network(
+                                  vps.videoMetadata.authorAvatar ??
+                                      "Avatar url is null",
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, e, st) {
+                                    if (!e.toString().contains("mockAvatar")) {
+                                      logger
+                                          .e(
+                                          "Failed to load network avatar: $e\n$st");
+                                    }
+                                    return FittedBox(
+                                        fit: BoxFit.cover,
+                                        child: Icon(Icons.person,
+                                            color: Theme
+                                                .of(context)
+                                                .colorScheme
+                                                .onTertiary));
+                                  },
+                                ),
+                              )),
                         ),
-                      )),
-                    ),
-                    SizedBox(width: 10),
-                    Flexible(
-                      fit: vps.isMobile ? FlexFit.tight : FlexFit.loose,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(vps.videoMetadata.authorName ?? "-",
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                          Text(
-                              "Subscribers: ${convertNumberIntoHumanReadable(vps.videoMetadata.authorSubscriberCount ?? 0)}",
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: Theme.of(context).textTheme.titleSmall)
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 50),
-                    FutureBuilder<bool?>(
-                        // TODO: Add call to check subscription here
-                        future: Future.value(false),
-                        builder: (context, snapshot) {
-                          return ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.primary),
-                              onPressed: () =>
-                                  showToast("Not yet implemented", context),
-                              child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                        size: 20,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary,
-                                        snapshot.data ?? false
-                                            ? Icons.notifications_off_outlined
-                                            : Icons.notification_add),
-                                    Text(snapshot.data ?? false
-                                        ? " Unsubscribe"
-                                        : " Subscribe")
-                                  ]));
-                        }),
-                  ]))));
+                        SizedBox(width: 10),
+                        Flexible(
+                          fit: vps.isMobile ? FlexFit.tight : FlexFit.loose,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(vps.videoMetadata.authorName ?? "-",
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: Theme
+                                      .of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
+                              Text(
+                                  "Subscribers: ${convertNumberIntoHumanReadable(
+                                      vps.videoMetadata.authorSubscriberCount ??
+                                          0)}",
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: Theme
+                                      .of(context)
+                                      .textTheme
+                                      .titleSmall)
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 50),
+                        FutureBuilder<bool?>(
+                          // TODO: Add call to check subscription here
+                            future: Future.value(false),
+                            builder: (context, snapshot) {
+                              return ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                      foregroundColor:
+                                      Theme
+                                          .of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      backgroundColor:
+                                      Theme
+                                          .of(context)
+                                          .colorScheme
+                                          .primary),
+                                  onPressed: () =>
+                                      showToast("Not yet implemented", context),
+                                  child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                            size: 20,
+                                            color: Theme
+                                                .of(context)
+                                                .colorScheme
+                                                .onPrimary,
+                                            snapshot.data ?? false
+                                                ? Icons
+                                                .notifications_off_outlined
+                                                : Icons.notification_add),
+                                        Text(snapshot.data ?? false
+                                            ? " Unsubscribe"
+                                            : " Subscribe")
+                                      ]));
+                            }),
+                      ]))));
 }
 
 Widget buildActionButtonsRow(BuildContext context, VideoPlayerScreenState vps) {
@@ -351,70 +393,106 @@ Widget buildActionButtonsRow(BuildContext context, VideoPlayerScreenState vps) {
           children: [
             SizedBox(
                 child: FutureBuilder<bool?>(
-              future: isInFavorites(vps.videoMetadata.iD),
-              builder: (context, snapshot) {
-                return ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSecondary,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary),
-                    child: Row(children: [
-                      Icon(
-                          size: 20,
-                          color: Theme.of(context).colorScheme.onSecondary,
-                          snapshot.data ?? false
-                              ? Icons.favorite
-                              : Icons.favorite_border),
-                      Text(snapshot.data ?? false
-                          ? " Remove from favorites"
-                          : " Add to favorites")
-                    ]),
-                    onPressed: () => vps.toggleFavorite(snapshot.data));
-              },
-            )),
+                  future: isInFavorites(vps.videoMetadata.iD),
+                  builder: (context, snapshot) {
+                    return ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            foregroundColor:
+                            Theme
+                                .of(context)
+                                .colorScheme
+                                .onSecondary,
+                            backgroundColor:
+                            Theme
+                                .of(context)
+                                .colorScheme
+                                .secondary),
+                        child: Row(children: [
+                          Icon(
+                              size: 20,
+                              color: Theme
+                                  .of(context)
+                                  .colorScheme
+                                  .onSecondary,
+                              snapshot.data ?? false
+                                  ? Icons.favorite
+                                  : Icons.favorite_border),
+                          Text(snapshot.data ?? false
+                              ? " Remove from favorites"
+                              : " Add to favorites")
+                        ]),
+                        onPressed: () => vps.toggleFavorite(snapshot.data));
+                  },
+                )),
             SizedBox(
                 child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                  backgroundColor: Theme.of(context).colorScheme.secondary),
-              child: Row(children: [
-                Icon(
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSecondary,
-                    Icons.share),
-                Text(" Share")
-              ]),
-              onPressed: () => vps.shareVideo(),
-            )),
+                  style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSecondary,
+                      backgroundColor: Theme
+                          .of(context)
+                          .colorScheme
+                          .secondary),
+                  child: Row(children: [
+                    Icon(
+                        size: 20,
+                        color: Theme
+                            .of(context)
+                            .colorScheme
+                            .onSecondary,
+                        Icons.share),
+                    Text(" Share")
+                  ]),
+                  onPressed: () => vps.shareVideo(),
+                )),
             SizedBox(
                 child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                  backgroundColor: Theme.of(context).colorScheme.secondary),
-              child: Row(children: [
-                Icon(
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSecondary,
-                    Icons.open_in_new),
-                Text(" Open in browser")
-              ]),
-              onPressed: () => vps.openInBrowser(),
-            )),
+                  style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSecondary,
+                      backgroundColor: Theme
+                          .of(context)
+                          .colorScheme
+                          .secondary),
+                  child: Row(children: [
+                    Icon(
+                        size: 20,
+                        color: Theme
+                            .of(context)
+                            .colorScheme
+                            .onSecondary,
+                        Icons.open_in_new),
+                    Text(" Open in browser")
+                  ]),
+                  onPressed: () => vps.openInBrowser(),
+                )),
             SizedBox(
                 child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                  backgroundColor: Theme.of(context).colorScheme.secondary),
-              child: Row(children: [
-                Icon(
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSecondary,
-                    Icons.bug_report),
-                Text(" Report bug")
-              ]),
-              onPressed: () => vps.createManualVideoMetadataBugReport(),
-            ))
+                  style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSecondary,
+                      backgroundColor: Theme
+                          .of(context)
+                          .colorScheme
+                          .secondary),
+                  child: Row(children: [
+                    Icon(
+                        size: 20,
+                        color: Theme
+                            .of(context)
+                            .colorScheme
+                            .onSecondary,
+                        Icons.bug_report),
+                    Text(" Report bug")
+                  ]),
+                  onPressed: () => vps.createManualVideoMetadataBugReport(),
+                ))
           ]));
 }
 
@@ -424,11 +502,17 @@ Widget buildCommentButton(BuildContext context, VideoPlayerScreenState vps) {
     child: Skeleton.shade(
       child: TextButton(
         style: TextButton.styleFrom(
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme
+              .of(context)
+              .colorScheme
+              .onPrimary,
+          backgroundColor: Theme
+              .of(context)
+              .colorScheme
+              .primary,
         ),
         onPressed:
-            vps.isLoadingMetadata ? null : () => vps.openCommentSection(),
+        vps.isLoadingMetadata ? null : () => vps.openCommentSection(),
         child: const Text("Comments"),
       ),
     ),
@@ -463,13 +547,19 @@ Widget buildCommentSection(BuildContext context, VideoPlayerScreenState vps) {
   ]);
 }
 
-Widget buildTopLevelCommentSection(
-    BuildContext context, VideoPlayerScreenState vps) {
+Widget buildTopLevelCommentSection(BuildContext context,
+    VideoPlayerScreenState vps) {
   return Container(
       decoration: BoxDecoration(
         color: vps.isMobile
-            ? Theme.of(context).colorScheme.surfaceVariant
-            : Theme.of(context).colorScheme.surface,
+            ? Theme
+            .of(context)
+            .colorScheme
+            .surfaceVariant
+            : Theme
+            .of(context)
+            .colorScheme
+            .surface,
         // Set the background color of the container
         borderRadius: BorderRadius.circular(
             vps.isMobile ? 25 : 0), // Set the border radius
@@ -482,9 +572,17 @@ Widget buildTopLevelCommentSection(
                 : EdgeInsets.zero,
             child: Row(children: [
               Text(
-                  "Comments (${vps.isLoadingComments ? "?" : vps.comments?.length ?? 0}) ",
-                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  "Comments (${vps.isLoadingComments ? "?" : vps.comments
+                      ?.length ?? 0}) ",
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .titleLarge!
+                      .copyWith(
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
                       fontWeight: FontWeight.w500)),
               const Spacer(),
               if (vps.loadingHandler.commentsBugReports.isNotEmpty &&
@@ -492,7 +590,10 @@ Widget buildTopLevelCommentSection(
                   !vps.isLoadingMoreComments) ...[
                 IconButton(
                   icon: Icon(
-                      color: Theme.of(context).colorScheme.error,
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .error,
                       Icons.error_outline),
                   onPressed: () => vps.openCommentsScrapingReport(),
                 )
@@ -500,74 +601,91 @@ Widget buildTopLevelCommentSection(
               IconButton(
                   onPressed: () => vps.openCommentSettings(),
                   icon: Icon(Icons.filter_alt,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant)),
               if (vps.isMobile)
                 IconButton(
                     onPressed: () => vps.closeCommentSection(),
                     icon: Icon(Icons.close,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant))
+                        color: Theme
+                            .of(context)
+                            .colorScheme
+                            .onSurfaceVariant))
             ])),
         Divider(
             height: 0,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: Theme
+                .of(context)
+                .colorScheme
+                .onSurfaceVariant,
             thickness: 1),
         Expanded(
             child: Skeletonizer(
                 enabled: vps.isLoadingComments,
                 child: vps.comments?.isEmpty ?? true
                     ? Column(children: [
-                        Padding(
-                            padding: const EdgeInsets.only(top: 50, bottom: 10),
-                            child: Text(
-                                vps.comments == null
-                                    ? "Failed to load comments"
-                                    : "No comments",
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall!
-                                    .copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant),
-                                textAlign: TextAlign.center)),
-                        if (vps.comments == null) ...[
-                          ElevatedButton(
-                              style: TextButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.primary),
-                              child: Text("Open scraping report",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary)),
-                              onPressed: () => vps.openCommentsScrapingReport())
-                        ]
-                      ])
+                  Padding(
+                      padding: const EdgeInsets.only(top: 50, bottom: 10),
+                      child: Text(
+                          vps.comments == null
+                              ? "Failed to load comments"
+                              : "No comments",
+                          style: Theme
+                              .of(context)
+                              .textTheme
+                              .headlineSmall!
+                              .copyWith(
+                              color: Theme
+                                  .of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
+                          textAlign: TextAlign.center)),
+                  if (vps.comments == null) ...[
+                    ElevatedButton(
+                        style: TextButton.styleFrom(
+                            backgroundColor:
+                            Theme
+                                .of(context)
+                                .colorScheme
+                                .primary),
+                        child: Text("Open scraping report",
+                            style: Theme
+                                .of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                color: Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .onPrimary)),
+                        onPressed: () => vps.openCommentsScrapingReport())
+                  ]
+                ])
                     : ListView.builder(
-                        controller: vps.commentsScrollController,
-                        physics: AlwaysScrollableScrollPhysics(),
-                        itemCount: vps.comments!.length +
-                            (vps.isLoadingMoreComments ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          return index == vps.comments?.length
-                              ? Center(
-                                  child: Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
-                                      child: CircularProgressIndicator(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant)))
-                              : Padding(
-                                  padding: EdgeInsets.only(
-                                      top: 10, left: vps.isMobile ? 15 : 5),
-                                  child: buildComment(
-                                      context, vps, vps.comments![index]));
-                        },
-                      )))
+                  controller: vps.commentsScrollController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  itemCount: vps.comments!.length +
+                      (vps.isLoadingMoreComments ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    return index == vps.comments?.length
+                        ? Center(
+                        child: Padding(
+                            padding:
+                            const EdgeInsets.only(bottom: 10),
+                            child: CircularProgressIndicator(
+                                color: Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant)))
+                        : Padding(
+                        padding: EdgeInsets.only(
+                            top: 10, left: vps.isMobile ? 15 : 5),
+                        child: buildComment(
+                            context, vps, vps.comments![index]));
+                  },
+                )))
       ]));
 }
 
@@ -577,95 +695,122 @@ Widget buildReplyCommentSection(BuildContext context,
   return topLevelComment == null
       ? Center(child: const Text("topLevelComment is null? Report this!"))
       : Container(
-          decoration: BoxDecoration(
-            color: vps.isMobile
-                ? Theme.of(context).colorScheme.surfaceVariant
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(vps.isMobile ? 25 : 0),
-          ),
-          // build as many widgets as there are in the list
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Padding(
-                padding: vps.isMobile
-                    ? const EdgeInsets.only(
-                        left: 5, right: 10, top: 10, bottom: 5)
-                    : EdgeInsets.zero,
-                child:
-                    Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-                  IconButton(
-                      onPressed: () =>
-                          vps.closeCommentSection(closeReplySectionOnly: true),
-                      icon: Icon(Icons.arrow_back,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant)),
-                  Text(
-                      "Replies (${topLevelComment.replyComments?.length ?? "No reply comments?"})",
-                      style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500)),
-                  if (vps.isMobile) ...[
-                    const Spacer(),
-                    IconButton(
-                        onPressed: () => vps.closeCommentSection(),
-                        icon: Icon(Icons.close,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant))
-                  ]
-                ])),
-            Divider(
-                height: 0,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                thickness: 1),
-            Expanded(
-                child: topLevelComment.replyComments?.isEmpty ?? true
-                    ? Center(
-                        child: Text("No reply comments? Report this!",
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall!
-                                .copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant),
-                            textAlign: TextAlign.center),
-                      )
-                    : ListView.builder(
-                        physics: AlwaysScrollableScrollPhysics(),
-                        itemCount: topLevelComment.replyComments!.length + 1,
-                        itemBuilder: (context, index) {
-                          return Container(
-                              decoration: BoxDecoration(
-                                  color: index == 0
-                                      ? vps.isMobile
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .surface
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .surfaceVariant
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(
-                                      vps.isMobile ? 0 : 25)),
-                              child: Padding(
-                                  // only insert some space at the top for the first ListTile
-                                  padding: EdgeInsets.only(
-                                      top: 10, left: vps.isMobile ? 15 : 5),
-                                  child: index == 0
-                                      ? buildComment(
-                                          context, vps, topLevelComment,
-                                          hideRepliesCounter: true)
-                                      : buildComment(
-                                          context,
-                                          vps,
-                                          topLevelComment
-                                              .replyComments![index - 1])));
-                        },
-                      ))
-          ]));
+      decoration: BoxDecoration(
+        color: vps.isMobile
+            ? Theme
+            .of(context)
+            .colorScheme
+            .surfaceVariant
+            : Theme
+            .of(context)
+            .colorScheme
+            .surface,
+        borderRadius: BorderRadius.circular(vps.isMobile ? 25 : 0),
+      ),
+      // build as many widgets as there are in the list
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Padding(
+            padding: vps.isMobile
+                ? const EdgeInsets.only(
+                left: 5, right: 10, top: 10, bottom: 5)
+                : EdgeInsets.zero,
+            child:
+            Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+              IconButton(
+                  onPressed: () =>
+                      vps.closeCommentSection(closeReplySectionOnly: true),
+                  icon: Icon(Icons.arrow_back,
+                      color:
+                      Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant)),
+              Text(
+                  "Replies (${topLevelComment.replyComments?.length ??
+                      "No reply comments?"})",
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .titleLarge!
+                      .copyWith(
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
+                      fontWeight: FontWeight.w500)),
+              if (vps.isMobile) ...[
+                const Spacer(),
+                IconButton(
+                    onPressed: () => vps.closeCommentSection(),
+                    icon: Icon(Icons.close,
+                        color:
+                        Theme
+                            .of(context)
+                            .colorScheme
+                            .onSurfaceVariant))
+              ]
+            ])),
+        Divider(
+            height: 0,
+            color: Theme
+                .of(context)
+                .colorScheme
+                .onSurfaceVariant,
+            thickness: 1),
+        Expanded(
+            child: topLevelComment.replyComments?.isEmpty ?? true
+                ? Center(
+              child: Text("No reply comments? Report this!",
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headlineSmall!
+                      .copyWith(
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant),
+                  textAlign: TextAlign.center),
+            )
+                : ListView.builder(
+              physics: AlwaysScrollableScrollPhysics(),
+              itemCount: topLevelComment.replyComments!.length + 1,
+              itemBuilder: (context, index) {
+                return Container(
+                    decoration: BoxDecoration(
+                        color: index == 0
+                            ? vps.isMobile
+                            ? Theme
+                            .of(context)
+                            .colorScheme
+                            .surface
+                            : Theme
+                            .of(context)
+                            .colorScheme
+                            .surfaceVariant
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(
+                            vps.isMobile ? 0 : 25)),
+                    child: Padding(
+                      // only insert some space at the top for the first ListTile
+                        padding: EdgeInsets.only(
+                            top: 10, left: vps.isMobile ? 15 : 5),
+                        child: index == 0
+                            ? buildComment(
+                            context, vps, topLevelComment,
+                            hideRepliesCounter: true)
+                            : buildComment(
+                            context,
+                            vps,
+                            topLevelComment
+                                .replyComments![index - 1])));
+              },
+            ))
+      ]));
 }
 
-Widget buildComment(
-    BuildContext context, VideoPlayerScreenState vps, UniversalComment comment,
+Widget buildComment(BuildContext context, VideoPlayerScreenState vps,
+    UniversalComment comment,
     {bool hideRepliesCounter = false}) {
   return GestureDetector(
       onLongPress: () {
@@ -674,27 +819,28 @@ Widget buildComment(
             builder: (BuildContext context) {
               return SafeArea(
                   child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ListTile(
-                      leading: const Icon(Icons.copy_all),
-                      title: const Text("Copy comment text"),
-                      onTap: () => vps.copyComment(comment.commentBody)),
-                  ListTile(
-                      leading: const Icon(Icons.share),
-                      title: const Text("Share link to comment"),
-                      onTap: () async => vps.shareComment(comment)),
-                  ListTile(
-                    leading: const Icon(Icons.person),
-                    title: const Text("Go to author page"),
-                    onTap: () => vps.openCommentAuthor(comment),
-                  ),
-                  ListTile(
-                      leading: const Icon(Icons.bug_report),
-                      title: const Text("Create bug report"),
-                      onTap: () => vps.createManualBugReportForComment(comment))
-                ],
-              ));
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      ListTile(
+                          leading: const Icon(Icons.copy_all),
+                          title: const Text("Copy comment text"),
+                          onTap: () => vps.copyComment(comment.commentBody)),
+                      ListTile(
+                          leading: const Icon(Icons.share),
+                          title: const Text("Share link to comment"),
+                          onTap: () async => vps.shareComment(comment)),
+                      ListTile(
+                        leading: const Icon(Icons.person),
+                        title: const Text("Go to author page"),
+                        onTap: () => vps.openCommentAuthor(comment),
+                      ),
+                      ListTile(
+                          leading: const Icon(Icons.bug_report),
+                          title: const Text("Create bug report"),
+                          onTap: () =>
+                              vps.createManualBugReportForComment(comment))
+                    ],
+                  ));
             });
       },
       child: ListTile(
@@ -705,7 +851,10 @@ Widget buildComment(
             child: Container(
               width: 40,
               height: 40,
-              color: Theme.of(context).colorScheme.tertiary,
+              color: Theme
+                  .of(context)
+                  .colorScheme
+                  .tertiary,
               child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
@@ -713,28 +862,51 @@ Widget buildComment(
                       child: Image.network(
                         comment.profilePicture ?? "",
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.person,
-                          color: Theme.of(context).colorScheme.onTertiary,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            Icon(
+                              Icons.person,
+                              color: Theme
+                                  .of(context)
+                                  .colorScheme
+                                  .onTertiary,
+                            ),
                       ))),
             ),
           ),
         ),
         title: Text(
-            "${comment.hidden ? "(hidden comment) " : ""}${comment.author} • ${getTimeDeltaInHumanReadable(comment.commentDate)} ago",
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: comment.hidden
-                      ? Theme.of(context).colorScheme.error
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                )),
+            "${comment.hidden ? "(hidden comment) " : ""}${comment
+                .author} • ${getTimeDeltaInHumanReadable(
+                comment.commentDate)} ago",
+            style: Theme
+                .of(context)
+                .textTheme
+                .labelSmall!
+                .copyWith(
+              color: comment.hidden
+                  ? Theme
+                  .of(context)
+                  .colorScheme
+                  .error
+                  : Theme
+                  .of(context)
+                  .colorScheme
+                  .onSurfaceVariant,
+            )),
         subtitle:
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
             comment.commentBody,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            style: Theme
+                .of(context)
+                .textTheme
+                .bodyMedium!
+                .copyWith(
+              color: Theme
+                  .of(context)
+                  .colorScheme
+                  .onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 5),
           Row(children: [
@@ -742,25 +914,40 @@ Widget buildComment(
               Skeleton.shade(
                   child: Icon(
                       size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
                       Icons.thumb_up)),
               const SizedBox(width: 5),
               Text(
                   vps.isLoadingComments
                       ? "3000 | 300"
                       : comment.ratingsPositiveTotal != null &&
-                              comment.ratingsNegativeTotal != null
-                          ? "${convertNumberIntoHumanReadable(comment.ratingsPositiveTotal!)} "
-                              "| ${convertNumberIntoHumanReadable(comment.ratingsNegativeTotal!)}"
-                          : "${comment.ratingsTotal}",
+                      comment.ratingsNegativeTotal != null
+                      ? "${convertNumberIntoHumanReadable(
+                      comment.ratingsPositiveTotal!)} "
+                      "| ${convertNumberIntoHumanReadable(
+                      comment.ratingsNegativeTotal!)}"
+                      : "${comment.ratingsTotal}",
                   maxLines: 1,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .bodyMedium!
+                      .copyWith(
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant)),
               const SizedBox(width: 5),
               Skeleton.shade(
                   child: Icon(
                       size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
                       Icons.thumb_down))
             ]),
             if ((comment.replyComments?.isNotEmpty ?? false) &&
@@ -777,17 +964,25 @@ Widget buildComment(
                         child: Icon(
                             size: 16,
                             color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            Theme
+                                .of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                             Icons.comment)),
                     const SizedBox(width: 5),
                     Text(
                         vps.isLoadingComments
                             ? "10"
                             : convertNumberIntoHumanReadable(
-                                comment.replyComments!.length),
+                            comment.replyComments!.length),
                         maxLines: 1,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: Theme.of(context)
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .bodyMedium!
+                            .copyWith(
+                            color: Theme
+                                .of(context)
                                 .colorScheme
                                 .onSurfaceVariant)),
                   ]),
@@ -799,21 +994,31 @@ Widget buildComment(
       ));
 }
 
-List<Widget> buildVideoSuggestions(
-    BuildContext context, VideoPlayerScreenState vps) {
+List<Widget> buildVideoSuggestions(BuildContext context,
+    VideoPlayerScreenState vps) {
   return [
     FloatingDynamicSliverHeader(
         pinned: true,
         floating: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Theme
+            .of(context)
+            .colorScheme
+            .surface,
         child: Padding(
             padding: EdgeInsets.only(bottom: 10),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Text(
-                  "Related videos from ${vps.videoMetadata.plugin?.prettyName ?? ""}:",
+                  "Related videos from ${vps.videoMetadata.plugin?.prettyName ??
+                      ""}:",
                   style: vps.isMobile
-                      ? Theme.of(context).textTheme.titleMedium!
-                      : Theme.of(context).textTheme.bodyMedium!),
+                      ? Theme
+                      .of(context)
+                      .textTheme
+                      .titleMedium!
+                      : Theme
+                      .of(context)
+                      .textTheme
+                      .bodyMedium!),
               Spacer(),
               if (vps.loadingHandler.videoSuggestionsBugReports.isNotEmpty &&
                   !vps.isLoadingMetadata) ...[
@@ -825,7 +1030,10 @@ List<Widget> buildVideoSuggestions(
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     icon: Icon(
-                        color: Theme.of(context).colorScheme.error,
+                        color: Theme
+                            .of(context)
+                            .colorScheme
+                            .error,
                         Icons.error_outline),
                     onPressed: () => vps.createSuggestionVideosBugReport())
               ]
