@@ -757,10 +757,11 @@ class _VideoListState extends State<VideoList> {
                   // -> Copy to clipboard and show warning instead
                   if (Platform.isWindows || Platform.isLinux) {
                     Clipboard.setData(ClipboardData(
-                        text: videoList![index]
-                            .plugin!
-                            .getVideoUriFromID(videoList![index].iD)
+                        text: (await videoList![index]
+                                .plugin!
+                                .getVideoUriFromID(videoList![index].iD))
                             .toString()));
+                    if (!context.mounted) return;
                     showToast(
                         "Share not available on "
                         "${Platform.isWindows ? "Windows" : "Linux"}. "

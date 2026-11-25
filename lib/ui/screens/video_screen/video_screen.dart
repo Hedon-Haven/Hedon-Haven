@@ -265,9 +265,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     // -> Copy to clipboard and show warning instead
     if (Platform.isWindows || Platform.isLinux) {
       Clipboard.setData(ClipboardData(
-          text: videoMetadata.plugin!
-              .getVideoUriFromID(videoMetadata.iD)
-              .toString()));
+          text:
+              (await videoMetadata.plugin!.getVideoUriFromID(videoMetadata.iD))
+                  .toString()));
+      if (!mounted) return;
       showToast(
           "Share not available on "
           "${Platform.isWindows ? "Windows" : "Linux"}. "
