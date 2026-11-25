@@ -104,7 +104,6 @@ Future<void> _setAppearanceSettings() async {
       "appearance_fake_settings_list", ["1", "0", "0", "1", "1"]);
 
   await sharedStorage.setString("appearance_theme_mode", "Follow device theme");
-  await sharedStorage.setString("appearance_list_view", "Card");
   await sharedStorage.setBool("appearance_play_previews", true);
   await sharedStorage.setBool("appearance_homepage_enabled", true);
 }

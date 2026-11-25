@@ -59,21 +59,6 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
                         );
                       },
                     ),
-                    FutureBuilder<String?>(
-                        future: sharedStorage.getString("appearance_list_view"),
-                        builder: (context, snapshot) {
-                          return OptionsTile(
-                              // TODO: Add visualization of the list modes
-                              title: "List view mode",
-                              subtitle: snapshot.data ?? "",
-                              options: const ["Card", "Grid", "List"],
-                              selectedOption: snapshot.data ?? "",
-                              onSelected: (value) async {
-                                await sharedStorage.setString(
-                                    "appearance_list_view", value);
-                                setState(() {});
-                              });
-                        }),
                     FutureBuilder<bool?>(
                         future:
                             sharedStorage.getBool("appearance_play_previews"),

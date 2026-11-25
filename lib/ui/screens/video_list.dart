@@ -68,9 +68,6 @@ class VideoList extends StatefulWidget {
   /// Don't pad the video list (other padding might still apply)
   final bool noListPadding;
 
-  /// Force a particular list view type no matter the user-preferred type
-  final String? overrideListViewTo;
-
   /// Don't show Author button
   final bool hideAuthors;
 
@@ -100,7 +97,6 @@ class VideoList extends StatefulWidget {
       this.noPluginsEnabled = false,
       this.noPluginsMessage = "",
       this.noListPadding = false,
-      this.overrideListViewTo,
       this.hideAuthors = false,
       this.hideFavoriteButton = false,
       this.playPreviews = true,
@@ -293,7 +289,7 @@ class _VideoListState extends State<VideoList> {
 
   @override
   Widget build(BuildContext context) {
-    isMobile = MediaQuery.of(context).size.width < 600;
+    isMobile = MediaQuery.of(context).size.width < 1100;
     // If the list is null -> error
     // If the list is empty -> no results, but no error getting them either
     if ((videoList?.isEmpty ?? true) && !isLoadingResults) {
@@ -369,96 +365,76 @@ class _VideoListState extends State<VideoList> {
       }))); // keep existing empty/error content unchanged, just wrap in SliverToBoxAdapter
     }
 
-    return FutureBuilder<String?>(
-        future: widget.overrideListViewTo != null
-            ? Future.value(widget.overrideListViewTo)
-            : sharedStorage.getString("appearance_list_view"),
-        builder: (context, listViewType) {
-          if (listViewType.data == null) {
-            return SliverToBoxAdapter(child: Container());
-          }
-          return SliverPadding(
-              padding: widget.noListPadding
-                  ? EdgeInsets.zero
-                  : const EdgeInsets.only(right: 10, left: 10),
-              sliver: SliverMasonryGrid.count(
-                crossAxisCount: listViewType.data! == "Grid" ? 2 : 1,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
-                childCount: videoList?.length ?? 0,
-                itemBuilder: (context, index) {
-                  return OpenContainer(
-                      closedElevation: 0,
-                      openElevation: 0,
-                      closedColor: Colors.transparent,
-                      openColor: Theme.of(context).colorScheme.surface,
-                      transitionDuration: const Duration(milliseconds: 400),
-                      routeSettings: RouteSettings(name: "/video_player"),
-                      openBuilder: (context, _) => VideoPlayerScreen(
-                            videoMetadata:
-                                _videoMetadataCache[videoList![index].iD] ??=
-                                    videoList![index].plugin!.getVideoMetadata(
-                                        videoList![index].iD,
-                                        videoList![index]),
-                            videoID: videoList![index].iD,
+    return SliverPadding(
+        padding: widget.noListPadding
+            ? EdgeInsets.zero
+            : const EdgeInsets.only(right: 10, left: 10),
+        sliver: SliverMasonryGrid.count(
+          crossAxisCount: isMobile ? 1 : 2,
+          crossAxisSpacing: 15,
+          mainAxisSpacing: 15,
+          childCount: videoList?.length ?? 0,
+          itemBuilder: (context, index) {
+            return OpenContainer(
+                closedElevation: 0,
+                openElevation: 0,
+                closedColor: Colors.transparent,
+                openColor: Theme.of(context).colorScheme.surface,
+                transitionDuration: const Duration(milliseconds: 400),
+                routeSettings: RouteSettings(name: "/video_player"),
+                openBuilder: (context, _) => VideoPlayerScreen(
+                      videoMetadata:
+                          _videoMetadataCache[videoList![index].iD] ??=
+                              videoList![index].plugin!.getVideoMetadata(
+                                  videoList![index].iD, videoList![index]),
+                      videoID: videoList![index].iD,
+                    ),
+                closedBuilder: (context, openContainer) => MouseRegion(
+                    onEnter: (_) => showPreview(index),
+                    child: GestureDetector(
+                        onLongPress: () => showModalMenu(index),
+                        onTapDown: (_) => showPreview(index),
+                        onTap: () async {
+                          _disposePreviewController();
+                          _tappedChildIndex = null;
+                          if (videoList![index].virtualReality) {
+                            showToast(
+                                "Virtual reality not yet supported", context);
+                            return;
+                          }
+                          addToWatchHistory(videoList![index]);
+                          widget.onVideoTap?.call();
+                          openContainer();
+                        },
+                        child: Skeletonizer(
+                          enabled:
+                              isLoadingResults || index >= videoList!.length,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return IntrinsicHeight(
+                                  child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  buildImageWidgets(constraints, index),
+                                  buildDescription(index),
+                                ],
+                              ));
+                            },
                           ),
-                      closedBuilder: (context, openContainer) => MouseRegion(
-                          onEnter: (_) => showPreview(index),
-                          child: GestureDetector(
-                              onLongPress: () => showModalMenu(index),
-                              onTapDown: (_) => showPreview(index),
-                              onTap: () async {
-                                _disposePreviewController();
-                                _tappedChildIndex = null;
-                                if (videoList![index].virtualReality) {
-                                  showToast("Virtual reality not yet supported",
-                                      context);
-                                  return;
-                                }
-                                addToWatchHistory(videoList![index]);
-                                widget.onVideoTap?.call();
-                                openContainer();
-                              },
-                              child: Skeletonizer(
-                                enabled: isLoadingResults ||
-                                    index >= videoList!.length,
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return IntrinsicHeight(
-                                        child: Flex(
-                                      mainAxisSize: MainAxisSize.min,
-                                      direction: listViewType.data! == "List"
-                                          ? Axis.horizontal
-                                          : Axis.vertical,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        buildImageWidgets(constraints, index,
-                                            listViewType.data!),
-                                        buildDescription(index),
-                                      ],
-                                    ));
-                                  },
-                                ),
-                              ))));
-                },
-              ));
-        });
+                        ))));
+          },
+        ));
   }
 
-  Widget buildImageWidgets(
-      BoxConstraints constraints, int index, String listViewType) {
+  Widget buildImageWidgets(BoxConstraints constraints, int index) {
     // ClipRect contains the shadow spreads to just the preview
     return ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Stack(children: [
           SizedBox(
-              // make the image smaller for list view mode
-              width: constraints.maxWidth / (listViewType == "List" ? 2 : 1),
-              height: constraints.maxWidth *
-                  9 /
-                  16 /
-                  (listViewType == "List" ? 2 : 1),
+              width: constraints.maxWidth,
+              height: constraints.maxWidth * 9 / 16,
               child: Skeleton.replace(
                 // TODO: Detect if video is not visible and stop playing
                 child: previewVideoController.value.isInitialized == true &&
