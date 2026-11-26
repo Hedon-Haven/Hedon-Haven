@@ -278,41 +278,13 @@ class _PornhubIsolate extends BundledPluginIsolate {
   }
 
   /// Convert human readable string (e.g. 300K) to full integer (-> 300000)
-  int? _convertHumanReadableStringToInt(String intAsString) {
-    int views = 0;
-    if (intAsString != "just added") {
-      if (intAsString.endsWith("K")) {
-        if (intAsString.contains(".")) {
-          views = int.parse(intAsString.split(".")[1][0]) * 100;
-          // this is so that the normal step still works
-          // ignore: prefer_interpolation_to_compose_strings
-          intAsString = intAsString.split(".")[0] + " ";
-        }
-        views +=
-            int.parse(intAsString.substring(0, intAsString.length - 1)) * 1000;
-      } else if (intAsString.endsWith("M")) {
-        if (intAsString.contains(".")) {
-          views = int.parse(intAsString.split(".")[1][0]) * 100000;
-          // this is so that the normal step still works
-          // ignore: prefer_interpolation_to_compose_strings
-          intAsString = intAsString.split(".")[0] + " ";
-        }
-        views += int.parse(intAsString.substring(0, intAsString.length - 1)) *
-            1000000;
-      } else if (intAsString.endsWith("B")) {
-        if (intAsString.contains(".")) {
-          views = int.parse(intAsString.split(".")[1][0]) * 100000000;
-          // this is so that the normal step still works
-          // ignore: prefer_interpolation_to_compose_strings
-          intAsString = intAsString.split(".")[0] + " ";
-        }
-        views += int.parse(intAsString.substring(0, intAsString.length - 1)) *
-            1000000000;
-      } else {
-        views = int.parse(intAsString);
-      }
-    }
-    return views;
+  /// Returns null if the string can't be converted
+  int? _convertHumanReadableStringToInt(String? intAsString) {
+    if (intAsString == "just added") return 0;
+    final match = RegExp(r"^(\d+(?:\.\d+)?)([KMB])?$").firstMatch(intAsString ?? "");
+    if (match == null) return null;
+    final multiplier = {"K": 1000, "M": 1000000, "B": 1000000000}[match.group(2)];
+    return (double.parse(match.group(1)!) * (multiplier ?? 1)).round();
   }
 
 // Since pornhub sometimes throws a compute check, wrap all requests
