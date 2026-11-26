@@ -153,19 +153,19 @@ class _XHamsterIsolate extends BundledPluginIsolate {
   }
 
   Future<List<UniversalVideoPreview>> _parseVideoList(
-      List<Map<String, dynamic>> resultsList,
+      List resultsList,
       {String? authorNamePassed,
       String? authorIDPassed}) async {
     // convert the divs into UniversalSearchResults
     List<UniversalVideoPreview> results = [];
-    for (Map<String, dynamic> element in resultsList) {
-      // Exclude private/friends-only videos
-      // TODO: Add toggle to display private videos in UI
-      if (["friends", "lock"].contains(element["icon"])) continue;
-
+    for (var element in resultsList) {
       String? iD;
       String? title;
       try {
+        // Exclude private/friends-only videos
+        // TODO: Add toggle to display private videos in UI
+        if (["friends", "lock"].contains(element["icon"])) continue;
+
         iD = element["pageURL"]?.split("-").last;
         title = element["title"];
 
@@ -315,9 +315,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     Map<String, dynamic> jscriptMap = jsonDecode(
         jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
 
-    return _parseVideoList(jscriptMap["layoutPage"]["videoListProps"]
-            ["videoThumbProps"]
-        .cast<Map<String, dynamic>>());
+    return _parseVideoList(
+        jscriptMap["layoutPage"]["videoListProps"]["videoThumbProps"]);
   }
 
   /// FIXME: Why is this handling and suppressing errors?
@@ -389,8 +388,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     Map<String, dynamic> jscriptMap = jsonDecode(
         jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
 
-    return _parseVideoList(jscriptMap["searchResult"]["videoThumbProps"]
-        .cast<Map<String, dynamic>>());
+    return _parseVideoList(jscriptMap["searchResult"]["videoThumbProps"]);
   }
 
   @override
@@ -428,25 +426,24 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     List<String>? categories = [];
     List<({String name, String authorID, String? avatar})>? actors;
     try {
-      for (Map<String, dynamic> element
-      in jscriptMap["videoTagsComponent"]!["tags"]!) {
-        if (element["isCategory"]!) {
-          categories.add(element["name"]!);
-        } else if (element["isPornstar"]!) {
-          try {
+      for (var element in jscriptMap["videoTagsComponent"]!["tags"]!) {
+        try {
+          if (element["isCategory"]!) {
+            categories.add(element["name"]!);
+          } else if (element["isPornstar"]!) {
             actors ??= [];
             actors.add((
             name: element["name"],
             authorID: element["slug"],
             avatar: element["thumbUrl"]
             ));
-          } catch (e, st) {
-            logWarning("Failed to parse actor: $e\n$st");
+          } else if (element["isTag"]!) {
+            tags.add(element["name"]!);
+          } else {
+            logDebug("Skipping element: ${element["name"]!}");
           }
-        } else if (element["isTag"]!) {
-          tags.add(element["name"]!);
-        } else {
-          logDebug("Skipping element: ${element["name"]!}");
+        } catch (e, st) {
+          logWarning("Failed to parse tag/category/actor: $e\n$st");
         }
       }
     } catch (e, stacktrace) {
@@ -537,6 +534,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     );
   }
 
+  /// FIXME: Swallows all errors and returns null, so scraper breakage only shows up in the log (no bug report)
   @override
   Future<List<Uint8List>?> getProgressThumbnails(String videoID,
       String rawHtmlString) async {
@@ -1083,18 +1081,14 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       videosTotal = jscriptMap["counters"]?["videos"];
       logDebug("Trying to scrape subscribers from html");
       // some users don't have this info in the jsonmap -> scrape from html
-      try {
-        subscribers = int.tryParse(pageHtml
-            .querySelectorAll('div[class="user-details"] .details-row')
-            .firstWhere((row) => row.querySelector("use#user-group") != null)
-            .querySelector(".details-counter")!
-            .attributes["data-tooltip"]!
-            .replaceAll(",", "")
-            .trim());
-        // users don't have ranks
-      } catch (e, stacktrace) {
-        logWarning("Error parsing subscribers: $e\n$stacktrace");
-      }
+      subscribers = tryParse(() => int.parse(pageHtml
+          .querySelectorAll('div[class="user-details"] .details-row')
+          .firstWhere((row) => row.querySelector("use#user-group") != null)
+          .querySelector(".details-counter")!
+          .attributes["data-tooltip"]!
+          .replaceAll(",", "")
+          .trim()));
+      // users don't have ranks
     }
 
     return UniversalAuthorPage(
@@ -1169,12 +1163,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
     // Stack-based iterative search
     final stack = <Map<String, dynamic>>[jscriptMap];
-    List<Map<String, dynamic>>? videoThumbProps;
+    List? videoThumbProps;
     while (stack.isNotEmpty) {
       final current = stack.removeLast();
       if (current.containsKey("videoThumbProps")) {
-        videoThumbProps =
-            (current["videoThumbProps"] as List).cast<Map<String, dynamic>>();
+        videoThumbProps = current["videoThumbProps"] as List;
         break;
       }
       for (final value in current.values) {

@@ -163,31 +163,22 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
         // convert time string into int list
         // pornhub automatically converts hours into minutes -> no need to check
-        int? durationInSeconds;
-        try {
-          List<int>? durationList = resultDiv
-              .querySelector('span[class*="time"]')
-              ?.text
-              .trim()
-              .split(":")
-              .map((e) => int.parse(e))
-              .toList();
-          durationInSeconds = durationList![0] * 60 + durationList[1];
-        } catch (_) {}
+        int? durationInSeconds = tryParse(() => resultDiv
+            .querySelector('span[class*="time"]')!
+            .text
+            .trim()
+            .split(":")
+            .map((e) => int.parse(e))
+            .reduce((minutes, seconds) => minutes * 60 + seconds));
 
         // determine video views
-        int? views;
-        try {
-          // the div is called videoViews on the first homepage and just views on all others
-          String viewsString = resultDiv
-              .querySelector('div[class="videoViews"], div[class="views"]')!
-              .text
-              .replaceAll("Views", "")
-              .trim();
-
-          // just added means 0
-          views = _convertHumanReadableStringToInt(viewsString);
-        } catch (_) {}
+        // the div is called videoViews on the first homepage and just views on all others
+        // just added means 0
+        int? views = _convertHumanReadableStringToInt(resultDiv
+            .querySelector('div[class="videoViews"], div[class="views"]')
+            ?.text
+            .replaceAll("Views", "")
+            .trim());
 
         // TODO: determine video resolution
         // pornhub only offers up to 1080p
@@ -661,25 +652,19 @@ class _PornhubIsolate extends BundledPluginIsolate {
         rawHtml.querySelector('script[type="application/ld+json"]')!.text);
 
     // ratings
-    int? ratingsPositive;
-    for (var interaction in jsonLD["interactionStatistic"]) {
-      if (interaction["interactionType"].endsWith("/LikeAction")) {
-        ratingsPositive = int.tryParse(
-            interaction["userInteractionCount"].toString().replaceAll(",", ""));
-        break;
-      }
-    }
+    int? ratingsPositive = tryParse(() => int.parse(jsonLD["interactionStatistic"]
+        .firstWhere((e) => e["interactionType"].endsWith("/LikeAction"))[
+            "userInteractionCount"]
+        .toString()
+        .replaceAll(",", "")));
     int? ratingsTotal = ratingsPositive;
 
     // For some reason on mobile the full exact view amount is always shown
-    int? viewsTotal;
-    for (var interaction in jsonLD["interactionStatistic"]) {
-      if (interaction["interactionType"].endsWith("/WatchAction")) {
-        viewsTotal = int.tryParse(
-            interaction["userInteractionCount"].toString().replaceAll(",", ""));
-        break;
-      }
-    }
+    int? viewsTotal = tryParse(() => int.parse(jsonLD["interactionStatistic"]
+        .firstWhere((e) => e["interactionType"].endsWith("/WatchAction"))[
+            "userInteractionCount"]
+        .toString()
+        .replaceAll(",", "")));
 
     // author
     Element? authorRaw =
@@ -783,6 +768,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
     );
   }
 
+  /// FIXME: Swallows all errors and returns null, so scraper breakage only shows up in the log (no bug report)
   @override
   Future<List<Uint8List>?> getProgressThumbnails(String videoID,
       String rawHtmlString) async {
@@ -968,6 +954,10 @@ class _PornhubIsolate extends BundledPluginIsolate {
           parsedComments.addAll(await parseCommentList(child, videoID, true));
         } else if (child.className.startsWith("nestedBlock")) {
           // reply comments
+          if (parsedComments.isEmpty) {
+            logWarning("Found reply comments without a parent comment");
+            continue;
+          }
           List<UniversalComment> tempReplies = [];
           try {
             for (Element subChild in child.children) {
@@ -998,14 +988,15 @@ class _PornhubIsolate extends BundledPluginIsolate {
                     hidden));
               }
             }
+            // Add replyComments to previous top-level comment
+            parsedComments.last.replyComments = tempReplies;
           } catch (e, stacktrace) {
             logWarning("Error parsing reply comments: $e\n$stacktrace");
             parsedComments.last.replyComments = null;
-            parsedComments.last.scrapeFailException =
+            // Don't overwrite a critical failure of the parent comment itself
+            parsedComments.last.scrapeFailException ??=
                 ScrapingException("Failed to scrape: replyComments");
           }
-          // Add replyComments to previous top-level comment
-          parsedComments.last.replyComments = tempReplies;
         }
         // Ignore all other element types
       }
@@ -1312,11 +1303,14 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     // The author's own video list doesn't repeat the author per item
     // manually re-add it to have it store correctly in the history db
+    // Filter out ads and non-video results
     return await _parseVideoList(
         resultHtml
             .querySelectorAll('ul[class*="videoList"]')
             .last
-            .children,
+            .children
+            .where((e) => e.attributes.containsKey("data-video-vkey"))
+            .toList(),
         authorNamePassed:
         parse(rawHtmlString)
             .querySelector("h1")!
