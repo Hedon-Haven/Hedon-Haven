@@ -239,7 +239,9 @@ class _VideoListState extends State<VideoList> {
         videoList![index].previewVideo!,
         httpHeaders: {
           ...defaultHttpHeaders,
-          ...?videoList![index].previewVideoHttpHeaders
+          ...?videoList![index]
+              .previewVideoHttpHeaders
+              ?.map((k, v) => MapEntry(k.toLowerCase(), v))
         });
     previewVideoController.initialize().then((value) async {
       // To stop after looping 3 times

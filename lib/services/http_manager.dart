@@ -36,8 +36,9 @@ final _requestInterceptor = SimpleInterceptor(
   beforeRequest: (request) async {
     // Add client hint headers to avoid TLS fingerprinting rejections
     HttpHeaders tempHeaders = request.headers ?? HttpHeaders.rawMap({});
-    final originalHeaders = _headersToMap(tempHeaders);
-    // Do not override already existing headers
+    final originalHeaders =
+        _headersToMap(tempHeaders).map((k, v) => MapEntry(k.toLowerCase(), v));
+    // Do not override already existing headers (header names are case-insensitive)
     for (final entry in defaultHttpHeaders.entries) {
       if (!originalHeaders.containsKey(entry.key)) {
         tempHeaders =
