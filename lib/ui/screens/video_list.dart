@@ -68,6 +68,9 @@ class VideoList extends StatefulWidget {
   /// Don't pad the video list (other padding might still apply)
   final bool noListPadding;
 
+  /// Always show a single column, no matter the screen size
+  final bool forceSingleColumn;
+
   /// Don't show Author button
   final bool hideAuthors;
 
@@ -97,6 +100,7 @@ class VideoList extends StatefulWidget {
       this.noPluginsEnabled = false,
       this.noPluginsMessage = "",
       this.noListPadding = false,
+      this.forceSingleColumn = false,
       this.hideAuthors = false,
       this.hideFavoriteButton = false,
       this.playPreviews = true,
@@ -375,7 +379,7 @@ class _VideoListState extends State<VideoList> {
             ? EdgeInsets.zero
             : const EdgeInsets.only(right: 10, left: 10),
         sliver: SliverMasonryGrid.count(
-          crossAxisCount: isMobile ? 1 : 2,
+          crossAxisCount: widget.forceSingleColumn || isMobile ? 1 : 2,
           crossAxisSpacing: 15,
           mainAxisSpacing: 15,
           childCount: videoList?.length ?? 0,

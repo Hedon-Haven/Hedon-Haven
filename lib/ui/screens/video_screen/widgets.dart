@@ -1048,6 +1048,7 @@ List<Widget> buildVideoSuggestions(BuildContext context,
         showScrapingReportButton: true,
         bugReports: vps.loadingHandler.videoSuggestionsBugReports,
         ignoreInternetError: false,
-        noListPadding: true)
+        noListPadding: true,
+        forceSingleColumn: true)
   ];
 }
