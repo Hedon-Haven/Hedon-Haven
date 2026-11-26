@@ -201,7 +201,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
         plugin: null,
         thumbnail: thumbnail,
         thumbnailHttpHeaders: {"Referer": "https://www.pornhub.com/"},
-        previewVideo: Uri.tryParse(imageDiv!.attributes["data-webm"]!),
+        previewVideo:
+            tryParse(() => Uri.parse(imageDiv!.attributes["data-webm"]!)),
         previewVideoHttpHeaders: {"Referer": "https://www.pornhub.com/"},
         duration: tryParse(() => Duration(seconds: durationInSeconds!)),
         viewsTotal: views,
