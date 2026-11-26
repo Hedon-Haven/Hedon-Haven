@@ -19,7 +19,8 @@ late http.Client client;
 Map<String, String> defaultHttpHeaders = {
   "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
       "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
-  "accept": 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,'
+  // Only request image formats Flutter can decode
+  "accept": 'text/html,application/xhtml+xml,application/xml;q=0.9,'
       'image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
   "accept-language": 'en-US,en;q=0.9',
   "priority": 'u=0, i',
@@ -85,6 +86,7 @@ Future<void> initHttpClient() async {
   String? proxy = await sharedStorage.getString("privacy_proxy_address");
   logger.i("Using proxy: ${proxy?.isEmpty ?? true ? "None" : proxy}");
   client = await getHttpClient(proxy);
+  overrideDartIoHttpClient(proxy);
 }
 
 Future<void> initEvents() async {

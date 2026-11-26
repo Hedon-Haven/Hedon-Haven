@@ -50,7 +50,11 @@ dependencies:
   synchronized: ^3.6.1+1
   super_drag_and_drop: ^0.10.0-dev.2
   receive_sharing_intent: ^1.9.0
-  rhttp: ^0.18.0
+  # Fork with a fixed dart:io shim (IoCompatibleClient)
+  rhttp:
+    git:
+      url: https://codeberg.org/Hedon-dev/rhttp
+      path: rhttp
   material_ui: ^1.11.1
 
 dependency_overrides:
