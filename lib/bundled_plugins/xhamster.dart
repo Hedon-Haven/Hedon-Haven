@@ -163,41 +163,52 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       // TODO: Add toggle to display private videos in UI
       if (["friends", "lock"].contains(element["icon"])) continue;
 
-      String? iD = element["pageURL"]?.split("-").last;
-      String? title = element["title"];
+      String? iD;
+      String? title;
+      try {
+        iD = element["pageURL"]?.split("-").last;
+        title = element["title"];
 
-      String authorName = authorNamePassed ??
-          (element["landing"]?["name"] ?? "Unknown amateur author");
+        String authorName = authorNamePassed ??
+            (element["landing"]?["name"] ?? "Unknown amateur author");
 
-      UniversalVideoPreview uniResult = UniversalVideoPreview(
-        iD: iD,
-        title: title,
-        plugin: null,
-        thumbnail: element["imageURL"],
-        previewVideo: tryParse(() => Uri.parse(element["trailerURL"])),
-        duration: tryParse(() => Duration(seconds: element["duration"])),
-        viewsTotal: element["views"],
-        maxQuality: element["isUHD"] == true ? 2160 : null,
-        virtualReality: false,
-        authorName: authorName,
-        authorID:
-            authorIDPassed ?? element["landing"]?["link"]?.split("/")?.last,
-        verifiedAuthor: (element["landing"]?["type"] ?? "user") != "user" &&
-            authorName != "Unknown amateur author",
-        unavailableFields: {
-          // Not shown on listing pages
-          "ratingsPositivePercent",
-          // Only non-null when isUHD is true
-          "maxQuality",
-          // Never provided on listing pages
-          "thumbnailHttpHeaders",
-          "previewVideoHttpHeaders",
-          // Amateur uploads have no author
-          if (element["landing"] == null) "authorID",
-        },
-      );
+        UniversalVideoPreview uniResult = UniversalVideoPreview(
+          iD: iD,
+          title: title,
+          plugin: null,
+          thumbnail: element["imageURL"],
+          previewVideo: tryParse(() => Uri.parse(element["trailerURL"])),
+          duration: tryParse(() => Duration(seconds: element["duration"])),
+          viewsTotal: element["views"],
+          maxQuality: element["isUHD"] == true ? 2160 : null,
+          virtualReality: false,
+          authorName: authorName,
+          authorID:
+              authorIDPassed ?? element["landing"]?["link"]?.split("/")?.last,
+          verifiedAuthor: (element["landing"]?["type"] ?? "user") != "user" &&
+              authorName != "Unknown amateur author",
+          unavailableFields: {
+            // Not shown on listing pages
+            "ratingsPositivePercent",
+            // Only non-null when isUHD is true
+            "maxQuality",
+            // Never provided on listing pages
+            "thumbnailHttpHeaders",
+            "previewVideoHttpHeaders",
+            // Amateur uploads have no author
+            if (element["landing"] == null) "authorID",
+          },
+        );
 
-      results.add(uniResult);
+        results.add(uniResult);
+      } catch (e) {
+        results.add(UniversalVideoPreview(
+            iD: iD,
+            title: title,
+            plugin: null,
+            unavailableFields: {},
+            scrapeFailException: ScrapingException("$e", true)));
+      }
     }
 
     return results;
@@ -687,44 +698,58 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     }
 
     for (var comment in commentsJson) {
-      String? iD = comment["id"];
-      String? author = comment["author"]?["name"];
+      String? iD;
+      String? author;
       String? commentBody;
-      if (comment["text"] != null) {
-        commentBody = HtmlUnescape().convert(comment["text"]!).trim();
+      try {
+        iD = comment["id"];
+        author = comment["author"]?["name"];
+        if (comment["text"] != null) {
+          commentBody = HtmlUnescape().convert(comment["text"]!).trim();
+        }
+
+        UniversalComment uniComment = UniversalComment(
+          iD: iD,
+          videoID: videoID,
+          author: author,
+          // The comment body includes html chars like &amp and &nbsp, which need to be cleaned up
+          commentBody: commentBody,
+          hidden: false,
+          plugin: null,
+          authorID: comment["userId"]?.toString(),
+          countryID: comment["author"]?["personalInfo"]?["geo"]?["countryCode"],
+          orientation: comment["author"]?["personalInfo"]?["orientation"]
+          ?["name"],
+          profilePicture: comment["author"]?["thumbUrl"],
+          // null in the json means 0
+          ratingsTotal: comment["likes"] ?? 0,
+          commentDate: tryParse(() =>
+              DateTime.fromMillisecondsSinceEpoch(comment["created"] * 1000)),
+          replyComments: [],
+          unavailableFields: {
+            // xhamster doesn't expose a positive/negative rating split for comments
+            "ratingsPositiveTotal",
+            "ratingsNegativeTotal",
+            // Some users have no profile picture
+            "profilePicture",
+            // Some users have no personal info
+            "countryID",
+            "orientation",
+          },
+        );
+
+        commentList.add(uniComment);
+      } catch (e) {
+        commentList.add(UniversalComment(
+            iD: iD,
+            videoID: videoID,
+            author: author,
+            commentBody: commentBody,
+            hidden: false,
+            plugin: null,
+            unavailableFields: {},
+            scrapeFailException: ScrapingException("$e", true)));
       }
-
-      UniversalComment uniComment = UniversalComment(
-        iD: iD,
-        videoID: videoID,
-        author: author,
-        // The comment body includes html chars like &amp and &nbsp, which need to be cleaned up
-        commentBody: commentBody,
-        hidden: false,
-        plugin: null,
-        authorID: comment["userId"]?.toString(),
-        countryID: comment["author"]?["personalInfo"]?["geo"]?["countryCode"],
-        orientation: comment["author"]?["personalInfo"]?["orientation"]
-        ?["name"],
-        profilePicture: comment["author"]?["thumbUrl"],
-        // null in the json means 0
-        ratingsTotal: comment["likes"] ?? 0,
-        commentDate: tryParse(() =>
-            DateTime.fromMillisecondsSinceEpoch(comment["created"] * 1000)),
-        replyComments: [],
-        unavailableFields: {
-          // xhamster doesn't expose a positive/negative rating split for comments
-          "ratingsPositiveTotal",
-          "ratingsNegativeTotal",
-          // Some users have no profile picture
-          "profilePicture",
-          // Some users have no personal info
-          "countryID",
-          "orientation",
-        },
-      );
-
-      commentList.add(uniComment);
     }
 
     if (commentList.length != commentsJson.length) {
@@ -765,39 +790,55 @@ class _XHamsterIsolate extends BundledPluginIsolate {
 
     List<UniversalVideoPreview> relatedVideos = [];
     for (var result in jsonDecode(response.body)["videoThumbProps"]) {
-      String? title = tryParse(() => result["title"]);
-      String? iD = tryParse(() => result["pageURL"].trim().split("/").last);
+      String? title;
+      String? iD;
+      try {
+        title = tryParse(() => result["title"]);
+        iD = tryParse(() =>
+        result["pageURL"]
+            .trim()
+            .split("/")
+            .last);
 
-      UniversalVideoPreview relatedVideo = UniversalVideoPreview(
-        iD: iD,
-        title: title,
-        plugin: null,
-        thumbnail: result["thumbURL"],
-        previewVideo: tryParse(() => Uri.parse(result["trailerURL"])),
-        duration: tryParse(() => Duration(seconds: result["duration"])),
-        viewsTotal: result["views"],
-        ratingsPositivePercent: null,
-        maxQuality: tryParse<int?>(() => result["isUHD"] != null ? 2160 : null),
-        virtualReality: null,
-        authorName: result["landing"]?["name"] ?? "Unknown amateur author",
-        authorID: result["landing"]?["link"]
-            ?.replaceAll("/videos", "")
-            ?.split("/")
-            ?.last,
-        verifiedAuthor: result["landing"]?["name"] != null,
-        unavailableFields: {
-          "ratingsPositivePercent",
-          // Only non-null when isUHD is true
-          "maxQuality",
-          // Never provided on the suggestions endpoint
-          "thumbnailHttpHeaders",
-          "previewVideoHttpHeaders",
-          // Amateur uploads have no author
-          if (result["landing"] == null) "authorID",
-        },
-      );
+        UniversalVideoPreview relatedVideo = UniversalVideoPreview(
+          iD: iD,
+          title: title,
+          plugin: null,
+          thumbnail: result["thumbURL"],
+          previewVideo: tryParse(() => Uri.parse(result["trailerURL"])),
+          duration: tryParse(() => Duration(seconds: result["duration"])),
+          viewsTotal: result["views"],
+          ratingsPositivePercent: null,
+          maxQuality:
+          tryParse<int?>(() => result["isUHD"] != null ? 2160 : null),
+          virtualReality: null,
+          authorName: result["landing"]?["name"] ?? "Unknown amateur author",
+          authorID: result["landing"]?["link"]
+              ?.replaceAll("/videos", "")
+              ?.split("/")
+              ?.last,
+          verifiedAuthor: result["landing"]?["name"] != null,
+          unavailableFields: {
+            "ratingsPositivePercent",
+            // Only non-null when isUHD is true
+            "maxQuality",
+            // Never provided on the suggestions endpoint
+            "thumbnailHttpHeaders",
+            "previewVideoHttpHeaders",
+            // Amateur uploads have no author
+            if (result["landing"] == null) "authorID",
+          },
+        );
 
-      relatedVideos.add(relatedVideo);
+        relatedVideos.add(relatedVideo);
+      } catch (e) {
+        relatedVideos.add(UniversalVideoPreview(
+            iD: iD,
+            title: title,
+            plugin: null,
+            unavailableFields: {},
+            scrapeFailException: ScrapingException("$e", true)));
+      }
     }
     return relatedVideos;
   }

@@ -142,87 +142,98 @@ class _PornhubIsolate extends BundledPluginIsolate {
     // convert the divs into UniversalVideoPreviews
     List<UniversalVideoPreview> results = [];
     for (Element resultElement in resultsList) {
-      Element resultDiv = resultElement.querySelector("div")!;
-      Element? imageDiv = resultDiv.querySelector("a");
-
-      String? iD = resultElement.attributes['data-video-vkey'];
-      // the title field can have different names
-      String? title = resultDiv
-          .querySelector('div[class="title"]')
-          ?.querySelector("a")
-          ?.text
-          .trim();
-
-      // Try lazy-loading source first, fall back to normal src
-      String? thumbnail =
-          imageDiv?.querySelector("img")?.attributes["data-lazy-src"] ??
-              imageDiv?.querySelector("img")?.attributes["src"];
-
-      // convert time string into int list
-      // pornhub automatically converts hours into minutes -> no need to check
-      int? durationInSeconds;
+      String? iD;
+      String? title;
       try {
-        List<int>? durationList = resultDiv
-            .querySelector('span[class*="time"]')
+        Element resultDiv = resultElement.querySelector("div")!;
+        Element? imageDiv = resultDiv.querySelector("a");
+
+        iD = resultElement.attributes['data-video-vkey'];
+        // the title field can have different names
+        title = resultDiv
+            .querySelector('div[class="title"]')
+            ?.querySelector("a")
             ?.text
-            .trim()
-            .split(":")
-            .map((e) => int.parse(e))
-            .toList();
-        durationInSeconds = durationList![0] * 60 + durationList[1];
-      } catch (_) {}
-
-      // determine video views
-      int? views;
-      try {
-        // the div is called videoViews on the first homepage and just views on all others
-        String viewsString = resultDiv
-            .querySelector('div[class="videoViews"], div[class="views"]')!
-            .text
-            .replaceAll("Views", "")
             .trim();
 
-        // just added means 0
-        views = _convertHumanReadableStringToInt(viewsString);
-      } catch (_) {}
+        // Try lazy-loading source first, fall back to normal src
+        String? thumbnail =
+            imageDiv?.querySelector("img")?.attributes["data-lazy-src"] ??
+                imageDiv?.querySelector("img")?.attributes["src"];
 
-      // TODO: determine video resolution
-      // pornhub only offers up to 1080p
+        // convert time string into int list
+        // pornhub automatically converts hours into minutes -> no need to check
+        int? durationInSeconds;
+        try {
+          List<int>? durationList = resultDiv
+              .querySelector('span[class*="time"]')
+              ?.text
+              .trim()
+              .split(":")
+              .map((e) => int.parse(e))
+              .toList();
+          durationInSeconds = durationList![0] * 60 + durationList[1];
+        } catch (_) {}
 
-      // the author field can be a link or a span
-      Element? authorDiv = resultDiv.querySelector('a[class*="uploaderLink"], '
-          'span[class*="uploaderLink"]');
+        // determine video views
+        int? views;
+        try {
+          // the div is called videoViews on the first homepage and just views on all others
+          String viewsString = resultDiv
+              .querySelector('div[class="videoViews"], div[class="views"]')!
+              .text
+              .replaceAll("Views", "")
+              .trim();
 
-      UniversalVideoPreview uniResult = UniversalVideoPreview(
-        iD: iD,
-        title: title,
-        plugin: null,
-        thumbnail: thumbnail,
-        thumbnailHttpHeaders: {"Referer": "https://www.pornhub.com/"},
-        previewVideo:
-            tryParse(() => Uri.parse(imageDiv!.attributes["data-webm"]!)),
-        previewVideoHttpHeaders: {"Referer": "https://www.pornhub.com/"},
-        duration: tryParse(() => Duration(seconds: durationInSeconds!)),
-        viewsTotal: views,
-        ratingsPositivePercent: null,
-        maxQuality: null,
-        virtualReality: tryParse(() =>
-            resultDiv
-                .querySelector('span[class="hd-thumbnail vr-thumbnail"]') !=
-            null),
-        authorName: authorDiv?.text.trim() ?? authorNamePassed,
-        authorID:
-            authorDiv?.attributes["href"]?.split("/").last ?? authorIDPassed,
-        // All authors on pornhub are verified
-        verifiedAuthor: true,
-        unavailableFields: {
-          // Not shown on any video listing page
-          "ratingsPositivePercent",
-          "maxQuality",
-        },
-      );
+          // just added means 0
+          views = _convertHumanReadableStringToInt(viewsString);
+        } catch (_) {}
 
-      results.add(uniResult);
+        // TODO: determine video resolution
+        // pornhub only offers up to 1080p
+
+        // the author field can be a link or a span
+        Element? authorDiv = resultDiv.querySelector(
+            'a[class*="uploaderLink"], span[class*="uploaderLink"]');
+
+        UniversalVideoPreview uniResult = UniversalVideoPreview(
+          iD: iD,
+          title: title,
+          plugin: null,
+          thumbnail: thumbnail,
+          thumbnailHttpHeaders: {"Referer": "https://www.pornhub.com/"},
+          previewVideo:
+              tryParse(() => Uri.parse(imageDiv!.attributes["data-webm"]!)),
+          previewVideoHttpHeaders: {"Referer": "https://www.pornhub.com/"},
+          duration: tryParse(() => Duration(seconds: durationInSeconds!)),
+          viewsTotal: views,
+          ratingsPositivePercent: null,
+          maxQuality: null,
+          virtualReality: tryParse(() =>
+              resultDiv
+                  .querySelector('span[class="hd-thumbnail vr-thumbnail"]') !=
+              null),
+          authorName: authorDiv?.text.trim() ?? authorNamePassed,
+          authorID:
+              authorDiv?.attributes["href"]?.split("/").last ?? authorIDPassed,
+          // All authors on pornhub are verified
+          verifiedAuthor: true,
+          unavailableFields: {
+            // Not shown on any video listing page
+            "ratingsPositivePercent",
+            "maxQuality",
+          },
+        );
+
+        results.add(uniResult);
+      } catch (e) {
+        results.add(UniversalVideoPreview(
+            iD: iD,
+            title: title,
+            plugin: null,
+            unavailableFields: {},
+            scrapeFailException: ScrapingException("$e", true)));
+      }
     }
 
     return results;
@@ -729,10 +740,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
     for (Map<String, dynamic> video in jscriptMap["mediaDefinitions"]) {
       // the last item is a List of all qualities -> ignore it
       if (video["format"] == "hls") {
-        var quality = video["quality"];
-        if (quality.runtimeType == String) {
-          m3u8Map[int.parse(quality)] = Uri.parse(video["videoUrl"]);
-        }
+        m3u8Map[int.parse(video["quality"])] = Uri.parse(video["videoUrl"]);
       }
     }
 
@@ -875,56 +883,71 @@ class _PornhubIsolate extends BundledPluginIsolate {
     // Private functions
     UniversalComment parseComment(Element comment, String videoID,
         bool hidden) {
-      Element tempComment = comment.children.first;
+      String? iD;
+      String? author;
+      String? commentBody;
+      try {
+        Element tempComment = comment.children.first;
 
-      String? author = tempComment
-          .querySelector('img[class="commentAvatarImg avatarTrigger"]')
-          ?.attributes["title"];
-      String? commentBody = tempComment
-          .querySelector("div[class=commentMessage]")
-          ?.children
-          .firstOrNull
-          ?.text
-          .trim();
-
-      String? iD = tryParse(
-              () =>
-              comment.className.split(" ")[2].replaceAll("commentTag", ""));
-
-      UniversalComment parsedComment = UniversalComment(
-        iD: iD,
-        videoID: videoID,
-        author: author,
-        commentBody: commentBody,
-        hidden: hidden,
-        plugin: null,
-        authorID: tempComment
-            .querySelector('a[class="userLink clearfix"]')
-            ?.attributes["href"]
-            ?.substring(7),
-        profilePicture: tempComment
+        author = tempComment
             .querySelector('img[class="commentAvatarImg avatarTrigger"]')
-            ?.attributes["src"],
-        ratingsTotal: tryParse(() =>
-            int.parse(
-                tempComment.querySelector('span[class*="voteTotal"]')!.text)),
-        commentDate: _convertStringToDateTime(
-            tempComment
-                .querySelector('div[class="date"]')
-                ?.text
-                .trim()),
-        replyComments: [],
-        unavailableFields: {
-          // Pornhub doesn't expose commenter country/orientation
-          "countryID",
-          "orientation",
-          // Comments only have a single net vote total, no positive/negative split
-          "ratingsPositiveTotal",
-          "ratingsNegativeTotal"
-        },
-      );
+            ?.attributes["title"];
+        commentBody = tempComment
+            .querySelector("div[class=commentMessage]")
+            ?.children
+            .firstOrNull
+            ?.text
+            .trim();
 
-      return parsedComment;
+        iD = tryParse(
+                () =>
+                comment.className.split(" ")[2].replaceAll("commentTag", ""));
+
+        UniversalComment parsedComment = UniversalComment(
+          iD: iD,
+          videoID: videoID,
+          author: author,
+          commentBody: commentBody,
+          hidden: hidden,
+          plugin: null,
+          authorID: tempComment
+              .querySelector('a[class="userLink clearfix"]')
+              ?.attributes["href"]
+              ?.substring(7),
+          profilePicture: tempComment
+              .querySelector('img[class="commentAvatarImg avatarTrigger"]')
+              ?.attributes["src"],
+          ratingsTotal: tryParse(() =>
+              int.parse(
+                  tempComment.querySelector('span[class*="voteTotal"]')!.text)),
+          commentDate: _convertStringToDateTime(
+              tempComment
+                  .querySelector('div[class="date"]')
+                  ?.text
+                  .trim()),
+          replyComments: [],
+          unavailableFields: {
+            // Pornhub doesn't expose commenter country/orientation
+            "countryID",
+            "orientation",
+            // Comments only have a single net vote total, no positive/negative split
+            "ratingsPositiveTotal",
+            "ratingsNegativeTotal"
+          },
+        );
+
+        return parsedComment;
+      } catch (e) {
+        return UniversalComment(
+            iD: iD,
+            videoID: videoID,
+            author: author,
+            commentBody: commentBody,
+            hidden: hidden,
+            plugin: null,
+            unavailableFields: {},
+            scrapeFailException: ScrapingException("$e", true));
+      }
     }
 
     /// Recursive function
