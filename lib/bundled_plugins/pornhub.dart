@@ -194,10 +194,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
           'span[class*="uploaderLink"]');
 
       UniversalVideoPreview uniResult = UniversalVideoPreview(
-        // Don't enforce null safety here
-        // treat error below in scrapeFailException instead
-        iD: iD ?? "null",
-        title: title ?? "null",
+        iD: iD,
+        title: title,
         plugin: null,
         thumbnail: thumbnail,
         thumbnailHttpHeaders: {"Referer": "https://www.pornhub.com/"},
@@ -222,11 +220,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
           "ratingsPositivePercent",
           "maxQuality",
         },
-        scrapeFailException: (iD == null || title == null)
-            ? ScrapingException("Error: Failed to scrape critical variable(s):"
-                "${iD == null ? " ID" : ""}"
-                "${title == null ? " title" : ""}")
-            : null,
       );
 
       results.add(uniResult);
@@ -890,8 +883,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
       String? commentBody = tempComment
           .querySelector("div[class=commentMessage]")
           ?.children
-          .first
-          .text
+          .firstOrNull
+          ?.text
           .trim();
 
       String? iD = tryParse(
@@ -899,12 +892,10 @@ class _PornhubIsolate extends BundledPluginIsolate {
               comment.className.split(" ")[2].replaceAll("commentTag", ""));
 
       UniversalComment parsedComment = UniversalComment(
-        // Don't enforce null safety here
-        // treat error below in scrapeFailException instead
-        iD: iD ?? "null",
+        iD: iD,
         videoID: videoID,
-        author: author ?? "null",
-        commentBody: commentBody ?? "null",
+        author: author,
+        commentBody: commentBody,
         hidden: hidden,
         plugin: null,
         authorID: tempComment
@@ -931,14 +922,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
           "ratingsPositiveTotal",
           "ratingsNegativeTotal"
         },
-        scrapeFailException: (iD == null ||
-            author == null ||
-            commentBody == null)
-            ? ScrapingException("Error: Failed to scrape critical variable(s):"
-            "${iD == null ? " iD" : ""}"
-            "${author == null ? " author" : ""}"
-            "${commentBody == null ? " commentBody" : ""}")
-            : null,
       );
 
       return parsedComment;

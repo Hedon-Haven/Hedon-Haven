@@ -170,10 +170,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           (element["landing"]?["name"] ?? "Unknown amateur author");
 
       UniversalVideoPreview uniResult = UniversalVideoPreview(
-        // Don't enforce null safety here
-        // treat error below in scrapeFailException instead
-        iD: iD ?? "null",
-        title: title ?? "null",
+        iD: iD,
+        title: title,
         plugin: null,
         thumbnail: element["imageURL"],
         previewVideo: tryParse(() => Uri.parse(element["trailerURL"])),
@@ -197,11 +195,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           // Amateur uploads have no author
           if (element["landing"] == null) "authorID",
         },
-        scrapeFailException: (iD == null || title == null)
-            ? ScrapingException("Error: Failed to scrape critical variable(s):"
-                "${iD == null ? " ID" : ""}"
-                "${title == null ? " title" : ""}")
-            : null,
       );
 
       results.add(uniResult);
@@ -702,13 +695,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       }
 
       UniversalComment uniComment = UniversalComment(
-        // Don't enforce null safety here
-        // treat error below in scrapeFailException instead
-        iD: iD ?? "null",
+        iD: iD,
         videoID: videoID,
-        author: author ?? "null",
+        author: author,
         // The comment body includes html chars like &amp and &nbsp, which need to be cleaned up
-        commentBody: commentBody ?? "null",
+        commentBody: commentBody,
         hidden: false,
         plugin: null,
         authorID: comment["userId"]?.toString(),
@@ -731,14 +722,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           "countryID",
           "orientation",
         },
-        scrapeFailException: (iD == null ||
-            author == null ||
-            commentBody == null)
-            ? ScrapingException("Error: Failed to scrape critical variable(s):"
-            "${iD == null ? " iD" : ""}"
-            "${author == null ? " author" : ""}"
-            "${commentBody == null ? " commentBody" : ""}")
-            : null,
       );
 
       commentList.add(uniComment);
@@ -783,16 +766,11 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     List<UniversalVideoPreview> relatedVideos = [];
     for (var result in jsonDecode(response.body)["videoThumbProps"]) {
       String? title = tryParse(() => result["title"]);
+      String? iD = tryParse(() => result["pageURL"].trim().split("/").last);
 
       UniversalVideoPreview relatedVideo = UniversalVideoPreview(
-        // Don't enforce null safety here
-        // treat error below in scrapeFailException instead
-        iD: tryParse(() =>
-        result["pageURL"]
-            .trim()
-            .split("/")
-            .last) ?? "null",
-        title: title ?? "null",
+        iD: iD,
+        title: title,
         plugin: null,
         thumbnail: result["thumbURL"],
         previewVideo: tryParse(() => Uri.parse(result["trailerURL"])),
@@ -817,10 +795,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           // Amateur uploads have no author
           if (result["landing"] == null) "authorID",
         },
-        scrapeFailException: title == null
-            ? ScrapingException(
-            "Error: Failed to scrape critical variable: title")
-            : null,
       );
 
       relatedVideos.add(relatedVideo);

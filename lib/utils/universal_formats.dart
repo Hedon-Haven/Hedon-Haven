@@ -110,6 +110,17 @@ ScrapingException? throwOnMissedField(
   return ScrapingException("Failed to scrape non-critical field(s): $nullKeys");
 }
 
+/// Returns a critical [ScrapingException] naming every null or empty value
+ScrapingException? criticalFieldsMissing(Map<String, String?> fields) {
+  final missing = [
+    for (final entry in fields.entries)
+      if (entry.value?.isEmpty ?? true) entry.key
+  ];
+  if (missing.isEmpty) return null;
+  return ScrapingException(
+      "Failed to scrape critical variable(s): ${missing.join(", ")}", true);
+}
+
 enum ContentType {
   homePage,
   searchResultsPage,
@@ -358,8 +369,8 @@ class UniversalVideoPreview {
             unavailableFields: const {});
 
   UniversalVideoPreview({
-    required this.iD,
-    required this.title,
+    required String? iD,
+    required String? title,
     required this.plugin,
     this.thumbnail,
     this.thumbnailHttpHeaders,
@@ -383,10 +394,14 @@ class UniversalVideoPreview {
     this.lastWatched,
     this.addedOn,
     required this.unavailableFields,
-    this.scrapeFailException,
-  })  : verifiedAuthor = verifiedAuthor ?? false,
+    ScrapingException? scrapeFailException,
+  })  : iD = iD ?? "",
+        title = title ?? "",
+        verifiedAuthor = verifiedAuthor ?? false,
         virtualReality = virtualReality ?? false,
-        thumbnailBinary = thumbnailBinary ?? Uint8List(0);
+        thumbnailBinary = thumbnailBinary ?? Uint8List(0),
+        scrapeFailException = scrapeFailException ??
+            criticalFieldsMissing({"iD": iD, "title": title});
 
   Map<String, dynamic> toJson() => toMap();
 
@@ -779,10 +794,10 @@ class UniversalComment {
             unavailableFields: const {});
 
   UniversalComment({
-    required this.iD,
+    required String? iD,
     required this.videoID,
-    required this.author,
-    required this.commentBody,
+    required String? author,
+    required String? commentBody,
     required this.hidden,
     required this.plugin,
     this.authorID,
@@ -795,8 +810,13 @@ class UniversalComment {
     this.commentDate,
     this.replyComments,
     required this.unavailableFields,
-    this.scrapeFailException,
-  });
+    ScrapingException? scrapeFailException,
+  })  : iD = iD ?? "",
+        author = author ?? "",
+        commentBody = commentBody ?? "",
+        scrapeFailException = scrapeFailException ??
+            criticalFieldsMissing(
+                {"iD": iD, "author": author, "commentBody": commentBody});
 
   Map<String, dynamic> toJson() => toMap();
 
