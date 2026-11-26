@@ -458,6 +458,7 @@ class _VideoListState extends State<VideoList> {
                                 }
                                 return Icon(
                                   Icons.error,
+                                  size: constraints.maxWidth / 8,
                                   color: Theme.of(context).colorScheme.error,
                                 );
                               }, fit: BoxFit.contain)
@@ -467,6 +468,7 @@ class _VideoListState extends State<VideoList> {
                                     "Failed to load binary thumbnail: $error\n$stackTrace");
                                 return Icon(
                                   Icons.nearby_error,
+                                  size: constraints.maxWidth / 8,
                                   color: Theme.of(context).colorScheme.error,
                                 );
                               }, fit: BoxFit.fill),
