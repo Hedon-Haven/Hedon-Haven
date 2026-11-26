@@ -137,7 +137,10 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     logger.i("Setting new url: $url");
     controller = VideoPlayerController.networkUrl(url,
-        httpHeaders: widget.videoMetadata.playbackHttpHeaders ?? {});
+        httpHeaders: {
+          ...defaultHttpHeaders,
+          ...?widget.videoMetadata.playbackHttpHeaders
+        });
     controllerInitFuture = controller.initialize().then((value) async {
       setState(() {});
       await controller.seekTo(oldPosition);

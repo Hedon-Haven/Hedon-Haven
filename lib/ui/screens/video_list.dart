@@ -237,7 +237,10 @@ class _VideoListState extends State<VideoList> {
     _disposePreviewController();
     previewVideoController = VideoPlayerController.networkUrl(
         videoList![index].previewVideo!,
-        httpHeaders: videoList![index].previewVideoHttpHeaders ?? {});
+        httpHeaders: {
+          ...defaultHttpHeaders,
+          ...?videoList![index].previewVideoHttpHeaders
+        });
     previewVideoController.initialize().then((value) async {
       // To stop after looping 3 times
       previewVideoController.addListener(() async {
