@@ -232,7 +232,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
             title: title,
             plugin: null,
             unavailableFields: {},
-            scrapeFailException: ScrapingException("$e", true)));
+            scrapeFailException:
+                ScrapingException("$e\n${resultElement.outerHtml}", true)));
       }
     }
 
@@ -946,7 +947,8 @@ class _PornhubIsolate extends BundledPluginIsolate {
             hidden: hidden,
             plugin: null,
             unavailableFields: {},
-            scrapeFailException: ScrapingException("$e", true));
+            scrapeFailException:
+            ScrapingException("$e\n${comment.outerHtml}", true));
       }
     }
 

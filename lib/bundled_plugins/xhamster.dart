@@ -207,7 +207,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             title: title,
             plugin: null,
             unavailableFields: {},
-            scrapeFailException: ScrapingException("$e", true)));
+            scrapeFailException: ScrapingException("$e\n$element", true)));
       }
     }
 
@@ -748,7 +748,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             hidden: false,
             plugin: null,
             unavailableFields: {},
-            scrapeFailException: ScrapingException("$e", true)));
+            scrapeFailException: ScrapingException("$e\n$comment", true)));
       }
     }
 
@@ -837,7 +837,7 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             title: title,
             plugin: null,
             unavailableFields: {},
-            scrapeFailException: ScrapingException("$e", true)));
+            scrapeFailException: ScrapingException("$e\n$result", true)));
       }
     }
     return relatedVideos;
