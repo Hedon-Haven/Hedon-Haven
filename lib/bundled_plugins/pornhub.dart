@@ -656,12 +656,12 @@ class _PornhubIsolate extends BundledPluginIsolate {
         jscript.substring(jscript.indexOf("{"), jscript.indexOf('};') + 1));
 
     // get the application/ld+json
-    Map<String, dynamic> JSONLD = jsonDecode(
+    Map<String, dynamic> jsonLD = jsonDecode(
         rawHtml.querySelector('script[type="application/ld+json"]')!.text);
 
     // ratings
     int? ratingsPositive;
-    for (var interaction in JSONLD["interactionStatistic"]) {
+    for (var interaction in jsonLD["interactionStatistic"]) {
       if (interaction["interactionType"].endsWith("/LikeAction")) {
         ratingsPositive = int.tryParse(
             interaction["userInteractionCount"].toString().replaceAll(",", ""));
@@ -672,7 +672,7 @@ class _PornhubIsolate extends BundledPluginIsolate {
 
     // For some reason on mobile the full exact view amount is always shown
     int? viewsTotal;
-    for (var interaction in JSONLD["interactionStatistic"]) {
+    for (var interaction in jsonLD["interactionStatistic"]) {
       if (interaction["interactionType"].endsWith("/WatchAction")) {
         viewsTotal = int.tryParse(
             interaction["userInteractionCount"].toString().replaceAll(",", ""));
