@@ -7,9 +7,9 @@ import '/services/database_manager.dart';
 import '/ui/screens/video_list.dart';
 import '/ui/screens/video_screen/video_screen.dart';
 import '/ui/utils/toast_notification.dart';
+import '/ui/widgets/safe_network_image.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/convert.dart';
-import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
 
 Widget buildFailedToLoadWidget(
@@ -226,24 +226,18 @@ Widget buildActorWidget(BuildContext context, void Function() openContainer,
           onPressed: () => openContainer(),
           child: Row(spacing: 3, children: [
             ClipOval(
-              child: Image.network(
-                width: 30,
-                height: 30,
-                actor.avatar ?? "Avatar url is null",
-                fit: BoxFit.cover,
-                errorBuilder: (context, e, st) {
-                  if (!e.toString().contains("mockAvatar")) {
-                    logger.e("Failed to load network avatar: $e\n$st");
-                  }
-                  return FittedBox(
+              child: SafeNetworkImage(
+                  url: actor.avatar,
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.cover,
+                  errorWidget: FittedBox(
                       fit: BoxFit.cover,
                       child: Icon(Icons.person,
                           color: Theme
                               .of(context)
                               .colorScheme
-                              .onTertiary));
-                },
-              ),
+                              .onTertiary))),
             ),
             Text(actor.name)
           ])));
@@ -293,25 +287,16 @@ Widget buildAuthorWidget(BuildContext context, VideoPlayerScreenState vps) {
                                     .of(context)
                                     .colorScheme
                                     .tertiary,
-                                child: Image.network(
-                                  vps.videoMetadata.authorAvatar ??
-                                      "Avatar url is null",
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, e, st) {
-                                    if (!e.toString().contains("mockAvatar")) {
-                                      logger
-                                          .e(
-                                          "Failed to load network avatar: $e\n$st");
-                                    }
-                                    return FittedBox(
+                                child: SafeNetworkImage(
+                                    url: vps.videoMetadata.authorAvatar,
+                                    fit: BoxFit.cover,
+                                    errorWidget: FittedBox(
                                         fit: BoxFit.cover,
                                         child: Icon(Icons.person,
                                             color: Theme
                                                 .of(context)
                                                 .colorScheme
-                                                .onTertiary));
-                                  },
-                                ),
+                                                .onTertiary))),
                               )),
                         ),
                         SizedBox(width: 10),
@@ -859,18 +844,14 @@ Widget buildComment(BuildContext context, VideoPlayerScreenState vps,
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                       onTap: () => vps.openCommentAvatarInFullscreen(comment),
-                      child: Image.network(
-                        comment.profilePicture ?? "",
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Icon(
-                              Icons.person,
+                      child: SafeNetworkImage(
+                          url: comment.profilePicture,
+                          fit: BoxFit.cover,
+                          errorWidget: Icon(Icons.person,
                               color: Theme
                                   .of(context)
                                   .colorScheme
-                                  .onTertiary,
-                            ),
-                      ))),
+                                  .onTertiary)))),
             ),
           ),
         ),

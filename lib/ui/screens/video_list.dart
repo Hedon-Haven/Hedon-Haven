@@ -18,6 +18,7 @@ import '/ui/screens/bug_report/bug_reports_list.dart';
 import '/ui/screens/video_screen/video_screen.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/external_link_warning.dart';
+import '/ui/widgets/safe_network_image.dart';
 import '/utils/convert.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
@@ -454,23 +455,15 @@ class _VideoListState extends State<VideoList> {
                             // same color as the default shimmer effect
                             color: Color(0xFF3A3A3A))
                         : widget.useNetworkThumbnails
-                            ? Image.network(
-                                videoList![index].thumbnail ??
-                                    "Thumbnail url is null",
+                            ? SafeNetworkImage(
+                                url: videoList![index].thumbnail,
                                 headers: videoList![index].thumbnailHttpHeaders,
-                                errorBuilder: (context, error, stackTrace) {
-                                if (!error
-                                    .toString()
-                                    .contains("mockThumbnail")) {
-                                  logger.e(
-                                      "Failed to load network video thumbnail: $error\n$stackTrace");
-                                }
-                                return Icon(
+                                fit: BoxFit.contain,
+                                errorWidget: Icon(
                                   Icons.error,
                                   size: constraints.maxWidth / 8,
                                   color: Theme.of(context).colorScheme.error,
-                                );
-                              }, fit: BoxFit.contain)
+                                ))
                             : Image.memory(videoList![index].thumbnailBinary,
                                 errorBuilder: (context, error, stackTrace) {
                                 logger.e(

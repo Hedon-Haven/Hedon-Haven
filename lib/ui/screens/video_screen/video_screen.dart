@@ -20,6 +20,7 @@ import '/ui/screens/video_screen/widgets.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
 import '/ui/widgets/external_link_warning.dart';
+import '/ui/widgets/safe_network_image.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
@@ -98,9 +99,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       videoSuggestions = loadingHandler.getVideoSuggestions(
           videoMetadata.plugin!, videoMetadata.iD, videoMetadata.rawHtml, null);
       // Pre-load images so they are immediately available when the skeletonizer stops
-      await precacheImage(
-          NetworkImage(videoMetadata.authorAvatar ?? "Avatar url is null"),
-          context);
+      if (isLoadableImageUrl(videoMetadata.authorAvatar)) {
+        await precacheImage(NetworkImage(videoMetadata.authorAvatar!), context);
+      }
       setState(() {
         isLoadingMetadata = false;
       });
@@ -249,15 +250,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
               if (context.mounted) Navigator.of(context).pop();
             },
             content: SingleChildScrollView(
-                child: Image.network(
-                    comment.profilePicture ?? "Avatar url is null",
-                    errorBuilder: (context, error, stackTrace) {
-              if (!error.toString().contains("mockAvatar")) {
-                logger.e("Failed to load network avatar: $error\n$stackTrace");
-              }
-              return Icon(Icons.error,
-                  color: Theme.of(context).colorScheme.error);
-            }, fit: BoxFit.contain))));
+                child: SafeNetworkImage(
+                    url: comment.profilePicture,
+                    fit: BoxFit.contain,
+                    errorWidget: Icon(Icons.error,
+                        color: Theme.of(context).colorScheme.error)))));
   }
 
   void shareVideo() async {

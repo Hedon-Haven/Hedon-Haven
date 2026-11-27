@@ -15,6 +15,7 @@ import '/ui/screens/video_list.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
 import '/ui/widgets/external_link_warning.dart';
+import '/ui/widgets/safe_network_image.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/convert.dart';
 import '/utils/global_vars.dart';
@@ -79,10 +80,10 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
         setState(() {});
       }
       // Pre-load images so they are immediately available when the skeletonizer stops
-      if (authorPage?.banner != null) {
+      if (isLoadableImageUrl(authorPage?.banner)) {
         await precacheImage(NetworkImage(authorPage!.banner!), context);
       }
-      if (authorPage?.avatar != null) {
+      if (isLoadableImageUrl(authorPage?.avatar)) {
         await precacheImage(NetworkImage(authorPage!.avatar!), context);
       }
       if (mounted) setState(() => isLoadingResults = false);
@@ -129,14 +130,11 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             primaryText: "Close",
             onPrimary: () => Navigator.pop(context),
             content: SingleChildScrollView(
-                child: Image.network(authorPage?.banner ?? "Banner url is null",
-                    errorBuilder: (context, error, stackTrace) {
-              if (!error.toString().contains("mockBanner")) {
-                logger.e("Failed to load network banner: $error\n$stackTrace");
-              }
-              return Icon(Icons.error,
-                  color: Theme.of(context).colorScheme.error);
-            }, fit: BoxFit.contain))));
+                child: SafeNetworkImage(
+                    url: authorPage?.banner,
+                    fit: BoxFit.contain,
+                    errorWidget: Icon(Icons.error,
+                        color: Theme.of(context).colorScheme.error)))));
   }
 
   void openAvatarInFullscreen() {
@@ -147,14 +145,11 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             primaryText: "Close",
             onPrimary: () => Navigator.pop(context),
             content: SingleChildScrollView(
-                child: Image.network(authorPage?.avatar ?? "Avatar url is null",
-                    errorBuilder: (context, error, stackTrace) {
-              if (!error.toString().contains("mockAvatar")) {
-                logger.e("Failed to load network avatar: $error\n$stackTrace");
-              }
-              return Icon(Icons.error,
-                  color: Theme.of(context).colorScheme.error);
-            }, fit: BoxFit.contain))));
+                child: SafeNetworkImage(
+                    url: authorPage?.avatar,
+                    fit: BoxFit.contain,
+                    errorWidget: Icon(Icons.error,
+                        color: Theme.of(context).colorScheme.error)))));
   }
 
   void createAuthorScreenBugReport() async {
@@ -316,31 +311,16 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                                       child: GestureDetector(
                                                           onTap: () =>
                                                               openBannerInFullscreen(),
-                                                          child: Image.network(
-                                                              authorPage
-                                                                      ?.banner ??
-                                                                  "Banner url is null",
-                                                              errorBuilder:
-                                                                  (context,
-                                                                      error,
-                                                                      stackTrace) {
-                                                            if (!error
-                                                                .toString()
-                                                                .contains(
-                                                                    "mockBanner")) {
-                                                              logger.e(
-                                                                  "Failed to load network banner: $error\n$stackTrace");
-                                                            }
-                                                            return Icon(
-                                                              Icons.error,
-                                                              color: Theme.of(
-                                                                      context)
-                                                                  .colorScheme
-                                                                  .error,
-                                                            );
-                                                          },
-                                                              fit: BoxFit
-                                                                  .cover)))))
+                                                          child: SafeNetworkImage(
+                                                              url: authorPage
+                                                                  ?.banner,
+                                                              fit: BoxFit.cover,
+                                                              errorWidget: Icon(
+                                                                  Icons.error,
+                                                                  color: Theme.of(
+                                                                          context)
+                                                                      .colorScheme
+                                                                      .error))))))
                                         ],
                                         buildAuthorDetails(),
                                         if (isMobile) buildAuthorDescription(),
@@ -407,20 +387,15 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                       onTap: () => openAvatarInFullscreen(),
-                      child: Image.network(
-                          authorPage?.avatar ?? "Avatar url is null",
+                      child: SafeNetworkImage(
+                          url: authorPage?.avatar,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                        if (!error.toString().contains("mockAvatar")) {
-                          logger.e(
-                              "Failed to load network author avatar: $error\n$stackTrace");
-                        }
-                        return FittedBox(
-                            fit: BoxFit.cover,
-                            child: Icon(Icons.person,
-                                color:
-                                    Theme.of(context).colorScheme.onTertiary));
-                      }))))),
+                          errorWidget: FittedBox(
+                              fit: BoxFit.cover,
+                              child: Icon(Icons.person,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onTertiary))))))),
       SizedBox(width: isMobile ? 10 : 20),
       Expanded(
           child: Column(
