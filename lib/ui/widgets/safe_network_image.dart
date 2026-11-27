@@ -1,11 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '/utils/global_vars.dart';
-
-/// False for null, empty and mock urls
-bool isLoadableImageUrl(String? url) {
-  return url != null && url.isNotEmpty && !url.startsWith("mock");
-}
+import '/utils/image_url.dart';
 
 /// Image.network, but null, empty and mock urls show [errorWidget] without making a request
 class SafeNetworkImage extends StatelessWidget {

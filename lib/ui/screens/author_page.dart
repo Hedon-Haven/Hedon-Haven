@@ -19,6 +19,7 @@ import '/ui/widgets/safe_network_image.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/convert.dart';
 import '/utils/global_vars.dart';
+import '/utils/image_url.dart';
 import '/utils/universal_formats.dart';
 
 class AuthorPageScreen extends StatefulWidget {
