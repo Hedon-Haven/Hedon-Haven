@@ -8,17 +8,18 @@ import '/utils/image_url.dart';
 
 /// Precaches network images so they show immediately, skipping unloadable urls
 /// Never throws, failures are logged and it gives up after [timeout]
-/// Check mounted before calling, as [context] is used right away
-Future<void> precacheNetworkImages(BuildContext context, List<String?> urls,
-        {Duration timeout = const Duration(seconds: 5)}) =>
-    Future.wait(urls.where(isLoadableImageUrl).map((url) => precacheImage(
-            NetworkImage(url!), context,
-            onError: (error, stackTrace) =>
-                logger.w("Failed to precache image $url: $error"))))
-        .timeout(timeout, onTimeout: () {
-      logger.w("Precaching images timed out after ${timeout.inSeconds}s");
-      return [];
-    });
+Future<void> precacheNetworkImages(State state, List<String?> urls,
+    {Duration timeout = const Duration(seconds: 3)}) async {
+  if (!state.mounted) return;
+  await Future.wait(urls.where(isLoadableImageUrl).map((url) => precacheImage(
+      NetworkImage(url!), state.context,
+      onError: (error, stackTrace) =>
+          logger.w("Failed to precache image $url: $error")))).timeout(timeout,
+      onTimeout: () {
+    logger.w("Precaching images timed out after ${timeout.inSeconds}s");
+    return [];
+  });
+}
 
 /// Image.network, but null, empty and mock urls show [errorWidget] without making a request
 /// [errorWidget] defaults to a red error icon

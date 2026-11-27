@@ -82,7 +82,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
       }
       // Pre-load images so they are immediately available when the skeletonizer stops
       await precacheNetworkImages(
-          context, [authorPage?.banner, authorPage?.avatar]);
+          this, [authorPage?.banner, authorPage?.avatar]);
       if (mounted) setState(() => isLoadingResults = false);
     } catch (e, stacktrace) {
       logger.e("Error getting author page: $e\n$stacktrace");
