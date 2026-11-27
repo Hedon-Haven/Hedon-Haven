@@ -23,7 +23,6 @@ import '/ui/widgets/external_link_warning.dart';
 import '/ui/widgets/safe_image.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/global_vars.dart';
-import '/utils/image_url.dart';
 import '/utils/universal_formats.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
@@ -95,13 +94,13 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Future<void> _loadMetadata() async {
     try {
       videoMetadata = await widget.videoMetadata;
+      if (!mounted) return;
       // Start loading video suggestions, but don't wait for them
       videoSuggestions = loadingHandler.getVideoSuggestions(
           videoMetadata.plugin!, videoMetadata.iD, videoMetadata.rawHtml, null);
       // Pre-load images so they are immediately available when the skeletonizer stops
-      if (isLoadableImageUrl(videoMetadata.authorAvatar)) {
-        await precacheImage(NetworkImage(videoMetadata.authorAvatar!), context);
-      }
+      await precacheNetworkImages(context, [videoMetadata.authorAvatar]);
+      if (!mounted) return;
       setState(() {
         isLoadingMetadata = false;
       });
@@ -117,6 +116,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       });
     } catch (e, stacktrace) {
       logger.e("Error getting video metadata: $e\n$stacktrace");
+      if (!mounted) return;
       setState(() {
         loadingError = e;
         loadErrorStacktrace = stacktrace.toString();

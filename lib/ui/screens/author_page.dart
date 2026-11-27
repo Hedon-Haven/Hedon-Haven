@@ -19,7 +19,6 @@ import '/ui/widgets/safe_image.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/convert.dart';
 import '/utils/global_vars.dart';
-import '/utils/image_url.dart';
 import '/utils/universal_formats.dart';
 
 class AuthorPageScreen extends StatefulWidget {
@@ -62,6 +61,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
     try {
       setState(() => isLoadingResults = true);
       authorPage = await widget.authorPage;
+      if (!mounted) return;
       // Start loading author videos but don't wait for them
       try {
         authorVideos = loadingHandler.getAuthorVideos(
@@ -81,15 +81,12 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
         setState(() {});
       }
       // Pre-load images so they are immediately available when the skeletonizer stops
-      if (isLoadableImageUrl(authorPage?.banner)) {
-        await precacheImage(NetworkImage(authorPage!.banner!), context);
-      }
-      if (isLoadableImageUrl(authorPage?.avatar)) {
-        await precacheImage(NetworkImage(authorPage!.avatar!), context);
-      }
+      await precacheNetworkImages(
+          context, [authorPage?.banner, authorPage?.avatar]);
       if (mounted) setState(() => isLoadingResults = false);
     } catch (e, stacktrace) {
       logger.e("Error getting author page: $e\n$stacktrace");
+      if (!mounted) return;
       setState(() {
         loadingError = e;
         loadErrorStacktrace = stacktrace.toString();
