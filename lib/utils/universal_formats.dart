@@ -358,7 +358,7 @@ class UniversalVideoPreview {
   /// Mock constructor for skeleton
   UniversalVideoPreview.skeleton()
       : this(
-            iD: "",
+            iD: "mockID",
             thumbnail: "mockThumbnail",
             title: BoneMock.paragraph,
             viewsTotal: 100,
@@ -782,8 +782,8 @@ class UniversalComment {
   /// Mock constructor for skeleton
   UniversalComment.skeleton()
       : this(
-            iD: "",
-            videoID: "",
+            iD: "mockID",
+            videoID: "mockVideoID",
             author: "author",
             commentBody: List<String>.filled(5, "comment").join(),
             hidden: false,
