@@ -118,7 +118,10 @@ class SafeFileImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return file == null
         ? _ErrorFallback(errorWidget: errorWidget, width: width, height: height)
-        : Image.file(file!, fit: fit, width: width, height: height,
+        : Image.file(file!,
+            fit: fit,
+            width: width,
+            height: height,
             errorBuilder: (context, error, stackTrace) => _ErrorFallback(
                 errorWidget: errorWidget, width: width, height: height));
   }
