@@ -326,9 +326,15 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
   newEntryData.remove("unavailableFields");
 
   // update values
-  newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
-          Uri.parse(result.thumbnail ?? ""), result.thumbnailHttpHeaders) ??
-      Uint8List(0);
+  newEntryData["thumbnailBinary"] = null;
+  if (result.thumbnail != null) {
+    try {
+      newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
+          Uri.parse(result.thumbnail!), result.thumbnailHttpHeaders);
+    } catch (e) {
+      logger.e("Failed to download thumbnail: $e");
+    }
+  }
   newEntryData["lastWatched"] = convertToUnixTime(DateTime.now());
   newEntryData["addedOn"] = convertToUnixTime(DateTime.now());
 
@@ -371,9 +377,15 @@ Future<void> addToFavorites(UniversalVideoPreview result) async {
   newEntryData.remove("lastWatched");
 
   // update values
-  newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
-          Uri.parse(result.thumbnail ?? ""), result.thumbnailHttpHeaders) ??
-      Uint8List(0);
+  newEntryData["thumbnailBinary"] = null;
+  if (result.thumbnail != null) {
+    try {
+      newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
+          Uri.parse(result.thumbnail!), result.thumbnailHttpHeaders);
+    } catch (e) {
+      logger.e("Failed to download thumbnail: $e");
+    }
+  }
   newEntryData["addedOn"] = convertToUnixTime(DateTime.now());
 
   // convert bool to int

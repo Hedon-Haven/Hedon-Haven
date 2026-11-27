@@ -178,23 +178,15 @@ class _TesterIsolate extends BundledPluginIsolate {
     );
   }
 
-  /// FIXME: Why is this handling and suppressing errors?
   @override
   Future<Uint8List> downloadThumbnail(
       String uriString, Map<String, String>? thumbnailHttpHeaders) async {
-    try {
-      var response =
-          await httpRequest(uriString, headers: thumbnailHttpHeaders);
-      if (response.statusCode == 200) {
-        return response.bodyBytes;
-      } else {
-        logError("Error downloading preview: ${response.statusCode}");
-        return Uint8List(0);
-      }
-    } catch (e, stacktrace) {
-      logError("Error downloading preview: $e\n$stacktrace");
-      return Uint8List(0);
+    var response = await httpRequest(uriString, headers: thumbnailHttpHeaders);
+    if (response.statusCode != 200) {
+      logError("Error downloading preview: ${response.statusCode}");
+      throw Exception("Error downloading preview: ${response.statusCode}");
     }
+    return response.bodyBytes;
   }
 
   @override

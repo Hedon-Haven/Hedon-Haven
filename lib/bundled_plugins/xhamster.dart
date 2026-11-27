@@ -319,23 +319,15 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         jscriptMap["layoutPage"]["videoListProps"]["videoThumbProps"]);
   }
 
-  /// FIXME: Why is this handling and suppressing errors?
   @override
   Future<Uint8List> downloadThumbnail(
       String uriString, Map<String, String>? thumbnailHttpHeaders) async {
-    try {
-      var response =
-          await httpRequest(uriString, headers: thumbnailHttpHeaders);
-      if (response.statusCode == 200) {
-        return response.bodyBytes;
-      } else {
-        logError("Error downloading preview: ${response.statusCode}");
-        return Uint8List(0);
-      }
-    } catch (e, stacktrace) {
-      logError("Error downloading preview: $e\n$stacktrace");
-      return Uint8List(0);
+    var response = await httpRequest(uriString, headers: thumbnailHttpHeaders);
+    if (response.statusCode != 200) {
+      logError("Error downloading preview: ${response.statusCode}");
+      throw Exception("Error downloading preview: ${response.statusCode}");
     }
+    return response.bodyBytes;
   }
 
   @override
@@ -1081,13 +1073,14 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       videosTotal = jscriptMap["counters"]?["videos"];
       logDebug("Trying to scrape subscribers from html");
       // some users don't have this info in the jsonmap -> scrape from html
-      subscribers = tryParse(() => int.parse(pageHtml
-          .querySelectorAll('div[class="user-details"] .details-row')
-          .firstWhere((row) => row.querySelector("use#user-group") != null)
-          .querySelector(".details-counter")!
-          .attributes["data-tooltip"]!
-          .replaceAll(",", "")
-          .trim()));
+      subscribers = tryParse(() =>
+          int.parse(pageHtml
+              .querySelectorAll('div[class="user-details"] .details-row')
+              .firstWhere((row) => row.querySelector("use#user-group") != null)
+              .querySelector(".details-counter")!
+              .attributes["data-tooltip"]!
+              .replaceAll(",", "")
+              .trim()));
       // users don't have ranks
     }
 
