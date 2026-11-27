@@ -1,0 +1,29 @@
+- Video lists now choose their layout based on screen size. The "List view mode" setting was removed and is cleared on upgrade.
+- All images shown right after a loading shimmer are now precached
+- All images are now guarded against invalid or empty URLs and show a scaled error icon instead of failing
+- Plugin info dialogs now show only the plugin name as title
+
+- Removed (barely implemented) in-app functionality tests from the third-party plugin install process
+- Third-party plugin updates are now atomic
+- Improved cleanup after a failed plugin import
+- The plugin install file picker now only allows selecting a single zip file
+
+- Removed `runFunctionalityTest` and `cancelGetProgressThumbnails` from the plugin interface
+- Made the `plugin` field optional in universal formats
+- Missing required fields are now handled in the `UniversalFormat` constructors instead of at plugin level
+- Thumbnail download errors are now handled app-side instead of in plugins
+- Aligned the internal tester plugin with the external example plugins
+
+- Single failing list element or partial scrape no longer fails the whole plugin call in bundled plugins
+- Scraping exceptions now include the element's HTML in bundled plugins
+- Fixed pornhub crashing on invalid `previewVideo` URLs
+
+- Fixed copying a video link on Desktop
+- Fixed invalid images being downloaded into the database
+- Fixed the changelog in the update dialog not being scrollable
+
+- All `dart:io` network traffic is now routed through rhttp, which makes scraped data load more consistently and prepares for app-wide proxy support
+- Switched rhttp to a fork (codeberg.org/Hedon-dev/rhttp) with a fixed `dart:io` shim (`IoCompatibleClient`)
+- Video streams and previews now receive the default HTTP headers along with plugin overrides, and headers are matched case-insensitively
+
+**Full Changelog**: https://github.com/Hedon-Haven/Hedon-Haven/compare/v0.6.8...v0.6.9
