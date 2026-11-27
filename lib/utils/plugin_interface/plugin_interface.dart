@@ -302,17 +302,6 @@ class PluginInterface {
     _isolateReady = Completer();
   }
 
-  /// Test full plugin functionality and return false if it fails
-  //TODO: Implement proper testing
-  // Future<bool> runFunctionalityTest() async {
-  //   try {
-  //     return (await _callFunction("runFunctionalityTest", [])).result as bool;
-  //   } catch (e) {
-  //     logger.i("Functionality test failed with: $e");
-  //     return false;
-  //   }
-  // }
-
   /// Parses a raw external link and returns an ExternalLinkParsed
   Future<ExternalLinkParsed> parseExternalLink(Uri uri) async {
     final call = await _callFunction("parseExternalLink", [uri.toString()]);
@@ -397,10 +386,6 @@ class PluginInterface {
         .toList();
     list.networkTraces = call.networkTraces;
     return list;
-  }
-
-  void cancelGetProgressThumbnails() {
-    return;
   }
 
   Future<Uri?> getCommentUriFromID(String commentID, String videoID) async {

@@ -358,7 +358,6 @@ class PluginManager {
   /// 1. Create a PluginInterface -> tests plugin.yaml validity
   /// 2. Runs .init() -> tests both isolate functionality (e.g. the javascript runtime)
   /// and the plugins internal init function
-  /// 3. Runs .runFunctionalityTest() -> tests basic plugins functionality
   static Future<bool> testExternalPlugin(Directory pluginDir) async {
     if (!(await pluginDir.exists())) {
       throw Exception("Plugin directory ${pluginDir.path} does not exist");
@@ -373,8 +372,6 @@ class PluginManager {
     try {
       tempPlugin = PluginInterface(pluginDir.path);
       await tempPlugin.init(tempCacheDir.path);
-      // runFunctionalityTest isn't implemented yet, so treat a successful
-      // init as a pass for now.
       testResult = true;
     } catch (e, st) {
       logger.e("Failed to test plugin in ${pluginDir.path}: $e\n$st");
