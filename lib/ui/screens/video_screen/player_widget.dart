@@ -8,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '/services/bug_report_manager.dart';
 import '/ui/screens/bug_report/bug_reports_list.dart';
+import '/ui/widgets/safe_image.dart';
 import '/utils/exceptions.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
@@ -488,10 +489,13 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                                                   child: showProgressThumbnail
                                                       ? widget.progressThumbnails !=
                                                               null
-                                                          ? Image.memory(
-                                                              timelineProgressThumbnail,
+                                                          ? SafeMemoryImage(
+                                                              bytes:
+                                                                  timelineProgressThumbnail,
                                                               width: 160,
-                                                              height: 90)
+                                                              height: 90,
+                                                              errorWidget:
+                                                                  const SizedBox())
                                                           : Container(
                                                               color:
                                                                   Colors.black,

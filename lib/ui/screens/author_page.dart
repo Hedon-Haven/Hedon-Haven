@@ -132,10 +132,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             onPrimary: () => Navigator.pop(context),
             content: SingleChildScrollView(
                 child: SafeNetworkImage(
-                    url: authorPage?.banner,
-                    fit: BoxFit.contain,
-                    errorWidget: Icon(Icons.error,
-                        color: Theme.of(context).colorScheme.error)))));
+                    url: authorPage?.banner, fit: BoxFit.contain))));
   }
 
   void openAvatarInFullscreen() {
@@ -147,10 +144,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             onPrimary: () => Navigator.pop(context),
             content: SingleChildScrollView(
                 child: SafeNetworkImage(
-                    url: authorPage?.avatar,
-                    fit: BoxFit.contain,
-                    errorWidget: Icon(Icons.error,
-                        color: Theme.of(context).colorScheme.error)))));
+                    url: authorPage?.avatar, fit: BoxFit.contain))));
   }
 
   void createAuthorScreenBugReport() async {
@@ -315,13 +309,8 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                                                           child: SafeNetworkImage(
                                                               url: authorPage
                                                                   ?.banner,
-                                                              fit: BoxFit.cover,
-                                                              errorWidget: Icon(
-                                                                  Icons.error,
-                                                                  color: Theme.of(
-                                                                          context)
-                                                                      .colorScheme
-                                                                      .error))))))
+                                                              fit: BoxFit
+                                                                  .cover)))))
                                         ],
                                         buildAuthorDetails(),
                                         if (isMobile) buildAuthorDescription(),

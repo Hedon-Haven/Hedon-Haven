@@ -252,10 +252,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             },
             content: SingleChildScrollView(
                 child: SafeNetworkImage(
-                    url: comment.profilePicture,
-                    fit: BoxFit.contain,
-                    errorWidget: Icon(Icons.error,
-                        color: Theme.of(context).colorScheme.error)))));
+                    url: comment.profilePicture, fit: BoxFit.contain))));
   }
 
   void shareVideo() async {

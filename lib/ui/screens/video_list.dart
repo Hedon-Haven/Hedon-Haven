@@ -458,22 +458,10 @@ class _VideoListState extends State<VideoList> {
                             ? SafeNetworkImage(
                                 url: videoList![index].thumbnail,
                                 headers: videoList![index].thumbnailHttpHeaders,
-                                fit: BoxFit.contain,
-                                errorWidget: Icon(
-                                  Icons.error,
-                                  size: constraints.maxWidth / 8,
-                                  color: Theme.of(context).colorScheme.error,
-                                ))
-                            : Image.memory(videoList![index].thumbnailBinary,
-                                errorBuilder: (context, error, stackTrace) {
-                                logger.e(
-                                    "Failed to load binary thumbnail: $error\n$stackTrace");
-                                return Icon(
-                                  Icons.nearby_error,
-                                  size: constraints.maxWidth / 8,
-                                  color: Theme.of(context).colorScheme.error,
-                                );
-                              }, fit: BoxFit.fill),
+                                fit: BoxFit.contain)
+                            : SafeMemoryImage(
+                                bytes: videoList![index].thumbnailBinary,
+                                fit: BoxFit.fill),
               )),
           // Show previewVideo loading progress
           // TODO: Maybe find a way to show the actual progress of the download
@@ -534,13 +522,15 @@ class _VideoListState extends State<VideoList> {
               top: 8,
               child: Skeleton.replace(
                   child: !isLoadingResults
-                      ? Image.file(
-                          File(
-                              "${cacheDir?.path}/${videoList![index].plugin?.codeName}"),
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.question_mark),
+                      ? SafeFileImage(
+                          file: cacheDir == null ||
+                                  videoList![index].plugin == null
+                              ? null
+                              : File(
+                                  "${cacheDir!.path}/${videoList![index].plugin!.codeName}"),
                           width: 20,
-                          height: 20)
+                          height: 20,
+                          errorWidget: const Icon(Icons.question_mark))
                       // TODO: Fix skeletonizer not showing
                       : const Placeholder())),
           if (widget.deleteVideo != null) ...[
