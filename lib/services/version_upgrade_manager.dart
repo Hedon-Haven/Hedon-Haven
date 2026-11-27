@@ -76,6 +76,11 @@ Future<bool> startUpgrade(String currentVersion) async {
       case "0.6.7":
         // The date columns in the db are unix time (int) instead of text now
         await purgeDatabase();
+        continue case0_6_8;
+      case0_6_8:
+      case "0.6.8":
+        // The list view mode setting was removed
+        await sharedStorage.remove("appearance_list_view");
         break;
       default:
         logger.e("Unknown version: $currentVersion. Not changing anything");
