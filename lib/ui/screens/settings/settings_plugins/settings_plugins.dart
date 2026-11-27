@@ -288,7 +288,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
     await showDialog(
         context: context,
         builder: (BuildContext context) => ThemedDialog(
-            title: "About ${plugin.prettyName}",
+            title: plugin.prettyName,
             primaryText: "Close",
             onPrimary: () => Navigator.pop(context),
             content: SingleChildScrollView(
