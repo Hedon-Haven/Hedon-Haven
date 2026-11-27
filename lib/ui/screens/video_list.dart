@@ -235,7 +235,7 @@ class _VideoListState extends State<VideoList> {
   }
 
   void setPreviewSource(int index) {
-    if (videoList![index].previewVideo == null) {
+    if (videoList![index].previewVideo?.toString().isEmpty ?? true) {
       logger.i("Preview URI empty, not playing");
       return;
     }
