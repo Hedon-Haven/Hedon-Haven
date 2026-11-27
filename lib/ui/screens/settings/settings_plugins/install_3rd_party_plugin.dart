@@ -138,7 +138,7 @@ class _Install3rdPartyPluginScreenState
           await PluginManager.extractNewPlugin(selectedFile.path!);
       configFormatted = "Name: ${pluginConfigMap!["metadata"]["prettyName"]} "
           "(${pluginConfigMap!["metadata"]["codeName"]})"
-          "\nProvider for: ${pluginConfigMap!["providerData"]["providerUrl"]}"
+          "\nProvider for: ${pluginConfigMap!["providerData"]["serviceUrl"]}"
           "\nVersion: ${pluginConfigMap!["metadata"]["version"]}"
           "\nDeveloper: ${pluginConfigMap!["metadata"]["developer"]}"
           "\nContact email: ${pluginConfigMap!["metadata"]["contactEmail"] ?? "Not provided"}"
