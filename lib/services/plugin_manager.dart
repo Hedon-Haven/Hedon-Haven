@@ -116,8 +116,11 @@ class PluginManager {
       if (!(await _pluginsDir!.exists())) {
         await _pluginsDir!.create();
       } else {
-        await for (var dir
-            in _pluginsDir!.list().where((e) => e is Directory)) {
+        // Skip leftover update backups
+        // TODO: Show message to user if .bak dirs are detected, saying the update (or its rollback) did not finish cleanly
+        await for (var dir in _pluginsDir!
+            .list()
+            .where((e) => e is Directory && !e.path.endsWith(".bak"))) {
           PluginInterface tempPlugin;
           try {
             tempPlugin = PluginInterface(dir.path);
@@ -354,36 +357,6 @@ class PluginManager {
     return pluginConfigMap;
   }
 
-  /// Fully tests an externally stored plugin
-  /// 1. Create a PluginInterface -> tests plugin.yaml validity
-  /// 2. Runs .init() -> tests both isolate functionality (e.g. the javascript runtime)
-  /// and the plugins internal init function
-  static Future<bool> testExternalPlugin(Directory pluginDir) async {
-    if (!(await pluginDir.exists())) {
-      throw Exception("Plugin directory ${pluginDir.path} does not exist");
-    }
-    // Create temp cache dir for plugin
-    Directory tempCacheDir = Directory("${pluginDir.path}/cache");
-    logger.d("Creating cache dir ${tempCacheDir.path}");
-    await tempCacheDir.create();
-
-    bool testResult = false;
-    PluginInterface? tempPlugin;
-    try {
-      tempPlugin = PluginInterface(pluginDir.path);
-      await tempPlugin.init(tempCacheDir.path);
-      testResult = true;
-    } catch (e, st) {
-      logger.e("Failed to test plugin in ${pluginDir.path}: $e\n$st");
-    } finally {
-      tempPlugin?.dispose();
-      // remove cache dir to avoid copying it over if user decides to install
-      await deleteDirectory(tempCacheDir);
-    }
-    logger.i("Functionality tests passed");
-    return testResult;
-  }
-
   /// Imports and fully enables the new plugin
   static Future<void> importNewPlugin(Map<String, dynamic> pluginConfig) async {
     final String installedPath =
@@ -405,8 +378,8 @@ class PluginManager {
         logger.e("Failed to import plugin "
             "${pluginConfig["metadata"]["codeName"]}: $e\n$stacktrace");
         // Don't let a failed cleanup mask the original error
-        await deleteDirectory(Directory(installedPath)).catchError(
-            (e) => logger.w("Failed to delete $installedPath: $e"));
+        await deleteDirectory(Directory(installedPath))
+            .catchError((e) => logger.w("Failed to delete $installedPath: $e"));
         rethrow;
       } finally {
         await deleteDirectory(Directory(pluginConfig["tempPluginPath"]))
@@ -505,8 +478,7 @@ class PluginManager {
   }
 
   /// Update a single plugin
-  /// The new plugin will be fully tested, however this process is technically
-  /// not fully atomic / reversible if an error occurs after testExternalPlugin
+  /// The old version is backed up and restored if installing the new one fails
   static Future<void> updatePlugin(PluginInterface oldPlugin) async {
     logger.i("Updating plugin ${oldPlugin.codeName}");
 
@@ -562,24 +534,53 @@ class PluginManager {
 
       tempDir = pluginConfig["tempPluginPath"];
 
-      // Test plugin loading and functionality.
-      // If this succeeds we assume the new plugin is fully valid and
-      // replace the old plugin with it
-      if (!(await testExternalPlugin(Directory(tempDir!)))) {
-        throw Exception("3rd party plugin functionality tests failed");
-      }
+      // Validates plugin.yaml (including apiVersion)
+      PluginInterface(tempDir!);
+
+      final installPath = p.join(_pluginsDir!.path, codename!);
+      final backupDir = Directory("$installPath.bak");
 
       // Re-acquire lock to update plugin files
       await _lock.synchronized(() async {
-        oldPlugin.dispose();
-        PluginInterface newPlugin =
-            await _importPlugin(tempDir!, p.join(_pluginsDir!.path, codename!));
-        // Re-enable plugin if needed
-        if (providers!.isNotEmpty) {
-          await _enablePlugin(newPlugin);
-          await _setAsProvider(newPlugin, providers!);
-          await _writeProvidersSetsToSettings();
+        if (await backupDir.exists()) {
+          await backupDir.delete(recursive: true);
         }
+        oldPlugin.dispose();
+        await Directory(installPath).rename(backupDir.path);
+        PluginInterface? newPlugin;
+        try {
+          newPlugin = await _importPlugin(tempDir!, installPath);
+          // Re-enable plugin if needed
+          if (providers!.isNotEmpty) {
+            await _enablePlugin(newPlugin);
+            await _setAsProvider(newPlugin, providers!);
+            await _writeProvidersSetsToSettings();
+          }
+        } catch (e, st) {
+          logger.e("Failed to install update, restoring old version: $e\n$st");
+          if (newPlugin != null) {
+            await _disablePlugin(newPlugin);
+          }
+          await deleteDirectory(Directory(installPath));
+          await backupDir.rename(installPath);
+          final restoredPlugin = PluginInterface(installPath);
+          _allPlugins
+            ..removeWhere((e) => e == restoredPlugin)
+            ..add(restoredPlugin);
+          try {
+            if (providers!.isNotEmpty) {
+              await _enablePlugin(restoredPlugin);
+              await _setAsProvider(restoredPlugin, providers!);
+              await _writeProvidersSetsToSettings();
+            }
+          } catch (e, st) {
+            // Don't let this mask the original error
+            logger.e("Failed to re-enable restored old version: $e\n$st");
+          }
+          rethrow;
+        }
+        await deleteDirectory(backupDir)
+            .catchError((e) => logger.w("Failed to delete update backup: $e"));
       });
     } catch (e, st) {
       logger.e("Failed to update plugin: $e\n$st");
@@ -588,7 +589,8 @@ class PluginManager {
       // Perform cleanup no matter the outcome
       await File(tempFile).delete();
       if (tempDir != null) {
-        await Directory(tempDir).delete(recursive: true);
+        await deleteDirectory(Directory(tempDir))
+            .catchError((e) => logger.w("Failed to delete temp dir: $e"));
       }
     }
 
