@@ -6,28 +6,6 @@ import 'package:material_ui/material_ui.dart';
 import '/utils/global_vars.dart';
 import '/utils/image_url.dart';
 
-/// Shows [errorWidget], or a red error icon if none is given
-class _ErrorFallback extends StatelessWidget {
-  final Widget? errorWidget;
-  final double? width;
-  final double? height;
-
-  const _ErrorFallback({this.errorWidget, this.width, this.height});
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-      width: width,
-      height: height,
-      child: errorWidget ??
-          // Scale with the available space, fall back to the default icon size if unbounded
-          LayoutBuilder(
-              builder: (context, constraints) => Icon(Icons.error,
-                  size: constraints.biggest.shortestSide.isFinite
-                      ? constraints.biggest.shortestSide / 4
-                      : null,
-                  color: Theme.of(context).colorScheme.error)));
-}
-
 /// Image.network, but null, empty and mock urls show [errorWidget] without making a request
 /// [errorWidget] defaults to a red error icon
 class SafeNetworkImage extends StatelessWidget {
@@ -125,4 +103,26 @@ class SafeFileImage extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) => _ErrorFallback(
                 errorWidget: errorWidget, width: width, height: height));
   }
+}
+
+/// Shows [errorWidget], or a red error icon if none is given
+class _ErrorFallback extends StatelessWidget {
+  final Widget? errorWidget;
+  final double? width;
+  final double? height;
+
+  const _ErrorFallback({this.errorWidget, this.width, this.height});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      width: width,
+      height: height,
+      child: errorWidget ??
+          // Scale with the available space, fall back to the default icon size if unbounded
+          LayoutBuilder(
+              builder: (context, constraints) => Icon(Icons.error,
+                  size: constraints.biggest.shortestSide.isFinite
+                      ? constraints.biggest.shortestSide / 4
+                      : null,
+                  color: Theme.of(context).colorScheme.error)));
 }
