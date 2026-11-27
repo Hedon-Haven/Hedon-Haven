@@ -389,20 +389,28 @@ class PluginManager {
     final String installedPath =
         p.join(_pluginsDir!.path, pluginConfig["metadata"]["codeName"]);
     await _lock.synchronized(() async {
+      PluginInterface? newPlugin;
       try {
-        PluginInterface newPlugin =
+        newPlugin =
             await _importPlugin(pluginConfig["tempPluginPath"], installedPath);
         await _enablePlugin(newPlugin);
         await _setAsProvider(newPlugin, ProviderType.values.toSet());
         await _writeProvidersSetsToSettings();
       } catch (e, stacktrace) {
-        await deleteDirectory(Directory(installedPath));
+        if (newPlugin != null) {
+          // Remove from enabled/failed/provider sets and kill the isolate
+          await _disablePlugin(newPlugin);
+          _allPlugins.remove(newPlugin);
+        }
         logger.e("Failed to import plugin "
-            "${pluginConfig["metadata"]["codeName"]} "
-            "(all plugin files deleted): $e\n$stacktrace");
+            "${pluginConfig["metadata"]["codeName"]}: $e\n$stacktrace");
+        // Don't let a failed cleanup mask the original error
+        await deleteDirectory(Directory(installedPath)).catchError(
+            (e) => logger.w("Failed to delete $installedPath: $e"));
         rethrow;
       } finally {
-        await deleteDirectory(Directory(pluginConfig["tempPluginPath"]));
+        await deleteDirectory(Directory(pluginConfig["tempPluginPath"]))
+            .catchError((e) => logger.w("Failed to delete temp dir: $e"));
       }
     });
   }
