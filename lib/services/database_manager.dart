@@ -6,6 +6,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '/services/plugin_manager.dart';
 import '/utils/global_vars.dart';
+import '/utils/image_url.dart';
 import '/utils/plugin_interface/plugin_interface.dart';
 import '/utils/try_parse.dart';
 import '/utils/universal_formats.dart';
@@ -326,7 +327,7 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
 
   // update values
   newEntryData["thumbnailBinary"] = null;
-  if (result.thumbnail != null) {
+  if (isLoadableImageUrl(result.thumbnail)) {
     try {
       newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
           Uri.parse(result.thumbnail!), result.thumbnailHttpHeaders);
@@ -377,7 +378,7 @@ Future<void> addToFavorites(UniversalVideoPreview result) async {
 
   // update values
   newEntryData["thumbnailBinary"] = null;
-  if (result.thumbnail != null) {
+  if (isLoadableImageUrl(result.thumbnail)) {
     try {
       newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
           Uri.parse(result.thumbnail!), result.thumbnailHttpHeaders);
