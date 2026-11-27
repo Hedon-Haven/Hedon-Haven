@@ -152,10 +152,8 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     return playListMap;
   }
 
-  Future<List<UniversalVideoPreview>> _parseVideoList(
-      List resultsList,
-      {String? authorNamePassed,
-      String? authorIDPassed}) async {
+  Future<List<UniversalVideoPreview>> _parseVideoList(List resultsList,
+      {String? authorNamePassed, String? authorIDPassed}) async {
     // convert the divs into UniversalSearchResults
     List<UniversalVideoPreview> results = [];
     for (var element in resultsList) {

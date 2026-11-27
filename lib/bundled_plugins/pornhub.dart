@@ -281,9 +281,11 @@ class _PornhubIsolate extends BundledPluginIsolate {
   /// Returns null if the string can't be converted
   int? _convertHumanReadableStringToInt(String? intAsString) {
     if (intAsString == "just added") return 0;
-    final match = RegExp(r"^(\d+(?:\.\d+)?)([KMB])?$").firstMatch(intAsString ?? "");
+    final match =
+        RegExp(r"^(\d+(?:\.\d+)?)([KMB])?$").firstMatch(intAsString ?? "");
     if (match == null) return null;
-    final multiplier = {"K": 1000, "M": 1000000, "B": 1000000000}[match.group(2)];
+    final multiplier =
+        {"K": 1000, "M": 1000000, "B": 1000000000}[match.group(2)];
     return (double.parse(match.group(1)!) * (multiplier ?? 1)).round();
   }
 
@@ -616,19 +618,21 @@ class _PornhubIsolate extends BundledPluginIsolate {
         rawHtml.querySelector('script[type="application/ld+json"]')!.text);
 
     // ratings
-    int? ratingsPositive = tryParse(() => int.parse(jsonLD["interactionStatistic"]
-        .firstWhere((e) => e["interactionType"].endsWith("/LikeAction"))[
-            "userInteractionCount"]
-        .toString()
-        .replaceAll(",", "")));
+    int? ratingsPositive = tryParse(() =>
+        int.parse(jsonLD["interactionStatistic"]
+            .firstWhere((e) => e["interactionType"].endsWith("/LikeAction"))[
+        "userInteractionCount"]
+            .toString()
+            .replaceAll(",", "")));
     int? ratingsTotal = ratingsPositive;
 
     // For some reason on mobile the full exact view amount is always shown
-    int? viewsTotal = tryParse(() => int.parse(jsonLD["interactionStatistic"]
-        .firstWhere((e) => e["interactionType"].endsWith("/WatchAction"))[
-            "userInteractionCount"]
-        .toString()
-        .replaceAll(",", "")));
+    int? viewsTotal = tryParse(() =>
+        int.parse(jsonLD["interactionStatistic"]
+            .firstWhere((e) => e["interactionType"].endsWith("/WatchAction"))[
+        "userInteractionCount"]
+            .toString()
+            .replaceAll(",", "")));
 
     // author
     Element? authorRaw =
