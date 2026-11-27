@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -22,8 +20,6 @@ class _Install3rdPartyPluginScreenState
   String? fileName;
   Map<String, dynamic>? pluginConfigMap;
   String? configFormatted;
-  bool? isTestingPlugin;
-  bool funcTestFailed = false;
   bool? isImportingPlugin;
   bool allowPop = false;
 
@@ -45,8 +41,6 @@ class _Install3rdPartyPluginScreenState
       fileName = null;
       pluginConfigMap = null;
       configFormatted = null;
-      isTestingPlugin = null;
-      funcTestFailed = false;
       isImportingPlugin = null;
     });
   }
@@ -73,32 +67,6 @@ class _Install3rdPartyPluginScreenState
                     "Importing plugins from untrusted sources may put your device at risk! "
                     "The developers of Hedon Haven take no responsibility for any damage or "
                     "unintended consequences of using plugins from untrusted sources.",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ));
-        });
-  }
-
-  void showFunctionalityFailWarning() async {
-    await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return PopScope(
-              canPop: false,
-              child: ThemedDialog(
-                title: "Functionality tests failed",
-                primaryText: "Import anyway",
-                onPrimary: () {
-                  Navigator.pop(context);
-                  importPlugin();
-                },
-                secondaryText: "Cancel import",
-                onSecondary: () {
-                  resetProgress();
-                  Navigator.of(context).pop();
-                },
-                content: const Text(
-                    "Some functionality tests failed. The plugin might not "
-                    "fully work as intended.",
                     style: TextStyle(fontWeight: FontWeight.bold)),
               ));
         });
@@ -162,33 +130,6 @@ class _Install3rdPartyPluginScreenState
     logger.i("Finished extracting plugin, waiting for user confirmation");
   }
 
-  void testPlugin() async {
-    setState(() => isTestingPlugin = true);
-    logger.i("Testing plugin functionality");
-    try {
-      final passed = await PluginManager.testExternalPlugin(
-          Directory(pluginConfigMap!["tempPluginPath"]));
-      if (!passed) {
-        logger.w("Functionality tests (fully/partially) failed");
-        setState(() {
-          isTestingPlugin = false;
-          funcTestFailed = true;
-        });
-        showFunctionalityFailWarning();
-      } else {
-        setState(() => isTestingPlugin = false);
-        importPlugin();
-      }
-    } catch (e, stacktrace) {
-      logger.e("Failed to run functionality tests: $e\n$stacktrace");
-      showErrorDialog("Failed to run functionality tests", "$e\n$stacktrace");
-      setState(() {
-        funcTestFailed = true;
-        isTestingPlugin = false;
-      });
-    }
-  }
-
   void importPlugin() async {
     setState(() => isImportingPlugin = true);
     try {
@@ -205,8 +146,7 @@ class _Install3rdPartyPluginScreenState
   @override
   Widget build(BuildContext context) {
     return PopScope(
-        canPop: allowPop ||
-            isImportingPlugin == isTestingPlugin && isImportingPlugin != true,
+        canPop: allowPop || isImportingPlugin != true,
         onPopInvokedWithResult: (goingToPop, __) {
           if (!goingToPop) {
             showDialog(
@@ -259,7 +199,7 @@ class _Install3rdPartyPluginScreenState
                                       backgroundColor: Theme.of(context)
                                           .colorScheme
                                           .primary),
-                                  onPressed: isTestingPlugin != null
+                                  onPressed: isImportingPlugin != null
                                       ? null
                                       : () => extractPlugin(),
                                   child: Row(children: [
@@ -294,7 +234,7 @@ class _Install3rdPartyPluginScreenState
                                 )
                               ],
                             ),
-                            if (isTestingPlugin == null)
+                            if (isImportingPlugin == null)
                               Row(mainAxisSize: MainAxisSize.max, children: [
                                 Spacer(),
                                 ElevatedButton(
@@ -305,39 +245,11 @@ class _Install3rdPartyPluginScreenState
                                         backgroundColor: Theme.of(context)
                                             .colorScheme
                                             .primary),
-                                    onPressed: () => testPlugin(),
-                                    child: Text("Test and Import")),
+                                    onPressed: () => importPlugin(),
+                                    child: Text("Import")),
                                 Spacer()
                               ])
                           ],
-                          if (isTestingPlugin != null)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text("Functionality tests:",
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium),
-                                isTestingPlugin!
-                                    ? SizedBox(
-                                        width: 30,
-                                        height: 30,
-                                        child: CircularProgressIndicator())
-                                    : Icon(
-                                        funcTestFailed
-                                            ? Icons.error
-                                            : Icons.check_circle,
-                                        size: 30,
-                                        color: funcTestFailed
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .error
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .primary)
-                              ],
-                            ),
                           if (isImportingPlugin != null) ...[
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
