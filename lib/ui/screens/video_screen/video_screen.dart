@@ -99,7 +99,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       videoSuggestions = loadingHandler.getVideoSuggestions(
           videoMetadata.plugin!, videoMetadata.iD, videoMetadata.rawHtml, null);
       // Pre-load images so they are immediately available when the skeletonizer stops
-      await precacheNetworkImages(this, [videoMetadata.authorAvatar]);
+      await precacheNetworkImages(this, [
+        videoMetadata.authorAvatar,
+        ...?videoMetadata.actors?.map((a) => a.avatar)
+      ]);
       if (!mounted) return;
       setState(() {
         isLoadingMetadata = false;
@@ -187,6 +190,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       setState(() => isLoadingComments = true);
       comments = await loadingHandler.getCommentResults(
           videoMetadata.plugin!, videoMetadata.iD, videoMetadata.rawHtml, null);
+      // TODO: Make the amount of precached avatars dynamic
+      await precacheNetworkImages(
+          this, comments?.take(10).map((c) => c.profilePicture).toList() ?? []);
+      if (!mounted) return;
       setState(() => isLoadingComments = false);
       logger.d("Finished getting comments");
       loadedCommentsOnce = true;
@@ -380,9 +387,20 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           ? "Force loading additional results to make list scrollable"
           : "Loading additional results");
       setState(() => isLoadingMoreComments = true);
+      final previousCount = comments?.length ?? 0;
       comments = await loadingHandler.getCommentResults(videoMetadata.plugin!,
           videoMetadata.iD, videoMetadata.rawHtml, comments);
+      // TODO: Make the amount of precached avatars dynamic
+      await precacheNetworkImages(
+          this,
+          comments
+                  ?.skip(previousCount)
+                  .take(10)
+                  .map((c) => c.profilePicture)
+                  .toList() ??
+              []);
       logger.i("Finished getting more results");
+      if (!mounted) return;
       // This also updates the scraping report button
       setState(() => isLoadingMoreComments = false);
     }

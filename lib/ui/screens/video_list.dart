@@ -209,6 +209,11 @@ class _VideoListState extends State<VideoList> {
     isInternetConnected = !(await (Connectivity().checkConnectivity()))
         .contains(ConnectivityResult.none);
     logger.d("Internet connected: $isInternetConnected");
+    // TODO: Make the amount of precached thumbnails dynamic
+    if (widget.useNetworkThumbnails) {
+      await precacheNetworkImages(
+          this, videoList?.take(10).map((v) => v.thumbnail).toList() ?? []);
+    }
     // Make sure context is still mounted
     if (mounted) setState(() => isLoadingResults = false);
   }
@@ -219,6 +224,7 @@ class _VideoListState extends State<VideoList> {
             0.95 * widget.scrollController.position.maxScrollExtent) {
       logger.i("Loading additional results");
       setState(() => isLoadingMoreResults = true);
+      final previousCount = videoList?.length ?? 0;
       Future<List<UniversalVideoPreview>?> newVideoResults = Future.value([]);
       if (widget.loadMoreResults == null) {
         logger.d(
@@ -228,7 +234,20 @@ class _VideoListState extends State<VideoList> {
         newVideoResults = widget.loadMoreResults!();
       }
 
-      videoList = await newVideoResults;
+      final newResults = await newVideoResults;
+      // TODO: Make the amount of precached thumbnails dynamic
+      if (widget.useNetworkThumbnails) {
+        await precacheNetworkImages(
+            this,
+            newResults
+                    ?.skip(previousCount)
+                    .take(10)
+                    .map((v) => v.thumbnail)
+                    .toList() ??
+                []);
+      }
+      if (!mounted) return;
+      videoList = newResults;
       logger.i("Finished getting more results");
       setState(() => isLoadingMoreResults = false);
     }
