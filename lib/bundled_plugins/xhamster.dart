@@ -173,7 +173,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         UniversalVideoPreview uniResult = UniversalVideoPreview(
           iD: iD,
           title: title,
-          plugin: null,
           thumbnail: element["imageURL"],
           previewVideo: tryParse(() => Uri.parse(element["trailerURL"])),
           duration: tryParse(() => Duration(seconds: element["duration"])),
@@ -203,7 +202,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         results.add(UniversalVideoPreview(
             iD: iD,
             title: title,
-            plugin: null,
             unavailableFields: {},
             scrapeFailException: ScrapingException("$e\n$element", true)));
       }
@@ -497,7 +495,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
       iD: videoId,
       m3u8Uris: m3u8Map,
       title: jscriptMap["videoModel"]!["title"]!,
-      plugin: null,
       universalVideoPreview: uvp,
       authorID: authorID!,
       authorName: authorName,
@@ -703,7 +700,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
           // The comment body includes html chars like &amp and &nbsp, which need to be cleaned up
           commentBody: commentBody,
           hidden: false,
-          plugin: null,
           authorID: comment["userId"]?.toString(),
           countryID: comment["author"]?["personalInfo"]?["geo"]?["countryCode"],
           orientation: comment["author"]?["personalInfo"]?["orientation"]
@@ -734,7 +730,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
             author: author,
             commentBody: commentBody,
             hidden: false,
-            plugin: null,
             unavailableFields: {},
             scrapeFailException: ScrapingException("$e\n$comment", true)));
       }
@@ -791,7 +786,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         UniversalVideoPreview relatedVideo = UniversalVideoPreview(
           iD: iD,
           title: title,
-          plugin: null,
           thumbnail: result["thumbURL"],
           previewVideo: tryParse(() => Uri.parse(result["trailerURL"])),
           duration: tryParse(() => Duration(seconds: result["duration"])),
@@ -823,7 +817,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
         relatedVideos.add(UniversalVideoPreview(
             iD: iD,
             title: title,
-            plugin: null,
             unavailableFields: {},
             scrapeFailException: ScrapingException("$e\n$result", true)));
       }
@@ -1085,7 +1078,6 @@ class _XHamsterIsolate extends BundledPluginIsolate {
     return UniversalAuthorPage(
       iD: authorID,
       name: name!,
-      plugin: null,
       avatar: thumbnail,
       aliases: jscriptMap["infoComponent"]?["aliases"]?.split(", "),
       description: shortDescription,

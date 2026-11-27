@@ -153,7 +153,6 @@ class _TesterIsolate extends BundledPluginIsolate {
       (index) => UniversalVideoPreview(
         iD: "${(index * pi * 10000).toInt()}",
         title: "Test homepage video $index, page $page",
-        plugin: null,
         thumbnail: "https://placehold.co/1280x720.png",
         thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(
@@ -210,7 +209,6 @@ class _TesterIsolate extends BundledPluginIsolate {
         iD: "${(index * pi * 10000).toInt()}",
         title: "Test result video $index, page $page, "
             "request ${request.searchString}",
-        plugin: null,
         thumbnail: "https://placehold.co/1280x720.png",
         thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(
@@ -255,7 +253,6 @@ class _TesterIsolate extends BundledPluginIsolate {
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
       },
       title: "Tester video metadata title",
-      plugin: null,
       universalVideoPreview: uvp,
       // Uncomment to test partial metadata scrape fail
       //scrapeFailException: ScrapingException("Test fail scrape message"),
@@ -339,7 +336,6 @@ class _TesterIsolate extends BundledPluginIsolate {
         commentBody:
             List<String>.filled(5, "test comment $index, page $page ").join(),
         hidden: index % 4 == 0,
-        plugin: null,
         authorID: "author-$index",
         countryID: "US",
         orientation: null,
@@ -359,7 +355,6 @@ class _TesterIsolate extends BundledPluginIsolate {
                       List<String>.filled(5, "test reply comment $index ")
                           .join(),
                   hidden: index % 4 == 0,
-                  plugin: null,
                   authorID: "author-reply-$index",
                   countryID: "US",
                   orientation: null,
@@ -399,7 +394,6 @@ class _TesterIsolate extends BundledPluginIsolate {
       (index) => UniversalVideoPreview(
         iD: "${(index * pi * 10000).toInt()}",
         title: "Test suggestion video $index",
-        plugin: null,
         thumbnail: "https://placehold.co/1280x720.png",
         thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(
@@ -434,7 +428,6 @@ class _TesterIsolate extends BundledPluginIsolate {
     return UniversalAuthorPage(
       iD: authorID,
       name: "Test author name",
-      plugin: null,
       avatar: "https://placehold.co/240x240.png",
       banner: "https://placehold.co/1270x400.png",
       aliases: ["Test alias 1", "Test alias 2"],
@@ -469,7 +462,6 @@ class _TesterIsolate extends BundledPluginIsolate {
       (index) => UniversalVideoPreview(
         iD: "${(index * pi * 10000).toInt()}",
         title: "Test author video $index, page $page",
-        plugin: null,
         thumbnail: "https://placehold.co/1280x720.png",
         thumbnailHttpHeaders: {"X-Ignore": "example-header"},
         previewVideo: Uri.parse(

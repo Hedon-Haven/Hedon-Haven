@@ -190,7 +190,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
         UniversalVideoPreview uniResult = UniversalVideoPreview(
           iD: iD,
           title: title,
-          plugin: null,
           thumbnail: thumbnail,
           thumbnailHttpHeaders: {"Referer": "https://www.pornhub.com/"},
           previewVideo:
@@ -221,7 +220,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
         results.add(UniversalVideoPreview(
             iD: iD,
             title: title,
-            plugin: null,
             unavailableFields: {},
             scrapeFailException:
                 ScrapingException("$e\n${resultElement.outerHtml}", true)));
@@ -703,7 +701,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
       m3u8Uris: m3u8Map,
       playbackHttpHeaders: {"Referer": "https://www.pornhub.com/"},
       title: jscriptMap["video_title"]!,
-      plugin: null,
       universalVideoPreview: uvp,
       authorID: authorId,
       authorName: authorString,
@@ -864,7 +861,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
           author: author,
           commentBody: commentBody,
           hidden: hidden,
-          plugin: null,
           authorID: tempComment
               .querySelector('a[class="userLink clearfix"]')
               ?.attributes["href"]
@@ -899,7 +895,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
             author: author,
             commentBody: commentBody,
             hidden: hidden,
-            plugin: null,
             unavailableFields: {},
             scrapeFailException:
             ScrapingException("$e\n${comment.outerHtml}", true));
@@ -1219,7 +1214,6 @@ class _PornhubIsolate extends BundledPluginIsolate {
     return UniversalAuthorPage(
         iD: authorID,
         name: authorName,
-        plugin: null,
         avatar: thumbnail,
         banner: banner,
         description: description,

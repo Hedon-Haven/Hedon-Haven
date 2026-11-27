@@ -359,7 +359,6 @@ class UniversalVideoPreview {
   UniversalVideoPreview.skeleton()
       : this(
             iD: "",
-            plugin: null,
             thumbnail: "mockThumbnail",
             title: BoneMock.paragraph,
             viewsTotal: 100,
@@ -371,7 +370,7 @@ class UniversalVideoPreview {
   UniversalVideoPreview({
     required String? iD,
     required String? title,
-    required this.plugin,
+    this.plugin,
     this.thumbnail,
     this.thumbnailHttpHeaders,
     Uint8List? thumbnailBinary,
@@ -511,7 +510,6 @@ class UniversalVideoMetadata {
             playbackHttpHeaders: {},
             title: List<String>.filled(10, 'title').join(),
             // long string
-            plugin: null,
             universalVideoPreview: UniversalVideoPreview.skeleton(),
             authorID: 'none',
             authorName: BoneMock.name,
@@ -528,7 +526,7 @@ class UniversalVideoMetadata {
     required this.m3u8Uris,
     this.playbackHttpHeaders,
     required this.title,
-    required this.plugin,
+    this.plugin,
     required this.universalVideoPreview,
     required this.authorID,
     this.authorName,
@@ -665,7 +663,6 @@ class UniversalAuthorPage {
       : this(
             iD: iD,
             name: BoneMock.name,
-            plugin: null,
             avatar: "mockAvatar",
             banner: "mockBanner",
             externalLinks: {"": Uri.parse("")},
@@ -679,7 +676,7 @@ class UniversalAuthorPage {
   UniversalAuthorPage({
     required this.iD,
     required this.name,
-    required this.plugin,
+    this.plugin,
     this.avatar,
     this.banner,
     this.aliases,
@@ -790,7 +787,6 @@ class UniversalComment {
             author: "author",
             commentBody: List<String>.filled(5, "comment").join(),
             hidden: false,
-            plugin: null,
             unavailableFields: const {});
 
   UniversalComment({
@@ -799,7 +795,7 @@ class UniversalComment {
     required String? author,
     required String? commentBody,
     required this.hidden,
-    required this.plugin,
+    this.plugin,
     this.authorID,
     this.countryID,
     this.orientation,
