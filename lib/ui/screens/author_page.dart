@@ -15,7 +15,7 @@ import '/ui/screens/video_list.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/alert_dialog.dart';
 import '/ui/widgets/external_link_warning.dart';
-import '/ui/widgets/safe_network_image.dart';
+import '/ui/widgets/safe_image.dart';
 import '/ui/widgets/sliver_header.dart';
 import '/utils/convert.dart';
 import '/utils/global_vars.dart';

@@ -18,7 +18,7 @@ import '/ui/screens/bug_report/bug_reports_list.dart';
 import '/ui/screens/video_screen/video_screen.dart';
 import '/ui/utils/toast_notification.dart';
 import '/ui/widgets/external_link_warning.dart';
-import '/ui/widgets/safe_network_image.dart';
+import '/ui/widgets/safe_image.dart';
 import '/utils/convert.dart';
 import '/utils/global_vars.dart';
 import '/utils/universal_formats.dart';
