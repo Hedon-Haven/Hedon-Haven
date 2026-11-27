@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:html/dom.dart';
-import 'package:image/image.dart';
 
 import '/utils/bundled_plugin.dart';
 import '/utils/exceptions.dart';
@@ -84,8 +83,11 @@ void initBundledPluginIsolate(SendPort mainSendPort) {
 
 class _TesterIsolate extends BundledPluginIsolate {
   @override
-  Future<void> init() {
-    return Future.value(null);
+  Future<void> init() async {
+    // Bundled plugins can't read or write cache files, so unlike the example
+    // plugins there is no cache file demo here
+    // Simulate network latency
+    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
   }
 
 // To test share/drop any of the following links into the app:
@@ -94,14 +96,14 @@ class _TesterIsolate extends BundledPluginIsolate {
 // https://example.com/video?videoId=123
 // https://example.com/author?authorId=123
   @override
-  Future<ExternalLinkParsed> parseExternalLink(String uriAsString) async {
-    Uri uri = Uri.parse(uriAsString);
+  Future<ExternalLinkParsed> parseExternalLink(String uriString) async {
+    Uri uri = Uri.parse(uriString);
     switch (uri.path) {
       case "/home":
         return ExternalLinkParsed(
           type: ContentType.homePage,
-          pageCount: int.parse(uri.queryParameters["page"] ??
-              TesterPlugin().initialHomePage.toString()),
+          pageCount: tryParse(() => int.parse(uri.queryParameters["page"] ??
+              TesterPlugin().initialHomePage.toString())),
         );
 
       case "/search":
@@ -109,8 +111,7 @@ class _TesterIsolate extends BundledPluginIsolate {
         return ExternalLinkParsed(
             type: ContentType.searchResultsPage,
             searchRequest: UniversalSearchRequest(
-              searchString:
-                  tryParse(() => Uri.decodeQueryComponent(args["query"]!)),
+              searchString: args["query"],
               sortingType: args["sortingType"],
               dateRange: args["dateRange"],
               minQuality: tryParse(() => int.parse(args["minQuality"]!)),
@@ -128,12 +129,18 @@ class _TesterIsolate extends BundledPluginIsolate {
             pageCount: tryParse(() => int.parse(args["page"]!)));
 
       case "/video":
+        if (uri.queryParameters["videoId"]?.isEmpty ?? true) {
+          throw Exception("Missing videoId");
+        }
         return ExternalLinkParsed(
           type: ContentType.videoPage,
           iD: uri.queryParameters["videoId"]!,
         );
 
       case "/author":
+        if (uri.queryParameters["authorId"]?.isEmpty ?? true) {
+          throw Exception("Missing authorId");
+        }
         return ExternalLinkParsed(
           type: ContentType.authorPage,
           iD: uri.queryParameters["authorId"]!,
@@ -146,12 +153,12 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getHomePage(int page) async {
-    // Simulate a delay without blocking the entire isolate
+    // Simulate network latency
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return List.generate(
       10,
       (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
+        iD: "${((page * 10 + index) * 3.1416 * 10000).toInt()}",
         title: "Test homepage video $index, page $page",
         thumbnail: "https://placehold.co/1280x720.png",
         thumbnailHttpHeaders: {"X-Ignore": "example-header"},
@@ -159,17 +166,15 @@ class _TesterIsolate extends BundledPluginIsolate {
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
         previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
-        // seconds
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
+        viewsTotal: (index * 3.1416 * 1000000).toInt(),
+        ratingsPositivePercent: (index * 3.1416 * 10).toInt() % 101,
+        maxQuality: 1080,
         virtualReality: false,
         authorName: "Tester-author $index",
         authorID: "Tester-author $index",
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        scrapeFailException: index % 4 != 0
+        scrapeFailException: index % 4 == 0
             ? ScrapingException("Test fail scrape message")
             : null,
         unavailableFields: const {},
@@ -179,18 +184,20 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<Uint8List> downloadThumbnail(
-      String uriString, Map<String, String>? thumbnailHttpHeaders) async {
-    var response = await httpRequest(uriString, headers: thumbnailHttpHeaders);
+      String uri, Map<String, String>? thumbnailHttpHeaders) async {
+    // Simulate network latency
+    if (_simulateDelays) await Future.delayed(Duration(milliseconds: 500));
+    var response = await httpRequest(uri, headers: thumbnailHttpHeaders);
     if (response.statusCode != 200) {
-      logError("Error downloading preview: ${response.statusCode}");
-      throw Exception("Error downloading preview: ${response.statusCode}");
+      logError("Error downloading thumbnail: ${response.statusCode}");
+      throw Exception("Error downloading thumbnail: ${response.statusCode}");
     }
     return response.bodyBytes;
   }
 
   @override
   Future<List<String>> getSearchSuggestions(String searchString) async {
-    // Simulate a delay without blocking the entire isolate
+    // Simulate network latency
     if (_simulateDelays) await Future.delayed(Duration(milliseconds: 200));
     return List.generate(5, (index) => "$searchString-$index");
   }
@@ -198,15 +205,16 @@ class _TesterIsolate extends BundledPluginIsolate {
   @override
   Future<List<UniversalVideoPreview>> getSearchResults(
       UniversalSearchRequest request, int page) async {
-    // Simulate a delay without blocking the entire isolate
+    // Simulate network latency
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    if (page == 5) {
+    // Past the last page, return an empty list
+    if (page >= 5) {
       return [];
     }
     return List.generate(
       10,
       (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
+        iD: "${((page * 10 + index) * 3.1416 * 10000).toInt()}",
         title: "Test result video $index, page $page, "
             "request ${request.searchString}",
         thumbnail: "https://placehold.co/1280x720.png",
@@ -215,16 +223,15 @@ class _TesterIsolate extends BundledPluginIsolate {
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
         previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
+        viewsTotal: (index * 3.1416 * 1000000).toInt(),
+        ratingsPositivePercent: (index * 3.1416 * 10).toInt() % 101,
+        maxQuality: 1080,
         virtualReality: false,
         authorName: "Tester-author $index",
         authorID: "Tester-author $index",
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        scrapeFailException: index % 4 != 0
+        scrapeFailException: index % 4 == 0
             ? ScrapingException("Test fail scrape message")
             : null,
         unavailableFields: const {},
@@ -233,17 +240,17 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<String> getVideoUriFromID(String videoID) async {
-    return "https://example.com/$videoID";
+  Future<String?> getVideoUriFromID(String videoID) async {
+    return "https://example.com/video?videoId=$videoID";
   }
 
   @override
   Future<UniversalVideoMetadata> getVideoMetadata(
-      String videoId, UniversalVideoPreview uvp) async {
-    // Simulate a delay without blocking the entire isolate
+      String videoID, UniversalVideoPreview uvp) async {
+    // Simulate network latency
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return UniversalVideoMetadata(
-      iD: videoId,
+      iD: videoID,
       m3u8Uris: {
         1080: Uri.parse(
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
@@ -256,10 +263,10 @@ class _TesterIsolate extends BundledPluginIsolate {
       universalVideoPreview: uvp,
       // Uncomment to test partial metadata scrape fail
       //scrapeFailException: ScrapingException("Test fail scrape message"),
-      authorID: "tester-author-$videoId",
+      authorID: "tester-author-$videoID",
       authorName: "Tester-author",
       authorSubscriberCount: 335433,
-      authorAvatar: "https://placehold.co/1280x720.png",
+      authorAvatar: "https://placehold.co/240x240.png",
       actors: [
         (
           name: "Tester-actor-1",
@@ -272,13 +279,13 @@ class _TesterIsolate extends BundledPluginIsolate {
           avatar: "https://placehold.co/200x200.png"
         )
       ],
-      description: "Tester video description" * 10,
+      description: "Tester video description " * 10,
       viewsTotal: 2532823,
       tags: ["Tester-tag-1", "Tester-tag-2"],
       categories: ["Tester-category-1", "Tester-category-2"],
       uploadDate: DateTime.now(),
-      ratingsPositiveTotal: 90,
-      ratingsNegativeTotal: 10,
+      ratingsPositiveTotal: 42646,
+      ratingsNegativeTotal: 4738,
       ratingsTotal: 47384,
       virtualReality: false,
       chapters: {
@@ -293,9 +300,7 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<Uint8List>?> getProgressThumbnails(
-      String videoID, String rawHtmlString) async {
-    List<Uint8List> completedProcessedImages = [];
-
+      String videoID, String rawHtml) async {
     // Simulate heavy processing
     final end = DateTime.now().add(const Duration(seconds: 3));
     while (DateTime.now().isBefore(end)) {
@@ -304,37 +309,37 @@ class _TesterIsolate extends BundledPluginIsolate {
     }
     logDebug("Heavy processing completed");
 
-    // Request the main thread to fetch the image
     final response = await httpRequest("https://placehold.co/720x480.png");
-    Uint8List encodedImage = encodeJpg(decodePng(response.bodyBytes)!);
-    for (int i = 0; i < 1000; i++) {
-      completedProcessedImages.add(encodedImage);
+    if (response.statusCode != 200) {
+      throw Exception("Failed to download placeholder image");
     }
-
-    return completedProcessedImages;
+    // Return 1000 copies of the same image
+    return List.filled(1000, response.bodyBytes);
   }
 
   @override
-  Future<String> getCommentUriFromID(String commentID, String videoID) async {
-    return "https://example.com/$videoID/$commentID";
+  Future<String?> getCommentUriFromID(String commentID, String videoID) async {
+    return "https://example.com/video?videoId=$videoID&commentId=$commentID";
   }
 
   @override
   Future<List<UniversalComment>> getComments(
-      String videoID, String rawHtmlString, int page) async {
-    if (page == 5) {
+      String videoID, String rawHtml, int page) async {
+    // Simulate network latency
+    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
+    // Past the last page, return an empty list
+    if (page >= 5) {
       return [];
     }
-    // Simulate a delay without blocking the entire isolate
-    if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return List.generate(
-      5,
+      10,
       (index) => UniversalComment(
-        iD: "comment-$index",
+        iD: "comment-$page-$index",
         videoID: videoID,
         author: "author-$index",
         commentBody:
             List<String>.filled(5, "test comment $index, page $page ").join(),
+        // Make every 4th comment hidden
         hidden: index % 4 == 0,
         authorID: "author-$index",
         countryID: "US",
@@ -347,33 +352,35 @@ class _TesterIsolate extends BundledPluginIsolate {
         replyComments: index % 2 == 0
             ? List.generate(
                 3,
-                (index) => UniversalComment(
-                  iD: "comment-reply-$index",
+                (replyIndex) => UniversalComment(
+                  iD: "comment-reply-$page-$index-$replyIndex",
                   videoID: videoID,
-                  author: "author-reply-$index",
+                  author: "author-reply-$replyIndex",
                   commentBody:
-                      List<String>.filled(5, "test reply comment $index ")
+                      List<String>.filled(5, "test reply comment $replyIndex ")
                           .join(),
-                  hidden: index % 4 == 0,
-                  authorID: "author-reply-$index",
+                  // Make every 4th reply hidden
+                  hidden: replyIndex % 4 == 0,
+                  authorID: "author-reply-$replyIndex",
                   countryID: "US",
                   orientation: null,
-                  profilePicture: "https://placehold.co/240x240",
-                  ratingsPositiveTotal: index % 2 == 0 ? 4 : null,
-                  ratingsNegativeTotal: index % 2 == 0 ? 1 : null,
-                  ratingsTotal: index % 2 == 0 ? 5 : 6,
-                  commentDate: DateTime.now().subtract(Duration(days: index)),
+                  profilePicture: "https://placehold.co/240x240.png",
+                  ratingsPositiveTotal: replyIndex % 2 == 0 ? 4 : null,
+                  ratingsNegativeTotal: replyIndex % 2 == 0 ? 1 : null,
+                  ratingsTotal: replyIndex % 2 == 0 ? 5 : 6,
+                  commentDate:
+                      DateTime.now().subtract(Duration(days: replyIndex)),
                   replyComments: [],
-                  // Make every 4th comment a fail
-                  scrapeFailException: index % 4 != 0
+                  // Make every 2nd reply a fail
+                  scrapeFailException: replyIndex % 2 == 1
                       ? ScrapingException("Test fail scrape message")
                       : null,
                   unavailableFields: const {},
                 ),
               )
             : [],
-        // Make every 4th comment a fail
-        scrapeFailException: index % 4 != 0
+        // Make every 3rd comment a fail
+        scrapeFailException: index % 3 == 0
             ? ScrapingException("Test fail scrape message")
             : null,
         unavailableFields: const {},
@@ -383,16 +390,17 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getVideoSuggestions(
-      String videoID, String rawHtmlString, int page) async {
-    // Simulate a delay without blocking the entire app
+      String videoID, String rawHtml, int page) async {
+    // Simulate network latency
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    if (page == 5) {
+    // Past the last page, return an empty list
+    if (page >= 5) {
       return [];
     }
     return List.generate(
       10,
       (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
+        iD: "${((page * 10 + index) * 3.1416 * 10000).toInt()}",
         title: "Test suggestion video $index",
         thumbnail: "https://placehold.co/1280x720.png",
         thumbnailHttpHeaders: {"X-Ignore": "example-header"},
@@ -400,16 +408,15 @@ class _TesterIsolate extends BundledPluginIsolate {
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
         previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
+        viewsTotal: (index * 3.1416 * 1000000).toInt(),
+        ratingsPositivePercent: (index * 3.1416 * 10).toInt() % 101,
+        maxQuality: 1080,
         virtualReality: false,
         authorName: "Tester-suggestion-author $index",
         authorID: "Tester-suggestion-author $index",
         verifiedAuthor: index % 2 == 0,
         // Make every 4th video a fail
-        scrapeFailException: index % 4 != 0
+        scrapeFailException: index % 4 == 0
             ? ScrapingException("Test fail scrape message")
             : null,
         unavailableFields: const {},
@@ -418,12 +425,13 @@ class _TesterIsolate extends BundledPluginIsolate {
   }
 
   @override
-  Future<String> getAuthorUriFromID(String authorID) async {
-    return "https://example.com/$authorID";
+  Future<String?> getAuthorUriFromID(String authorID) async {
+    return "https://example.com/author?authorId=$authorID";
   }
 
   @override
   Future<UniversalAuthorPage> getAuthorPage(String authorID) async {
+    // Simulate network latency
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
     return UniversalAuthorPage(
       iD: authorID,
@@ -431,7 +439,7 @@ class _TesterIsolate extends BundledPluginIsolate {
       avatar: "https://placehold.co/240x240.png",
       banner: "https://placehold.co/1270x400.png",
       aliases: ["Test alias 1", "Test alias 2"],
-      description: "Very long description" * 1000,
+      description: "Very long description " * 1000,
       advancedDescription: {
         for (int i = 1; i <= 1000; i++)
           "Test description key $i": "Test description value $i",
@@ -442,7 +450,7 @@ class _TesterIsolate extends BundledPluginIsolate {
         "external link 3": Uri.parse("https://example.com/link3")
       },
       viewsTotal: 23773212,
-      videosTotal: 114,
+      videosTotal: 50,
       subscribers: 573529,
       rank: 3746,
       rawHtml: Document(),
@@ -452,15 +460,17 @@ class _TesterIsolate extends BundledPluginIsolate {
 
   @override
   Future<List<UniversalVideoPreview>> getAuthorVideos(
-      String authorID, String rawHtmlString, int page) async {
+      String authorID, String rawHtml, int page) async {
+    // Simulate network latency
     if (_simulateDelays) await Future.delayed(Duration(seconds: 2));
-    if (page == 5) {
+    // Past the last page, return an empty list
+    if (page >= 5) {
       return [];
     }
     return List.generate(
       10,
       (index) => UniversalVideoPreview(
-        iD: "${(index * pi * 10000).toInt()}",
+        iD: "${((page * 10 + index) * 3.1416 * 10000).toInt()}",
         title: "Test author video $index, page $page",
         thumbnail: "https://placehold.co/1280x720.png",
         thumbnailHttpHeaders: {"X-Ignore": "example-header"},
@@ -468,16 +478,14 @@ class _TesterIsolate extends BundledPluginIsolate {
             "https://docs.evostream.com/sample_content/assets/bunny.mp4"),
         previewVideoHttpHeaders: {"X-Ignore": "example-header"},
         duration: Duration(seconds: 120 + index * 10),
-        viewsTotal: (index * pi * 1000000).toInt(),
-        ratingsPositivePercent:
-            int.tryParse((index * pi * 10000).toStringAsFixed(2)) ?? 50,
-        maxQuality: 720,
+        viewsTotal: (index * 3.1416 * 1000000).toInt(),
+        ratingsPositivePercent: (index * 3.1416 * 10).toInt() % 101,
+        maxQuality: 1080,
         virtualReality: false,
-        authorName: "Tester-author-same $index",
-        authorID: "Tester-author-same $index",
-        verifiedAuthor: index % 2 == 0,
+        authorName: "Test author name",
+        authorID: authorID,
         // Make every 4th video a fail
-        scrapeFailException: index % 4 != 0
+        scrapeFailException: index % 4 == 0
             ? ScrapingException("Test fail scrape message")
             : null,
         unavailableFields: const {},
