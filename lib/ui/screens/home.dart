@@ -26,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Key videoListKey = UniqueKey();
   Future<List<UniversalVideoPreview>?> videoResults = Future.value([]);
   LoadingHandler loadingHandler =
       LoadingHandler(navPath: navigatorPathObserver.currentPath);
@@ -115,6 +116,16 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
+  Future<void> refreshHomeScreen() async {
+    loadingHandler = LoadingHandler(navPath: navigatorPathObserver.currentPath);
+    videoResults = loadingHandler.getHomePages(null);
+    // New key forces VideoList to load the new results
+    setState(() => videoListKey = UniqueKey());
+    await videoResults;
+    // Update the scraping report button
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,25 +210,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   return const SizedBox();
                 }
                 return snapshot.data!
-                    ? CustomScrollView(slivers: [
-                        buildBanner(),
-                        VideoList(
-                          videoList: videoResults,
-                          scrollController: ScrollController(),
-                          reloadInitialResults: () =>
-                              loadingHandler.getHomePages(null),
-                          loadMoreResults: loadMoreResults,
-                          noResultsMessage:
-                              "Empty homepage but no error. Please report this to developers",
-                          noResultsErrorMessage: "Error loading homepage",
-                          showScrapingReportButton: true,
-                          bugReports: loadingHandler.resultsBugReports,
-                          ignoreInternetError: false,
-                          noPluginsEnabled: noPluginsEnabled,
-                          noPluginsMessage:
-                              "No homepage providers enabled. Enable at least one plugin's homepage provider setting",
-                        )
-                      ])
+                    ? RefreshIndicator(
+                        onRefresh: refreshHomeScreen,
+                        child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              buildBanner(),
+                              VideoList(
+                                key: videoListKey,
+                                videoList: videoResults,
+                                scrollController: ScrollController(),
+                                reloadInitialResults: () =>
+                                    loadingHandler.getHomePages(null),
+                                loadMoreResults: loadMoreResults,
+                                noResultsMessage:
+                                    "Empty homepage but no error. Please report this to developers",
+                                noResultsErrorMessage: "Error loading homepage",
+                                showScrapingReportButton: true,
+                                bugReports: loadingHandler.resultsBugReports,
+                                ignoreInternetError: false,
+                                noPluginsEnabled: noPluginsEnabled,
+                                noPluginsMessage:
+                                    "No homepage providers enabled. Enable at least one plugin's homepage provider setting",
+                              )
+                            ]))
                     : CustomScrollView(slivers: [
                         buildBanner(),
                         SliverToBoxAdapter(

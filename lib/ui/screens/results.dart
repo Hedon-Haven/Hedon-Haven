@@ -87,6 +87,16 @@ class _ResultsScreenState extends State<ResultsScreen> {
     setState(() {});
   }
 
+  Future<void> refreshResults() async {
+    widget.loadingHandler.resultsBugReports.clear();
+    widget.videoResults =
+        widget.loadingHandler.getSearchResults(widget.searchRequest);
+    setState(() => videoListKey = UniqueKey());
+    await widget.videoResults;
+    // Update the scraping report button
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -167,24 +177,28 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 ),
               ],
             ),
-            body: CustomScrollView(slivers: [
-              VideoList(
-                  scrollController: ScrollController(),
-                  // This key is needed to completely rebuild the VideoList widget
-                  key: videoListKey,
-                  videoList: widget.videoResults,
-                  searchRequest: widget.searchRequest,
-                  reloadInitialResults: () => widget.loadingHandler
-                      .getSearchResults(widget.searchRequest),
-                  loadMoreResults: loadMoreResults,
-                  noResultsMessage: "No results found",
-                  noResultsErrorMessage: "Error loading results",
-                  showScrapingReportButton: true,
-                  bugReports: widget.loadingHandler.resultsBugReports,
-                  ignoreInternetError: false,
-                  noPluginsEnabled: noPluginsEnabled,
-                  noPluginsMessage:
-                      "No result providers enabled. Enable at least one plugin's result provider setting")
-            ])));
+            body: RefreshIndicator(
+                onRefresh: refreshResults,
+                child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      VideoList(
+                          scrollController: ScrollController(),
+                          // This key is needed to completely rebuild the VideoList widget
+                          key: videoListKey,
+                          videoList: widget.videoResults,
+                          searchRequest: widget.searchRequest,
+                          reloadInitialResults: () => widget.loadingHandler
+                              .getSearchResults(widget.searchRequest),
+                          loadMoreResults: loadMoreResults,
+                          noResultsMessage: "No results found",
+                          noResultsErrorMessage: "Error loading results",
+                          showScrapingReportButton: true,
+                          bugReports: widget.loadingHandler.resultsBugReports,
+                          ignoreInternetError: false,
+                          noPluginsEnabled: noPluginsEnabled,
+                          noPluginsMessage:
+                              "No result providers enabled. Enable at least one plugin's result provider setting")
+                    ]))));
   }
 }
