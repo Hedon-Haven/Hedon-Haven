@@ -6,8 +6,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '/services/http_manager.dart';
+import '/ui/utils/handle_desktop_events.dart' show DesktopShortcut;
 import '/ui/utils/navigator_path_observer.dart';
 import 'custom_logger.dart';
+
+// Re-export so that screens importing global_vars can use the enum directly
+export '/ui/utils/handle_desktop_events.dart' show DesktopShortcut;
 
 // Make these late-initialized to allow mocking them in tests
 late SharedPreferencesAsync sharedStorage;
@@ -37,6 +41,9 @@ Map<String, String> defaultHttpHeaders = {
 
 late StreamController<void> reloadVideoListEvent;
 late StreamController<int> pluginUpdatesAvailableEvent;
+
+/// Fired by the global desktop key handler in handle_desktop_events.dart
+late StreamController<DesktopShortcut> desktopShortcutEvent;
 
 /// Global visual app reload. MUST be set from initGlobalSetState, NOT from the main initGlobalVars()
 late void Function() globalSetState;
@@ -91,6 +98,7 @@ Future<void> initHttpClient() async {
 
 Future<void> initEvents() async {
   logger.i("Initializing stream controllers");
+  desktopShortcutEvent = StreamController<DesktopShortcut>.broadcast();
   reloadVideoListEvent = StreamController<void>.broadcast();
   pluginUpdatesAvailableEvent = StreamController<int>.broadcast();
 }

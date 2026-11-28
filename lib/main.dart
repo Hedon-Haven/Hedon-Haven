@@ -200,8 +200,8 @@ class ViewerAppState extends State<ViewerApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     // Add global key handling for desktop
-    escapeHandler = (event) => handleEscape(event, materialAppKey);
-    HardwareKeyboard.instance.addHandler(escapeHandler);
+    HardwareKeyboard.instance.addHandler(
+        escapeHandler = (event) => handleDesktopEvents(event, materialAppKey));
 
     // Enable badge when plugin update check finishes and updates are available
     pluginUpdatesAvailableEvent.stream

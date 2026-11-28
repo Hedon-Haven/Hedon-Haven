@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import '/services/bug_report_manager.dart';
@@ -33,6 +35,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
   bool isLoading = true;
   bool noPluginsEnabled = false;
 
+  late final StreamSubscription<void> refreshSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +51,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
         setState(() => noPluginsEnabled = true);
       }
     });
+
+    // Refresh on desktop shortcut
+    refreshSubscription = desktopShortcutEvent.stream.listen((shortcut) {
+      if (shortcut == DesktopShortcut.refresh &&
+          (ModalRoute.of(context)?.isCurrent ?? false)) {
+        refreshResults();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    refreshSubscription.cancel();
+    super.dispose();
   }
 
   Future<List<UniversalVideoPreview>?> loadMoreResults() async {

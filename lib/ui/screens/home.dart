@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import '/services/banner_manager.dart';
@@ -32,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
       LoadingHandler(navPath: navigatorPathObserver.currentPath);
   bool isLoading = true;
   bool noPluginsEnabled = false;
+
+  late final StreamSubscription<void> refreshSubscription;
 
   late Future<({String severity, String title, String message})?> banner;
 
@@ -87,6 +91,21 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => noPluginsEnabled = true);
       }
     });
+
+    // Refresh on desktop shortcut
+    refreshSubscription = desktopShortcutEvent.stream.listen((shortcut) async {
+      if (shortcut == DesktopShortcut.refresh &&
+          navigatorPathObserver.routeStack.lastOrNull == "home" &&
+          (await sharedStorage.getBool("appearance_homepage_enabled"))!) {
+        refreshHomeScreen();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    refreshSubscription.cancel();
+    super.dispose();
   }
 
   Future<List<UniversalVideoPreview>?> loadMoreResults() async {
