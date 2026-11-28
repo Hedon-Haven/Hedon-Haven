@@ -93,10 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     // Refresh on desktop shortcut
-    refreshSubscription = desktopShortcutEvent.stream.listen((shortcut) async {
+    refreshSubscription = desktopShortcutEvent.stream.listen((shortcut) {
       if (shortcut == DesktopShortcut.refresh &&
-          navigatorPathObserver.routeStack.lastOrNull == "home" &&
-          (await sharedStorage.getBool("appearance_homepage_enabled"))!) {
+          navigatorPathObserver.routeStack.lastOrNull == "home") {
         refreshHomeScreen();
       }
     });
@@ -136,6 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> refreshHomeScreen() async {
+    // Don't load anything if the user disabled the homepage
+    if (!(await sharedStorage.getBool("appearance_homepage_enabled"))!) return;
     loadingHandler = LoadingHandler(navPath: navigatorPathObserver.currentPath);
     videoResults = loadingHandler.getHomePages(null);
     // New key forces VideoList to load the new results
@@ -151,6 +152,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
         actions: [
+          IconButton(
+              icon: Icon(
+                  color: Theme.of(context).colorScheme.primary, Icons.refresh),
+              onPressed: refreshHomeScreen),
           if (loadingHandler.resultsBugReports.isNotEmpty && !isLoading) ...[
             IconButton(
                 icon: Icon(

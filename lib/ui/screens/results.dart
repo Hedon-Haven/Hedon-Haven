@@ -170,6 +170,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           Icons.error_outline),
                       onPressed: () => createResultsBugReport()),
                 IconButton(
+                    icon: Icon(
+                        color: Theme.of(context).colorScheme.primary,
+                        Icons.refresh),
+                    onPressed: refreshResults),
+                IconButton(
                   color: Theme.of(context).colorScheme.primary,
                   icon: const Icon(Icons.filter_alt),
                   onPressed: () {
